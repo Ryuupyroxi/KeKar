@@ -27,9 +27,14 @@ Decision references (D1-D10) are defined in Part 1 of
 | §6 | Low-friction onboarding | `src/ui/wizard.py` | `test_gui_smoke.py` |
 | §7.1 | Data folder layout | **D3** — portable `KeKarData/` instead of `%APPDATA%` | `test_paths.py` |
 | §7.2 | Exact table schemas | `src/data/schema.sql` (field names verbatim) | `test_db.py`, `test_bundle_safety.py` |
-| §8.1 | Split-pane dashboard + drawer | `src/ui/main_window.py`, `property_drawer.py` | `test_gui_smoke.py` |
+| §8.1 | Split-pane dashboard + drawer | `src/ui/main_window.py`, `property_drawer.py` | `test_gui_smoke.py`, `test_ui_behaviour.py` |
 | §8.2 | Embedded chat | `src/ui/chat_pane.py` | `test_gui_smoke.py` |
-| §8.3 | CRM tab | `src/ui/crm_tab.py` | `test_gui_smoke.py` |
+| §8.3 | CRM tab | `src/ui/crm_tab.py` | `test_gui_smoke.py`, `test_ui_behaviour.py` |
+| §8.1 | Readable typography (no tiny default fonts) | `src/ui/theme.py`, `widgets.py` | `test_ui_behaviour.py` |
+| §8.1 | Inclusive search (address, city, ZIP, pet policy, notes, amenities) | `src/ui/property_drawer.py::search_text` | `test_ui_behaviour.py` |
+| §3.2 | Marketplace autofill UI with a hard stop before Publish | `src/ui/marketplace_dialog.py` | `test_ui_behaviour.py`, `test_marketplace.py` |
+| §3.2 | Listing preview and one-click copy | `src/ui/listing_dialog.py`, `src/services/clipboard.py` | `test_ui_behaviour.py`, `test_clipboard.py` |
+| §3.4 | Applicant linked to a property | `src/ui/crm_tab.py`, `src/data/applicant_repo.py` | `test_ui_behaviour.py`, `test_applicant_repo.py` |
 | §9 | Build milestones 1-5 | Phases 0-6 | README status table |
 | §10.1 | USB portable bundle | `tools/make_usb_package.py`, `copy_to_usb.sh` | `test_usb_packaging.py`, real copy + verify |
 | §10.2 | Dedicated API account + encrypted storage | **D6** — `src/config/crypto.py`, `settings.py` | `test_crypto.py`, `test_settings.py` |

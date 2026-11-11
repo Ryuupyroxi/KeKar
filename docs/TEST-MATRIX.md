@@ -30,26 +30,40 @@ applicable on that platform · blank = not yet run
 
 ## Automated coverage
 
-These are covered by the pytest suite (`pytest -q`, 79 tests) and must stay green:
+These are covered by the pytest suite (`pytest -q`, 169 tests) and must stay
+green:
 
 - Schema creation, WAL mode, foreign keys, migration idempotency (`test_db.py`)
 - Property and applicant CRUD, stage validation, document records
   (`test_property_repo.py`, `test_applicant_repo.py`)
 - Backup, restore, prune, corruption recovery (`test_backup.py`)
 - Listing compiler, including missing-optionals handling (`test_listing_compiler.py`)
-- Image import, resize, thumbnail (`test_image_service.py`)
+- Versioned listing templates and the fallback when the file is missing
+  (`test_listing_templates.py`)
+- Image import, resize, thumbnail, cover selection, deletion (`test_image_service.py`)
 - Agent tool schemas, dispatch, unknown-tool rejection (`test_agent_tools.py`)
 - Agent loop: final answer, tool execution, cancellation, step limit
   (`test_agent_runner.py`)
 - LLM fallback chain (`test_agent_client.py`)
+- Provider key verification against `/models` (`test_agent_verify_key.py`)
 - Settings encryption roundtrip, wrong-key failure, passphrase derivation
   (`test_crypto.py`, `test_settings.py`)
+- Default config loader and its embedded fallback (`test_default_config.py`)
 - Browser launcher flag construction, CDP connect failure handling
   (`test_launcher.py`, `test_cdp_client.py`)
 - Marketplace autofill stops before Publish; missing selector -> `needs_review`
   (`test_marketplace.py`)
 - GUI construction, drawer, form, photo panel, CRM, chat pane, wizard, settings
   (`test_gui_smoke.py`, headless `QT_QPA_PLATFORM=offscreen`)
+- UI behaviour: typography, status stripes, inclusive search across amenities,
+  listing preview/copy, marketplace dialog safeguards, applicant-property
+  linking, CRM stage colours (`test_ui_behaviour.py`)
+- CLI flags `--version`, `-V`, `--help` (`test_main_cli.py`)
+- First-run key seeding roundtrip (`test_seed_first_run.py`)
+- USB packaging: launcher sources stay in sync, package layout, reproducibility
+  (`test_usb_packaging.py`)
+- Frozen-bundle safety: no runtime dependency on an unshipped file
+  (`test_bundle_safety.py`)
 
 ## How to run a scenario
 

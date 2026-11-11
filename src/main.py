@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import sys
 
-APP_NAME = "KeKar"
-APP_VERSION = "0.1.0"
+from src._version import APP_NAME, APP_VERSION
 
 # Flags that must work with no display, no data directory, and no network.
 # They are handled before Qt is imported so `KeKar --version` succeeds on a

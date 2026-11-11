@@ -8,11 +8,13 @@ One folder for everything KeKar. No stray files, no scattered repos, no
 | Path | What it is |
 |---|---|
 | `docs/KeKar-Build-Plan.md` | **Master build plan — start here.** 36 tasks, 8 phases, full code for the foundations. |
-| `docs/SECURITY.md` | Security review checklist (created in Phase 7). |
-| `docs/TEST-MATRIX.md` | Cross-platform end-to-end test matrix (created in Phase 7). |
+| `docs/SECURITY.md` | Security gates, redaction rules and permission checks. |
+| `docs/TEST-MATRIX.md` | Cross-platform end-to-end test matrix (human run). |
+| `docs/WIRING.md` | How the pieces connect at runtime — startup, data flow, agent loop, browser automation. |
+| `docs/SPEC-COVERAGE.md` | Every spec requirement traced to the code and the test that proves it. |
 | `src/` | Application source — Python 3.12, PyQt6, SQLite. |
-| `tests/` | pytest suite. |
-| `config/` | Listing templates and Marketplace selector configs. |
+| `tests/` | pytest suite (28 test modules). |
+| `config/` | Listing templates, default config, Marketplace selectors. |
 | `tools/` | Build, packaging, and USB copy/verify tools. |
 | `packaging/` | NSIS installer (Windows) and AppImage builder (Linux). |
 | `assets/` | Launchers and icons. |
@@ -27,7 +29,8 @@ drive. All data stays local; only the AI chat needs the network.
 
 ## Status
 
-Implementation complete through Phase 7. **139 tests passing** (`pytest -q`).
+Implementation complete through Phase 7. **169 tests passing** (`pytest -q`).
+Source: 46 modules, 3,755 lines.
 
 | Phase | State |
 |---|---|
@@ -40,7 +43,32 @@ Implementation complete through Phase 7. **139 tests passing** (`pytest -q`).
 | 6 — Packaging and USB deployment | done |
 | 7 — Hardening, testing, release | in progress — human test matrix pending |
 
-### Verified by real execution
+## The interface
+
+The window is three regions: a property list on the left, tabs on the right,
+and the assistant along the bottom.
+
+- **Property list** — each row is a cover thumbnail, the address as the title,
+  and the city/ZIP underneath. Status is a coloured stripe on the left edge
+  (green = Vacant, red = Rented), so the address is never crowded out by a
+  badge. The search box is deliberately inclusive: it matches address, city,
+  ZIP, pet policy, free-form notes **and every enabled amenity**, so
+  "dishwasher" or "fenced yard" finds the right properties.
+- **Properties tab** — a two-column form (Details, Financials, Amenities,
+  Notes) that scrolls when the window is short, so no field is ever squeezed
+  to nothing. Quick actions: Save, Copy listing, Preview listing, Publish to
+  Marketplace, Mark as rented / vacant, Delete.
+- **Photos** — import, thumbnail, set cover, delete. The cover becomes the
+  row's thumbnail in the list.
+- **Applicants tab** — a table of applicants with a colour-coded screening
+  stage (Inquiry Received → Questionnaire Sent → Background Check →
+  Approved / Rejected). Adding an applicant asks which property they are
+  applying for. Pre-screening questions copy to the clipboard in one click.
+- **Assistant** — the chat pane talks to the in-app agent, which can only call
+  whitelisted tools (never raw SQL, never `eval`). Offline is handled with a
+  banner and a status pill rather than a crash.
+
+## Verified by real execution
 
 - `bash build.sh` produces a working Linux one-folder build (`dist/KeKar`).
 - `dist/KeKar/KeKar --version` prints `KeKar 0.1.0` on a headless machine.
@@ -53,6 +81,9 @@ Implementation complete through Phase 7. **139 tests passing** (`pytest -q`).
   including from a copy of the package on another path.
 - `tools/seed_first_run.py` writes an encrypted key and the resulting settings
   file loads back with `is_configured() == True`.
+- The app was launched on a real display and screenshotted: the property list,
+  the populated form (address, rent, bedrooms, amenities) and the photo panel
+  all render with readable text at 1280x800.
 
 ### Security review
 
@@ -60,11 +91,14 @@ See `docs/SECURITY.md`. Runtime dependencies were audited and raised:
 `cryptography` 45.0.7 → 50.0.2 and `Pillow` 11.1.0 → 13.0.0, closing 53
 pip-audit findings. Remaining findings are recorded with reasons.
 
+The API key is encrypted at rest (AES-256-GCM), its key file is `0600`, and it
+is redacted from every log line, dialog and crash report. It is never written
+to the database.
+
 ### Known gaps before release
 
 - `docs/TEST-MATRIX.md` scenarios 1-18 need a human on real hardware.
 - Windows artifact requires a GitHub Actions run (no Windows machine here).
-- No git history yet; the plan's commit steps have not been run.
 - Marketplace autofill is implemented but untested against the live Facebook DOM.
 
 ## Source documents (kept outside this folder, referenced by the plan)

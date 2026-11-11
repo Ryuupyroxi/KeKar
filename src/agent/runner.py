@@ -27,6 +27,25 @@ class AgentStepLimit(Exception):
     pass
 
 
+class CancelFlag:
+    """A thread-safe cancellation signal, checked between agent steps.
+
+    The agent loop runs in a QThread, so the UI cannot touch an asyncio.Event.
+    A plain boolean guarded by the GIL is enough: the loop checks it before
+    each model call and stops at the next opportunity.
+    """
+
+    def __init__(self) -> None:
+        self._cancelled = False
+
+    def cancel(self) -> None:
+        self._cancelled = True
+
+    @property
+    def cancelled(self) -> bool:
+        return self._cancelled
+
+
 class AgentRunner:
     def __init__(self, client: LLMClient, settings, ctx: ToolContext):
         self.client = client
@@ -34,7 +53,7 @@ class AgentRunner:
         self.ctx = ctx
 
     async def run(self, user_message: str, history: list[dict],
-                  cancel: asyncio.Event | None = None) -> AgentResult:
+                  cancel: CancelFlag | None = None) -> AgentResult:
         messages: list[dict] = [{"role": "system", "content": SOUL}]
         messages += history[-MAX_HISTORY_TURNS * 2:]
         messages.append({"role": "user", "content": user_message})
@@ -42,7 +61,7 @@ class AgentRunner:
         tool_calls = 0
         model_used = ""
         for _ in range(self.settings.max_agent_steps):
-            if cancel is not None and cancel.is_set():
+            if cancel is not None and cancel.cancelled:
                 raise AgentCancelled()
             response = await self.client.chat(messages, tools=TOOL_SCHEMAS)
             model_used = response.model

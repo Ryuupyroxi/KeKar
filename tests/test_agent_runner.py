@@ -4,7 +4,7 @@ import json
 import pytest
 
 from src.agent.client import LLMResponse
-from src.agent.runner import AgentCancelled, AgentRunner
+from src.agent.runner import AgentCancelled, AgentRunner, CancelFlag
 from src.agent.tools import ToolContext
 from src.config.settings import Settings
 from src.data.property_repo import PropertyRepo
@@ -54,11 +54,32 @@ def test_executes_tool_then_answers(db):
 
 def test_cancellation(db):
     client = FakeClient([_resp(content="x")])
-    cancel = asyncio.Event()
-    cancel.set()
+    cancel = CancelFlag()
+    cancel.cancel()
     with pytest.raises(AgentCancelled):
         asyncio.run(AgentRunner(client, Settings(), _ctx(db))
                     .run("hi", [], cancel=cancel))
+
+
+def test_cancellation_mid_loop(db):
+    """A cancel raised between steps stops the loop before the next call."""
+    tool_call = {"id": "c", "type": "function",
+                 "function": {"name": "property_list", "arguments": "{}"}}
+    client = FakeClient([LLMResponse(content="", tool_calls=[tool_call],
+                                      model="fake", finish_reason="tool_calls")]
+                        * 5)
+    cancel = CancelFlag()
+
+    original_chat = client.chat
+
+    async def chat_and_cancel(messages, tools=None):
+        cancel.cancel()
+        return await original_chat(messages, tools)
+
+    client.chat = chat_and_cancel
+    with pytest.raises(AgentCancelled):
+        asyncio.run(AgentRunner(client, Settings(), _ctx(db))
+                    .run("loop", [], cancel=cancel))
 
 
 def test_step_limit(db):

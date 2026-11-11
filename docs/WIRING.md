@@ -59,6 +59,48 @@ ChatPane -> AgentRunner.run(message)
 The model can only call whitelisted functions. There is no path from a tool
 call to `eval`, `exec`, or a raw SQL string.
 
+## Interface wiring
+
+```
+MainWindow (src/ui/main_window.py)
+  ├─ PropertyDrawer (left)  ──property_selected──▶ PropertyForm.load_property()
+  │     │                          └──────────▶ PhotoPanel.load_property()
+  │     └─ search box filters on PropertyDrawer.search_text(prop)
+  │           (address, city, ZIP, pet policy, notes, enabled amenities)
+  ├─ QTabWidget
+  │     ├─ Properties tab = PropertyForm inside a QScrollArea + PhotoPanel
+  │     └─ Applicants tab = CrmTab (stage combo box, colour per stage)
+  ├─ ChatPane (bottom) ──▶ AgentRunner
+  ├─ OfflineBanner + StatusPill ◀── _PingThread every 30 s
+  │     └─ connectivity.provider_reachable(api_base)  (plain TCP, no API key)
+  └─ menu: Settings → SettingsDialog, Help → AboutDialog
+```
+
+`src/ui/theme.py` is the single source of typography (`DejaVu Sans`, 11 pt);
+widgets that need emphasis call `font(points, bold)`. `src/ui/widgets.py`
+holds the shared `StatusPill`, `OfflineBanner` and `SectionLabel`.
+
+The property form is wrapped in a `QScrollArea` with `setWidgetResizable(True)`
+so a short window scrolls instead of squeezing the group boxes flat.
+
+## Marketplace publishing
+
+```
+PropertyForm.publish_btn
+  └─ MarketplaceDialog(app, prop)
+       └─ _AutofillThread (QThread, so the UI never freezes)
+            ├─ launcher.is_debug_port_open() -> launch_browser() if needed
+            ├─ CDPClient.connect()
+            └─ MarketplaceAutomation.autofill_listing(prop)
+                 └─ fills title / price / description / photos, then RETURNS
+       └─ _on_done(result) -> plain-language report in the dialog
+```
+
+The thread reports `autofilled`, `needs_review` or `failed`. In every case the
+dialog says plainly that nothing was published and points at **Copy listing**
+as the reliable fallback. Auto-fill is off unless the user enables it in
+Settings, and it can never click Publish.
+
 ## Browser automation
 
 ```
@@ -98,6 +140,7 @@ string concatenation elsewhere.
 | `config/default_config.json` | file, falls back to `DEFAULTS` | same |
 | `config/listing_templates.json` | file, falls back to `DEFAULT_TEMPLATE` | same |
 | `config/marketplace_selectors.json` | file, falls back to `DEFAULT_SELECTORS` | same |
+| `src/resources/styles.qss` | file, falls back to no stylesheet | shipped in the bundle |
 
 The rule: **anything read at runtime must either be declared in `KeKar.spec`
 or embedded in Python.** `tests/test_bundle_safety.py` and

@@ -1,24 +1,42 @@
 /* KeKar stylesheet.
  *
- * Kept deliberately small: warm neutrals, generous spacing, and clear focus
- * rings. The end user is a non-technical landlord, so nothing here is clever.
- * Loaded by src/app.py when the bundle ships this file; if it is missing the
- * app falls back to the Qt default theme and still works.
+ * Warm neutrals, generous spacing, clear focus rings. The end user is a
+ * non-technical landlord, so nothing here is clever.
+ *
+ * Fonts are set in code (src/ui/theme.py) rather than here. An earlier version
+ * of this file had `QWidget { font-size: 14px; }`, which overrode the
+ * application font on every widget and made the form fields render too small
+ * to read. Do not reintroduce a global font-size rule.
+ *
+ * Loaded by src/app.py when the bundle ships this file. A missing file is not
+ * an error — the app falls back to the Qt default theme and still works.
  */
-
-QWidget {
-    font-size: 14px;
-}
 
 QMainWindow, QDialog {
     background: #f5f4f1;
 }
 
+QGroupBox {
+    font-weight: 600;
+    border: 1px solid #ddd8d0;
+    border-radius: 6px;
+    margin-top: 12px;
+    padding-top: 10px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 4px;
+    color: #4a453e;
+}
+
 QPushButton {
-    padding: 6px 14px;
+    padding: 7px 16px;
     border: 1px solid #c9c4bc;
     border-radius: 6px;
     background: #ffffff;
+    min-height: 20px;
 }
 
 QPushButton:hover {
@@ -40,15 +58,28 @@ QPushButton:default:hover {
 }
 
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit, QPlainTextEdit {
-    padding: 5px;
+    padding: 6px;
     border: 1px solid #c9c4bc;
     border-radius: 5px;
     background: #ffffff;
+    selection-background-color: #2e5e4e;
 }
 
 QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus,
 QComboBox:focus, QTextEdit:focus, QPlainTextEdit:focus {
     border: 1px solid #2e5e4e;
+}
+
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    width: 18px;
+}
+
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    width: 18px;
 }
 
 QListWidget {
@@ -58,13 +89,30 @@ QListWidget {
 }
 
 QListWidget::item {
-    padding: 6px;
     border-bottom: 1px solid #f0ede8;
 }
 
 QListWidget::item:selected {
     background: #e3efe9;
-    color: #1d3b31;
+}
+
+QTableWidget {
+    border: 1px solid #ddd8d0;
+    border-radius: 6px;
+    gridline-color: #efece6;
+}
+
+QHeaderView::section {
+    background: #efece6;
+    color: #4a453e;
+    padding: 6px;
+    border: none;
+    border-bottom: 1px solid #ddd8d0;
+    font-weight: 600;
+}
+
+QScrollArea {
+    border: none;
 }
 
 QScrollBar:vertical {

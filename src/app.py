@@ -11,15 +11,16 @@ from .agent.client import LLMClient
 from .agent.memory import MemoryStore
 from .agent.runner import AgentRunner
 from .agent.tools import ToolContext
+from ._version import APP_NAME, APP_VERSION
 from .config.settings import Settings
 from .data.applicant_repo import ApplicantRepo
 from .data.backup import open_with_recovery, prune_backups
 from .data.chat_repo import ChatRepo
 from .data.db import Database
 from .data.property_repo import PropertyRepo
+from ._version import APP_NAME, APP_VERSION
 from .ui.main_window import MainWindow
-
-APP_VERSION = "0.1.0"
+from .ui.theme import app_font
 
 
 def _stylesheet_path() -> Path | None:
@@ -39,9 +40,10 @@ class Application(QApplication):
 
     def __init__(self, argv):
         super().__init__(argv)
-        self.setApplicationName("KeKar")
+        self.setApplicationName(APP_NAME)
         self.setApplicationVersion(APP_VERSION)
-        self.setApplicationDisplayName("KeKar Property Manager")
+        self.setApplicationDisplayName(f"{APP_NAME} Property Manager")
+        self.setFont(app_font())
         self._load_stylesheet()
 
         self.settings = Settings.load()
