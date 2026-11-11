@@ -1,0 +1,10 @@
+{
+  "selector_schema_version": "2026-11-11",
+  "listing_url": "https://www.facebook.com/marketplace/create/rental",
+  "title": "input[name='title'], [aria-label='Title']",
+  "price": "input[name='price'], [aria-label='Price']",
+  "description": "div[contenteditable='true'], textarea[aria-label='Description']",
+  "photos": "input[type='file']",
+  "publish": "div[role='button']:has-text('Publish')",
+  "next": "div[role='button']:has-text('Next')"
+}

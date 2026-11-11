@@ -1,0 +1,22 @@
+{
+  "schema_version": "2026-11-11",
+  "api_base": "https://openrouter.ai/api/v1",
+  "model_chain": [
+    "meta-llama/llama-3.1-8b-instruct",
+    "google/gemini-flash-1.5",
+    "nousresearch/hermes-3-llama-3.1-8b"
+  ],
+  "request_timeout_s": 45,
+  "max_agent_steps": 8,
+  "browser_kind": "auto",
+  "autofill_enabled": false,
+  "backup_keep_days": 30,
+  "photo_max_dimension": 1600,
+  "photo_jpeg_quality": 82,
+  "thumbnail_height": 140,
+  "max_photos_per_property": 12,
+  "max_photo_mb": 20,
+  "chat_history_limit": 200,
+  "log_max_bytes": 2000000,
+  "log_backup_count": 3
+}

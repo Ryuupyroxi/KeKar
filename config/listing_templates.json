@@ -1,0 +1,7 @@
+{
+  "schema_version": "2026-11-11",
+  "templates": {
+    "default": "{title}\n\n{bedrooms} bd | {bathrooms} ba | {sqft} sqft\n{address}, {city}, OK {zip_code}\n${rent}/month  |  Security deposit ${deposit}\nAvailable {available_date}\n\n{amenities}\n\n{pet_line}\n\n{notes}\n\n{footer}",
+    "short": "{title}\n${rent}/month | {bedrooms} bd {bathrooms} ba\n{address}, {city} {zip_code}\nAvailable {available_date}\n\n{amenities}\n\n{footer}"
+  }
+}

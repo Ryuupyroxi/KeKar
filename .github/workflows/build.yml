@@ -1,0 +1,42 @@
+name: build
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04          # oldest glibc we support -> widest compatibility
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: pytest -q
+      - run: pyinstaller KeKar.spec --noconfirm
+      - run: python tools/make_usb_package.py --platform linux --source dist/KeKar --out out/KeKar_Linux
+      - run: python tools/verify_usb.py out/KeKar_Linux --platform linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KeKar_Linux
+          path: out/KeKar_Linux/
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: pytest -q
+      - run: pyinstaller KeKar.spec --noconfirm
+      - run: python tools/make_usb_package.py --platform windows --source dist/KeKar --out out/KeKar_Windows
+      - run: python tools/verify_usb.py out/KeKar_Windows --platform windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KeKar_Windows
+          path: out/KeKar_Windows/

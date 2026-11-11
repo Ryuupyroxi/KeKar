@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=KeKar Property Manager
+Comment=Manage rental properties offline
+Exec=./KeKar.sh
+Icon=utilities-terminal
+Terminal=false
+Categories=Office;

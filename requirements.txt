@@ -1,0 +1,14 @@
+# KeKar runtime dependencies. Python 3.12+, Windows 10/11 + Linux x86_64.
+# These are tested floors. Generate an exact lock with:
+#   pip install -r requirements.txt && pip freeze > requirements-lock.txt
+#
+# Floors are set at the first version with no known pip-audit findings
+# (checked 2026-11-11; see docs/SECURITY.md). Raising a floor is a security
+# fix, not a breaking change — do it whenever pip-audit reports a CVE.
+PyQt6>=6.7,<7
+PyQt6-Qt6>=6.7,<7
+cryptography>=50.0.0,<51
+httpx>=0.27,<0.29
+Pillow>=13.0.0,<14
+playwright>=1.47,<2
+pyinstaller>=6.10,<7

@@ -1,0 +1,86 @@
+/* KeKar stylesheet.
+ *
+ * Kept deliberately small: warm neutrals, generous spacing, and clear focus
+ * rings. The end user is a non-technical landlord, so nothing here is clever.
+ * Loaded by src/app.py when the bundle ships this file; if it is missing the
+ * app falls back to the Qt default theme and still works.
+ */
+
+QWidget {
+    font-size: 14px;
+}
+
+QMainWindow, QDialog {
+    background: #f5f4f1;
+}
+
+QPushButton {
+    padding: 6px 14px;
+    border: 1px solid #c9c4bc;
+    border-radius: 6px;
+    background: #ffffff;
+}
+
+QPushButton:hover {
+    background: #efece6;
+}
+
+QPushButton:pressed {
+    background: #e4dfd6;
+}
+
+QPushButton:default {
+    background: #2e5e4e;
+    border-color: #2e5e4e;
+    color: #ffffff;
+}
+
+QPushButton:default:hover {
+    background: #265042;
+}
+
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit, QPlainTextEdit {
+    padding: 5px;
+    border: 1px solid #c9c4bc;
+    border-radius: 5px;
+    background: #ffffff;
+}
+
+QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus,
+QComboBox:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border: 1px solid #2e5e4e;
+}
+
+QListWidget {
+    border: 1px solid #ddd8d0;
+    border-radius: 6px;
+    background: #ffffff;
+}
+
+QListWidget::item {
+    padding: 6px;
+    border-bottom: 1px solid #f0ede8;
+}
+
+QListWidget::item:selected {
+    background: #e3efe9;
+    color: #1d3b31;
+}
+
+QScrollBar:vertical {
+    width: 12px;
+    background: transparent;
+}
+
+QScrollBar::handle:vertical {
+    background: #c9c4bc;
+    border-radius: 6px;
+    min-height: 30px;
+}
+
+QToolTip {
+    background: #2b2b28;
+    color: #ffffff;
+    padding: 6px;
+    border: none;
+}
