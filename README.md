@@ -29,8 +29,8 @@ drive. All data stays local; only the AI chat needs the network.
 
 ## Status
 
-Implementation complete through Phase 7. **178 tests passing** (`pytest -q`).
-Source: 46 modules, 3,946 lines.
+Implementation complete through Phase 7. **183 tests passing** (`pytest -q`).
+Source: 47 modules, 4,030 lines.
 
 | Phase | State |
 |---|---|
@@ -119,6 +119,10 @@ and the assistant along the bottom.
 - The app was launched on a real display and screenshotted: the property list,
   the populated form (address, rent, bedrooms, amenities) and the photo panel
   all render with readable text at 1280x800.
+- Startup crash fixed and re-verified. A `QThread` was destroyed while its
+  thread was still unwinding, which makes Qt abort the whole process. It was a
+  race, so it survived casual testing: 2 of 15 launches died. After the fix
+  (`src/ui/worker.py`), 25 of 25 launches survived.
 
 ### Security review
 

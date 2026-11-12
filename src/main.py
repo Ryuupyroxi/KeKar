@@ -80,7 +80,12 @@ def main(argv: list[str] | None = None) -> int:
 
     app.show_main_window()
     logger.info("startup: %.2fs to a visible window", time.perf_counter() - _START)
-    return app.exec()
+    try:
+        return app.exec()
+    finally:
+        # Never leave a worker thread running when the process tears down.
+        from src.ui import worker
+        worker.shutdown()
 
 
 if __name__ == "__main__":

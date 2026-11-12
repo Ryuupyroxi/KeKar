@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (QHBoxLayout, QLineEdit, QMessageBox, QPushButton,
 
 from ..agent.client import LLMBusy
 from ..agent.runner import (AgentCancelled, AgentStepLimit, CancelFlag)
+from . import worker
 
 
 class _AgentThread(QThread):
@@ -124,7 +125,8 @@ class ChatPane(QWidget):
         self._cancel = CancelFlag()
         self.cancel_btn.setEnabled(True)
         history = self.app.chat_repo.history(limit=30)
-        self._thread = _AgentThread(self.app, message, history, self._cancel)
+        self._thread = worker.register(
+            _AgentThread(self.app, message, history, self._cancel))
         self._thread.finished.connect(self._on_finished)
         self._thread.failed.connect(self._on_failed)
         self._thread.start()
@@ -138,6 +140,7 @@ class ChatPane(QWidget):
         self._replace_pending(result.text or "(no response)")
         self.app.chat_repo.add("user", self._last_user)
         self.app.chat_repo.add("assistant", result.text)
+        worker.reap(self._thread)
         self._thread = None
         self._cancel = None
         self.cancel_btn.setEnabled(False)
@@ -148,6 +151,7 @@ class ChatPane(QWidget):
             self.app.main_window.status("Stopped.")
         else:
             self._replace_pending(message)
+        worker.reap(self._thread)
         self._thread = None
         self._cancel = None
         self.cancel_btn.setEnabled(False)

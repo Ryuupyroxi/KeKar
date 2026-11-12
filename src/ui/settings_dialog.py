@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox,
 
 from .._version import APP_NAME, APP_VERSION
 from ..data.backup import create_backup, list_backups, restore_backup
+from . import worker
 
 
 class _VerifyThread(QThread):
@@ -117,13 +118,14 @@ class SettingsDialog(QDialog):
         self.app.settings.api_key = key
         self.test_btn.setEnabled(False)
         self.test_btn.setText("Checking...")
-        self._verify = _VerifyThread(self.app)
+        self._verify = worker.register(_VerifyThread(self.app))
         self._verify.done.connect(self._on_test_result)
         self._verify.start()
 
     def _on_test_result(self, ok: bool, message: str) -> None:
         self.test_btn.setEnabled(True)
         self.test_btn.setText("Test connection")
+        worker.reap(self._verify)
         self._verify = None
         QMessageBox.information(self, APP_NAME, message)
 

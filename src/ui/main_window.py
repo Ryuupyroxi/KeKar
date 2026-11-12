@@ -15,6 +15,7 @@ from .crm_tab import CrmTab
 from .photo_panel import PhotoPanel
 from .property_drawer import PropertyDrawer
 from .property_form import PropertyForm
+from . import worker
 from .settings_dialog import SettingsDialog
 from .widgets import OfflineBanner, StatusPill
 
@@ -192,11 +193,15 @@ class MainWindow(QMainWindow):
     def check_online(self) -> None:
         if self._ping is not None:
             return
-        self._ping = _PingThread(self.app.settings.api_base)
+        self._ping = worker.register(
+            _PingThread(self.app.settings.api_base))
         self._ping.result.connect(self._on_ping_result)
         self._ping.start()
 
     def _on_ping_result(self, reachable: bool) -> None:
+        # Wait for the thread before releasing it: destroying a QThread whose
+        # thread is still unwinding aborts the whole process.
+        worker.reap(self._ping)
         self._ping = None
         self.show_offline(not reachable)
 

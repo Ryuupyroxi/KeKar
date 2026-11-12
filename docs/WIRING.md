@@ -92,6 +92,21 @@ drawer, and thumbnails are generated on a `QThreadPool` (capped at 4 threads)
 with the pixmap built on the GUI thread — `QPixmap` is not valid off the GUI
 thread. See `docs/PERFORMANCE.md` for measurements.
 
+## Worker threads
+
+Every background operation (`_PingThread`, `_VerifyThread`, `_AutofillThread`,
+`_AgentThread`) goes through `src/ui/worker.py`. The registry owns each
+thread; the completion slot calls `worker.reap(thread)`, which waits for the
+thread to finish *before* releasing it.
+
+The order matters. Deleting a `QThread` whose thread is still unwinding makes
+Qt call `qFatal` and abort the entire process — no Python exception hook runs,
+no dialog, just a dead app. That is a race, so it passes casual testing: the
+app crashed on roughly 1 in 7 launches until this was fixed.
+
+Two rules, therefore: never drop the last reference to a running thread, and
+never call `reap()` from the worker thread itself.
+
 ## Marketplace publishing
 
 ```

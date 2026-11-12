@@ -19,6 +19,7 @@ from ..services.browser import launcher
 from ..services.browser.cdp_client import CDPClient, CDPUnavailable
 from ..services.browser.marketplace import (MarketplaceAutomation,
                                             load_selectors)
+from . import worker
 
 DEBUG_PORT = launcher.DEBUG_PORT
 
@@ -101,11 +102,14 @@ class MarketplaceDialog(QDialog):
             return
         self.go_btn.setEnabled(False)
         self.result.setPlainText("Opening the browser and filling the form...")
-        self._thread = _AutofillThread(self.prop)
+        self._thread = worker.register(_AutofillThread(self.prop))
         self._thread.done.connect(self._on_done)
         self._thread.start()
 
     def _on_done(self, result: dict) -> None:
+        # The thread can outlive this dialog's usefulness, but it must never
+        # be destroyed while still running — that aborts the process.
+        worker.reap(self._thread)
         self._thread = None
         self.go_btn.setEnabled(True)
         status = result.get("status", "failed")
