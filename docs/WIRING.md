@@ -41,6 +41,24 @@ Services (src/services/*)        Repositories (src/data/*_repo.py)
                                               WAL mode, integrity_check
 ```
 
+## Thread safety
+
+`Database` hands each thread its own connection (`threading.local`). sqlite3
+pins a connection to the thread that created it, and the agent's tools run in a
+worker `QThread` — sharing one connection made every tool call die with
+"SQLite objects created in a thread can only be used in that same thread".
+Per-thread connections plus WAL mode (one writer, many readers) is the fix.
+
+Repositories resolve `self.conn` lazily through the `Database`, so the same
+repo object works in the GUI thread and in the agent's worker thread. Passing a
+raw connection is still accepted for tests and one-off scripts.
+
+`Application.data_changed` is emitted by `dispatch_tool` after any tool in
+`MUTATING_TOOLS` and is connected to `MainWindow.reload_all`. The agent writes
+from its worker thread, so without it the sidebar kept showing stale data until
+the next manual reload. The signal is queued by Qt to the GUI thread, which is
+the only place widgets may be touched.
+
 ## Agent loop
 
 ```
@@ -118,6 +136,12 @@ Prefix matching takes the **longest** match only, because `sk-proj-…` also
 starts with DeepSeek's generic `sk-`. Ties at the longest length are all
 returned — a plain `sk-` key means OpenAI or DeepSeek, and the settings dialog
 probes both rather than guessing. Guessing would send a key to the wrong host.
+
+The default chain for OpenRouter is `openrouter/free` first. That is
+OpenRouter's free-models router: it picks whichever free model is available, so
+it keeps working as the free catalogue changes, and it needs no credits. The
+named `:free` models behind it are fallbacks for when the router itself is rate
+limited. A fresh install therefore works with a free-tier key and no top-up.
 
 `verify_key()` deliberately makes a completion rather than calling `/models`:
 on OpenRouter and OpenAI that endpoint is public and answers 200 for any key,

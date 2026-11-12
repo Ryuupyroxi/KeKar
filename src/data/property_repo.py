@@ -46,8 +46,20 @@ def _row_to_property(row: sqlite3.Row) -> Property:
 
 
 class PropertyRepo:
-    def __init__(self, conn: sqlite3.Connection):
-        self.conn = conn
+    def __init__(self, db):
+        self._db = db
+
+    @property
+    def conn(self) -> sqlite3.Connection:
+        """A connection owned by the calling thread.
+
+        ``db`` is normally a Database, which hands each thread its own
+        connection — SQLite requires that, and the agent's tools run in a
+        worker thread. A raw connection is also accepted, which is what the
+        tests and one-off scripts pass.
+        """
+        db = self._db
+        return db.conn if hasattr(db, "conn") else db
 
     def create(self, p: Property) -> int:
         cur = self.conn.execute(_INSERT, _values(p))

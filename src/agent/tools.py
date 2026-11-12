@@ -21,6 +21,19 @@ class ToolContext:
     memory: Any
     settings: Any
     browser: Any = None
+    #: Called after any tool that changes stored data, so the UI can reload.
+    #: Emitted from a worker thread; Qt queues it to the GUI thread.
+    on_change: Any = None
+
+
+# Tools that write. A read-only answer must not make the sidebar reload.
+MUTATING_TOOLS = frozenset({
+    "property_upsert",
+    "property_set_status",
+    "applicant_upsert",
+    "applicant_set_stage",
+    "memory_write",
+})
 
 
 TOOL_SCHEMAS: list[dict] = [
@@ -139,6 +152,8 @@ async def dispatch_tool(name: str, arguments: dict, ctx: ToolContext) -> str:
     if name not in registry:
         raise KeyError(f"unknown tool: {name}")
     result = await registry[name](**(arguments or {}))
+    if name in MUTATING_TOOLS and ctx.on_change is not None:
+        ctx.on_change()
     return result if isinstance(result, str) else json.dumps(result)
 
 

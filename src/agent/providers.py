@@ -42,11 +42,16 @@ PROVIDERS: tuple[Provider, ...] = (
         name="OpenRouter",
         api_base="https://openrouter.ai/api/v1",
         prefixes=("sk-or-",),
+        # "openrouter/free" is OpenRouter's free-models router: it picks
+        # whichever free model is available, so it keeps working as the free
+        # catalogue changes. The named :free models are fallbacks for when the
+        # router itself is rate limited.
         default_models=(
-            "meta-llama/llama-3.1-8b-instruct",
-            "google/gemini-2.5-flash-lite",
-            "deepseek/deepseek-v4.1-flash-1017",
-            "qwen/qwen3.8-omni-flash",
+            "openrouter/free",
+            "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "google/gemma-4-31b-it:free",
+            "nvidia/nemotron-3.5-lightning:free",
+            "google/gemma-4-26b-a4b-it:free",
         ),
         notes="Hundreds of models, one key. Free tiers available.",
     ),

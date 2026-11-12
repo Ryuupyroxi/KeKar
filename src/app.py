@@ -37,6 +37,8 @@ def _stylesheet_path() -> Path | None:
 
 class Application(QApplication):
     offline_changed = pyqtSignal(bool)
+    #: Emitted after the assistant changes stored data, so the GUI can reload.
+    data_changed = pyqtSignal()
 
     def __init__(self, argv):
         super().__init__(argv)
@@ -51,19 +53,23 @@ class Application(QApplication):
         # wrong host. Repair it once, then leave the user's choice alone.
         self.provider_note = providers.migrate_default_provider(self.settings)
         self.db = open_with_recovery(None)
-        self.property_repo = PropertyRepo(self.db.conn)
-        self.applicant_repo = ApplicantRepo(self.db.conn)
-        self.chat_repo = ChatRepo(self.db.conn)
+        self.property_repo = PropertyRepo(self.db)
+        self.applicant_repo = ApplicantRepo(self.db)
+        self.chat_repo = ChatRepo(self.db)
         self.memory = MemoryStore()
 
         self.client = LLMClient(self.settings)
         self.ctx = ToolContext(db=self.db, property_repo=self.property_repo,
                                applicant_repo=self.applicant_repo,
-                               memory=self.memory, settings=self.settings)
+                               memory=self.memory, settings=self.settings,
+                               on_change=self.data_changed.emit)
         self.agent_runner = AgentRunner(self.client, self.settings, self.ctx)
 
         self.main_window = MainWindow(self)
         self.offline_changed.connect(self.main_window.show_offline)
+        # The agent writes from a worker thread; the signal is queued back to
+        # the GUI thread, so the sidebar and CRM tab see the change.
+        self.data_changed.connect(self.main_window.reload_all)
         prune_backups(self.settings.backup_keep_days)
 
     def _load_stylesheet(self) -> None:

@@ -65,16 +65,24 @@ class LLMClient:
                     continue
                 try:
                     data = resp.json()
-                    message = data["choices"][0]["message"]
-                    return LLMResponse(
-                        content=message.get("content") or "",
-                        tool_calls=message.get("tool_calls") or [],
-                        model=model,
-                        finish_reason=data["choices"][0].get("finish_reason", ""),
-                    )
+                    choice = data["choices"][0]
+                    message = choice["message"]
+                    content = message.get("content") or ""
+                    tool_calls = message.get("tool_calls") or []
+                    finish = choice.get("finish_reason", "")
                 except (KeyError, ValueError, IndexError):
                     last_error = f"{model}: malformed response"
                     continue
+                if not content and not tool_calls:
+                    # A reasoning model can spend the whole budget on "reasoning"
+                    # and return no content at all. Returning that as a successful
+                    # empty answer shows the user a blank reply, so treat it as a
+                    # failure for this model and try the next one.
+                    last_error = (f"{model}: no content "
+                                  f"(finish_reason={finish or 'unknown'})")
+                    continue
+                return LLMResponse(content=content, tool_calls=tool_calls,
+                                   model=model, finish_reason=finish)
 
         raise LLMBusy(f"All models failed. Last error: {last_error}")
 

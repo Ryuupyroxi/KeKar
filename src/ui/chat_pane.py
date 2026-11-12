@@ -34,10 +34,21 @@ class _AgentThread(QThread):
         except AgentStepLimit:
             self.failed.emit(
                 "The assistant got stuck. Please try a shorter request.")
-        except LLMBusy:
-            self.failed.emit(
-                "I can't reach the assistant right now, but your property data "
-                "is saved safely on this drive.")
+        except LLMBusy as exc:
+            # Quote the provider's own reason. LLMBusy carries the last
+            # model's error text ("HTTP 429 — You have no credits remaining"),
+            # which is the difference between "top up your account" and
+            # "check your network" — hiding it made a billing problem look
+            # like a connectivity one.
+            detail = " ".join(str(exc).split())
+            if detail:
+                self.failed.emit(
+                    f"The assistant could not answer. {detail} "
+                    f"Check the key, the credits, or the model in Settings.")
+            else:
+                self.failed.emit(
+                    "I can't reach the assistant right now, but your property "
+                    "data is saved safely on this drive.")
         except Exception as exc:
             self.failed.emit(f"Something went wrong: {exc}")
 

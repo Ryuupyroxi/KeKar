@@ -29,7 +29,7 @@ drive. All data stays local; only the AI chat needs the network.
 
 ## Status
 
-Implementation complete through Phase 7. **211 tests passing** (`pytest -q`).
+Implementation complete through Phase 7. **214 tests passing** (`pytest -q`).
 Source: 48 modules, 4,575 lines.
 
 | Phase | State |

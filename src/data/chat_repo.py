@@ -4,8 +4,14 @@ import sqlite3
 
 
 class ChatRepo:
-    def __init__(self, conn: sqlite3.Connection):
-        self.conn = conn
+    def __init__(self, db):
+        self._db = db
+
+    @property
+    def conn(self) -> sqlite3.Connection:
+        """A connection owned by the calling thread (see PropertyRepo)."""
+        db = self._db
+        return db.conn if hasattr(db, "conn") else db
 
     def add(self, role: str, content: str) -> int:
         cur = self.conn.execute(

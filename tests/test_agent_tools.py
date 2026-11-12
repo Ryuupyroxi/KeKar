@@ -51,3 +51,21 @@ async def test_listing_compile(db):
 async def test_unknown_tool_raises(db):
     with pytest.raises(KeyError):
         await dispatch_tool("drop_table", {}, _ctx(db))
+
+
+async def test_writes_notify_and_reads_do_not(db):
+    """The sidebar must reload after a write, and must not after a read."""
+    seen: list[str] = []
+    ctx = ToolContext(db=db, property_repo=PropertyRepo(db.conn),
+                      applicant_repo=None, memory=None, settings=None,
+                      on_change=lambda: seen.append("change"))
+
+    await dispatch_tool("property_list", {}, ctx)
+    assert seen == [], "a read must not trigger a reload"
+
+    await dispatch_tool("property_upsert",
+                        {"address": "7 Notify St", "rent_price": 500}, ctx)
+    assert seen == ["change"], "a write must trigger exactly one reload"
+
+    await dispatch_tool("property_get", {"id": 1}, ctx)
+    assert seen == ["change"], "reads after a write must not add notifications"

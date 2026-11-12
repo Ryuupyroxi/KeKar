@@ -358,6 +358,29 @@ def test_chat_refuses_to_send_without_a_key(kekar_app, monkeypatch):
     assert shown, "the user should be told why nothing was sent"
 
 
+def test_chat_reports_the_providers_own_reason(kekar_app, monkeypatch):
+    """A billing rejection must not be reported as a connectivity problem."""
+    from src.agent.client import LLMBusy
+    from src.agent.runner import CancelFlag
+    from src.ui.chat_pane import _AgentThread
+
+    async def _boom(*a, **k):
+        raise LLMBusy(
+            "All models failed. Last error: gpt-4o-mini: HTTP 429 — "
+            "You have no credits remaining.")
+
+    monkeypatch.setattr(kekar_app.agent_runner, "run", _boom)
+
+    thread = _AgentThread(kekar_app, "hello", [], CancelFlag())
+    seen: list[str] = []
+    thread.failed.connect(seen.append)
+    thread.run()
+
+    assert seen, "the failure must be reported to the UI"
+    assert "no credits remaining" in seen[0]
+    assert "could not reach the assistant" not in seen[0]
+
+
 def test_chat_has_a_stop_button_that_cancels(kekar_app):
     pane = kekar_app.main_window.chat_pane
     assert pane.cancel_btn.isEnabled() is False

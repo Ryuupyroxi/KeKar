@@ -30,8 +30,14 @@ def _row_to_applicant(row: sqlite3.Row) -> Applicant:
 
 
 class ApplicantRepo:
-    def __init__(self, conn: sqlite3.Connection):
-        self.conn = conn
+    def __init__(self, db):
+        self._db = db
+
+    @property
+    def conn(self) -> sqlite3.Connection:
+        """A connection owned by the calling thread (see PropertyRepo)."""
+        db = self._db
+        return db.conn if hasattr(db, "conn") else db
 
     def create(self, a: Applicant) -> int:
         cur = self.conn.execute(

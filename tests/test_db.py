@@ -36,3 +36,35 @@ def test_migration_is_idempotent(db):
     db._migrate()
     count = db.conn.execute("SELECT COUNT(*) FROM properties").fetchone()[0]
     assert count == 0
+
+
+def test_repos_work_from_another_thread(db):
+    """The agent's tools run in a worker QThread, and sqlite3 pins a connection
+    to the thread that made it. A repo built on a Database must still work
+    there, or every tool call dies with "SQLite objects created in a thread can
+    only be used in that same thread"."""
+    import threading
+
+    from src.data.property_repo import PropertyRepo
+    from src.data.models import Property
+
+    repo = PropertyRepo(db)
+    problems: list[str] = []
+
+    def worker():
+        try:
+            pid = repo.create(Property(address="1 Thread Way"))
+            found = repo.get(pid)
+            assert found is not None, "created property not found"
+            assert found.address == "1 Thread Way"
+            repo.set_status(pid, "Rented")
+            assert repo.get(pid).status == "Rented"
+        except Exception as exc:  # pragma: no cover - only on failure
+            problems.append(f"{type(exc).__name__}: {exc}")
+
+    thread = threading.Thread(target=worker)
+    thread.start()
+    thread.join(timeout=20)
+
+    assert not thread.is_alive(), "worker thread hung"
+    assert not problems, problems

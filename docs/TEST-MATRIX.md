@@ -30,7 +30,7 @@ applicable on that platform · blank = not yet run
 
 ## Automated coverage
 
-These are covered by the pytest suite (`pytest -q`, 211 tests) and must stay
+These are covered by the pytest suite (`pytest -q`, 214 tests) and must stay
 green:
 
 - Schema creation, WAL mode, foreign keys, migration idempotency (`test_db.py`)
