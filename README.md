@@ -29,8 +29,8 @@ drive. All data stays local; only the AI chat needs the network.
 
 ## Status
 
-Implementation complete through Phase 7. **169 tests passing** (`pytest -q`).
-Source: 46 modules, 3,755 lines.
+Implementation complete through Phase 7. **178 tests passing** (`pytest -q`).
+Source: 46 modules, 3,946 lines.
 
 | Phase | State |
 |---|---|
@@ -53,6 +53,27 @@ Source: 46 modules, 3,755 lines.
   50 rows.
 - Task 7.4 end-to-end test matrix — written, awaiting a human on real hardware.
 - Task 7.5 release checklist — pending.
+
+## Running KeKar
+
+The zero-setup path is the launcher script:
+
+- Windows: double-click `KeKar.bat`
+- Linux: double-click `KeKar.sh`
+
+For a real one-click icon on Linux (application menu plus a Desktop shortcut),
+run the installer that ships in the package:
+
+```bash
+./install_linux.py --desktop
+```
+
+It writes `~/.local/share/applications/kekar.desktop` with the correct absolute
+path, installs the icon into the hicolor theme, and marks the Desktop copy as
+trusted so GTK will run it. Pass `--uninstall` to remove it.
+
+The entry records an absolute path, so if the USB drive's mount point changes,
+run the installer again after plugging it in.
 
 ## The interface
 
@@ -90,6 +111,9 @@ and the assistant along the bottom.
   SHA-256.
 - `assets/launchers/KeKar.sh` launches the built app from any working directory,
   including from a copy of the package on another path.
+- `tools/install_linux.py --desktop` writes a validated `.desktop` entry plus
+  icon-theme PNGs. `desktop-file-validate` reports the entry clean, and
+  launching it on a real display opens the KeKar main window.
 - `tools/seed_first_run.py` writes an encrypted key and the resulting settings
   file loads back with `is_configured() == True`.
 - The app was launched on a real display and screenshotted: the property list,

@@ -61,15 +61,12 @@ fi
 exec "$HERE/KeKar_Linux/KeKar" "$@"
 """
 
-DESKTOP = """[Desktop Entry]
-Type=Application
-Name=KeKar Property Manager
-Comment=Manage rental properties offline
-Exec=./KeKar.sh
-Icon=utilities-terminal
-Terminal=false
-Categories=Office;
-"""
+# The package ships no .desktop file of its own: the Desktop Entry
+# Specification cannot express a portable Exec, so a .desktop baked into the
+# package either points at a machine-specific path or fails validation.
+# install_linux.py (copied into the package) writes a correct one with the
+# real path, an icon, and a Desktop shortcut. Double-clicking KeKar.sh is the
+# zero-setup path.
 
 README = """KEKAR PROPERTY MANAGER
 ======================
@@ -77,6 +74,12 @@ README = """KEKAR PROPERTY MANAGER
 To open KeKar:
   On Windows:  double-click  KeKar.bat
   On Linux:    double-click  KeKar.sh  (or run ./KeKar.sh in a terminal)
+
+For a one-click icon on Linux (application menu and Desktop):
+  Run:  python3 install_linux.py --desktop
+  (or simply:  ./install_linux.py --desktop)
+This writes a proper launcher with the KeKar icon. If the drive's mount
+point changes, run it again after plugging the drive in.
 
 Your properties, photos, and notes are stored in the KeKarData folder on this
 drive. They never leave this drive unless you email or copy them yourself.
@@ -110,10 +113,12 @@ DATA_SUBDIRS = ("photos", "applicants", "memory", "config", "backups", "logs")
 def make_platform_package(platform: str, source: Path, out: Path) -> Path:
     if not source.exists():
         sys.exit(f"source build not found: {source}")
+    # Clear the previous package so nothing stale survives (an old
+    # KeKar.desktop, a removed launcher, an outdated README).
+    if out.exists():
+        shutil.rmtree(out)
     out.mkdir(parents=True, exist_ok=True)
     target = out / f"KeKar_{platform.capitalize()}"
-    if target.exists():
-        shutil.rmtree(target)
     shutil.copytree(source, target)
     _write_launchers(out)
     return out
@@ -136,8 +141,15 @@ def _write_launchers(out: Path) -> Path:
     sh = out / "KeKar.sh"
     sh.write_text(SH, encoding="utf-8")
     sh.chmod(0o755)
-    (out / "KeKar.desktop").write_text(DESKTOP, encoding="utf-8")
     (out / "README.txt").write_text(README, encoding="utf-8")
+
+    # The one-click installer travels with the package. It auto-detects the
+    # binary inside KeKar_Linux/ and writes a validated .desktop entry.
+    source = Path(__file__).resolve().parent / "install_linux.py"
+    if source.exists():
+        shutil.copy2(source, out / "install_linux.py")
+        (out / "install_linux.py").chmod(0o755)
+
     data = out / "KeKarData"
     data.mkdir(exist_ok=True)
     for sub in DATA_SUBDIRS:

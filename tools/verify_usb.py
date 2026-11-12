@@ -33,7 +33,8 @@ def verify(root: Path, platform: str | None = None) -> list[str]:
         if not (root / build / binary).exists():
             problems.append(f"{build}: missing {binary}")
 
-    for rel in ("KeKarData", "README.txt", "KeKar.sh", "KeKar.bat"):
+    for rel in ("KeKarData", "README.txt", "KeKar.sh", "KeKar.bat",
+                "install_linux.py"):
         if not (root / rel).exists():
             problems.append(f"missing: {rel}")
 
