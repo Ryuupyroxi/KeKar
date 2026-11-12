@@ -51,7 +51,10 @@ for every JPEG to decode. Two constraints this design respects:
   1600x1200 took 55.6 s on a loaded 2-core machine; on an idle machine it
   measured 26.8 s.
 - Startup is measured from process start to a visible window and is logged at
-  INFO as `startup: X.XXs`.
+  INFO as `startup: X.XXs`. On a first run the wizard is the first window, so
+  the timer stops there — timing past it would count however long the user
+  spent typing their key. The timer then restarts, so the second line measures
+  the path from the wizard to the main window.
 - Measurements were taken on the build machine under load (load average ~1.4
   on 2 cores). Treat the thresholds as met, not as comfortably met — re-run
   the script on the target hardware before release.

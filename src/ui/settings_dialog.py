@@ -3,38 +3,123 @@ from __future__ import annotations
 
 import asyncio
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, Qt, pyqtSignal
 from PyQt6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox,
-                             QFormLayout, QLabel, QLineEdit, QMessageBox,
-                             QPushButton, QSpinBox, QTextEdit, QVBoxLayout)
+                             QFormLayout, QLabel, QLineEdit, QListWidget,
+                             QListWidgetItem, QMessageBox, QPushButton,
+                             QSpinBox, QTextEdit, QVBoxLayout)
 
 from .._version import APP_NAME, APP_VERSION
+from ..agent import providers
 from ..data.backup import create_backup, list_backups, restore_backup
 from . import worker
 
 
-class _VerifyThread(QThread):
-    """Runs the provider check off the UI thread."""
+class _ProviderThread(QThread):
+    """Runs a provider task off the UI thread.
 
-    done = pyqtSignal(bool, str)
+    Tasks: ``verify`` (test the saved setup), ``models`` (list the provider's
+    models), ``detect`` (probe candidates for a key), ``probe`` (test one
+    specific endpoint and model).
+    """
 
-    def __init__(self, app):
+    done = pyqtSignal(bool, object)
+
+    def __init__(self, app, task: str, api_base: str = "", api_key: str = "",
+                 model: str = "", candidates: tuple = ()):
         super().__init__()
         self.app = app
+        self.task = task
+        self.api_base = api_base
+        self.api_key = api_key
+        self.model = model
+        self.candidates = candidates
 
-    def run(self):
+    async def _run(self):
+        if self.task == "verify":
+            return await self.app.client.verify_key()
+        if self.task == "models":
+            return True, await providers.fetch_models(self.api_base,
+                                                      self.api_key)
+        if self.task == "probe":
+            return await providers.probe(self.api_base, self.api_key,
+                                         self.model)
+        if self.task == "detect":
+            for prov in self.candidates:
+                model = prov.default_models[0] if prov.default_models else ""
+                ok, message = await providers.probe(prov.api_base,
+                                                    self.api_key, model)
+                if ok:
+                    return True, (prov, message)
+            # Nothing worked; report the last provider's own words.
+            prov = self.candidates[-1]
+            model = prov.default_models[0] if prov.default_models else ""
+            _, message = await providers.probe(prov.api_base, self.api_key,
+                                               model)
+            return False, (prov, message)
+        raise ValueError(f"unknown task {self.task!r}")
+
+    def run(self) -> None:
         try:
-            ok, message = asyncio.run(self.app.client.verify_key())
+            ok, payload = asyncio.run(self._run())
         except Exception as exc:
-            ok, message = False, f"Could not check the key: {type(exc).__name__}"
-        self.done.emit(ok, message)
+            self.done.emit(False, f"{type(exc).__name__}: {exc}")
+            return
+        self.done.emit(bool(ok), payload)
+
+
+class ModelPickerDialog(QDialog):
+    """Pick models from the provider's list, with a filter box."""
+
+    def __init__(self, models: list[str], parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Choose models")
+        self.resize(520, 600)
+        self._chosen: list[str] = []
+
+        layout = QVBoxLayout(self)
+        self.filter = QLineEdit()
+        self.filter.setPlaceholderText("Filter, e.g. 'llama' or 'free'")
+        self.filter.textChanged.connect(self._apply_filter)
+        layout.addWidget(self.filter)
+
+        self.list = QListWidget()
+        for model in models:
+            item = QListWidgetItem(model)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Unchecked)
+            self.list.addItem(item)
+        layout.addWidget(self.list)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok
+                                   | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self._accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _apply_filter(self, text: str) -> None:
+        needle = text.strip().lower()
+        for i in range(self.list.count()):
+            item = self.list.item(i)
+            item.setHidden(bool(needle)
+                           and needle not in item.text().lower())
+
+    def _accept(self) -> None:
+        self._chosen = [self.list.item(i).text()
+                        for i in range(self.list.count())
+                        if self.list.item(i).checkState()
+                        == Qt.CheckState.Checked]
+        self.accept()
+
+    def selected(self) -> list[str]:
+        return list(self._chosen)
 
 
 class SettingsDialog(QDialog):
     def __init__(self, app, parent=None):
         super().__init__(parent)
         self.app = app
-        self._verify: _VerifyThread | None = None
+        self._thread: _ProviderThread | None = None
         self.setWindowTitle(f"{APP_NAME} Settings")
         self.resize(600, 560)
         layout = QVBoxLayout(self)
@@ -45,10 +130,35 @@ class SettingsDialog(QDialog):
         self.key_input.setText(app.settings.api_key)
         form.addRow("API key", self.key_input)
 
+        self.provider = QComboBox()
+        for prov in providers.PROVIDERS:
+            self.provider.addItem(prov.name, prov.id)
+        index = self.provider.findData(app.settings.provider)
+        if index >= 0:
+            self.provider.setCurrentIndex(index)
+        self.provider.currentIndexChanged.connect(self._on_provider_changed)
+        form.addRow("Provider", self.provider)
+
+        detect_btn = QPushButton("Detect from key")
+        detect_btn.setToolTip("Identify the provider from the key's format, "
+                              "then confirm it actually works.")
+        detect_btn.clicked.connect(self._detect_provider)
+        form.addRow("", detect_btn)
+
+        self.api_base = QLineEdit()
+        self.api_base.setText(app.settings.api_base)
+        self.api_base.setPlaceholderText("https://…/api/v1")
+        form.addRow("API endpoint", self.api_base)
+
         self.models_input = QTextEdit()
         self.models_input.setPlainText("\n".join(app.settings.model_chain))
         self.models_input.setMaximumHeight(90)
+        self.models_input.setToolTip("Tried in order until one succeeds.")
         form.addRow("Models (one per line, tried in order)", self.models_input)
+
+        fetch_btn = QPushButton("Fetch the provider's model list")
+        fetch_btn.clicked.connect(self._fetch_models)
+        form.addRow("", fetch_btn)
 
         self.autofill = QCheckBox("Auto-fill Marketplace listings (experimental)")
         self.autofill.setChecked(app.settings.autofill_enabled)
@@ -95,6 +205,8 @@ class SettingsDialog(QDialog):
     def _save(self) -> None:
         settings = self.app.settings
         settings.api_key = self.key_input.text().strip()
+        settings.provider = self.provider.currentData() or "custom"
+        settings.api_base = self.api_base.text().strip()
         settings.model_chain = [m.strip() for m in
                                 self.models_input.toPlainText().splitlines()
                                 if m.strip()]
@@ -109,25 +221,115 @@ class SettingsDialog(QDialog):
             return
         self.accept()
 
-    def _test_connection(self) -> None:
-        """Ask the provider whether the pasted key works."""
+    # -- provider detection and model discovery -----------------------------
+
+    def _on_provider_changed(self, index: int) -> None:
+        """Fill the endpoint and default models when a provider is picked."""
+        prov = providers.by_id(self.provider.itemData(index))
+        if prov is None:
+            return
+        if prov.api_base:
+            self.api_base.setText(prov.api_base)
+        current = self.models_input.toPlainText()
+        if prov.default_models and (not current.strip()
+                                    or self._is_default_models(current)):
+            self.models_input.setPlainText("\n".join(prov.default_models))
+
+    def _is_default_models(self, text: str) -> bool:
+        """True when the box still holds a preset's untouched model list."""
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        return any(tuple(lines) == prov.default_models
+                   for prov in providers.PROVIDERS)
+
+    def _start_task(self, task: str, **kwargs) -> None:
+        self._set_busy(True)
+        self._thread = worker.register(
+            _ProviderThread(self.app, task, **kwargs))
+        self._thread.done.connect(self._on_task_done)
+        self._thread.start()
+
+    def _set_busy(self, busy: bool) -> None:
+        for widget in (self.test_btn, self.key_input, self.provider,
+                       self.api_base, self.models_input):
+            widget.setEnabled(not busy)
+
+    def _on_task_done(self, ok: bool, payload) -> None:
+        worker.reap(self._thread)
+        self._thread = None
+        self._set_busy(False)
+
+        if isinstance(payload, tuple) and payload and isinstance(payload[0],
+                                                                 providers.Provider):
+            prov, message = payload
+            self._apply_provider(prov)
+            QMessageBox.information(self, APP_NAME, message)
+            return
+
+        if isinstance(payload, list):
+            picker = ModelPickerDialog(payload, self)
+            if picker.exec() == ModelPickerDialog.DialogCode.Accepted:
+                chosen = picker.selected()
+                if chosen:
+                    self.models_input.setPlainText("\n".join(chosen))
+                    self.app.main_window.status(
+                        f"{len(chosen)} models selected.")
+            return
+
+        QMessageBox.information(self, APP_NAME, str(payload))
+
+    def _apply_provider(self, prov: providers.Provider) -> None:
+        index = self.provider.findData(prov.id)
+        if index >= 0:
+            self.provider.setCurrentIndex(index)
+        if prov.api_base:
+            self.api_base.setText(prov.api_base)
+        if prov.default_models:
+            self.models_input.setPlainText("\n".join(prov.default_models))
+
+    def _detect_provider(self) -> None:
         key = self.key_input.text().strip()
         if not key:
             QMessageBox.warning(self, APP_NAME, "Paste an API key first.")
             return
+        matches = providers.detect(key)
+        if not matches:
+            QMessageBox.information(self, APP_NAME,
+                                    providers.unrecognized_hint(key))
+            return
+        self._start_task("detect", api_key=key, candidates=tuple(matches))
+
+    def _fetch_models(self) -> None:
+        api_base = self.api_base.text().strip()
+        api_key = self.key_input.text().strip()
+        if not api_base:
+            QMessageBox.warning(self, APP_NAME,
+                                "Set an API endpoint first — or pick a "
+                                "provider above.")
+            return
+        if not api_key:
+            QMessageBox.warning(self, APP_NAME, "Paste an API key first.")
+            return
+        self._start_task("models", api_base=api_base, api_key=api_key)
+
+    def _test_connection(self) -> None:
+        """Ask the provider whether the saved setup works end to end."""
+        key = self.key_input.text().strip()
+        if not key:
+            QMessageBox.warning(self, APP_NAME, "Paste an API key first.")
+            return
+        if not self.models_input.toPlainText().strip():
+            QMessageBox.warning(self, APP_NAME,
+                                "Add at least one model first.")
+            return
         self.app.settings.api_key = key
+        self.app.settings.provider = self.provider.currentData() or "custom"
+        self.app.settings.api_base = self.api_base.text().strip()
+        self.app.settings.model_chain = [
+            m.strip() for m in self.models_input.toPlainText().splitlines()
+            if m.strip()]
         self.test_btn.setEnabled(False)
         self.test_btn.setText("Checking...")
-        self._verify = worker.register(_VerifyThread(self.app))
-        self._verify.done.connect(self._on_test_result)
-        self._verify.start()
-
-    def _on_test_result(self, ok: bool, message: str) -> None:
-        self.test_btn.setEnabled(True)
-        self.test_btn.setText("Test connection")
-        worker.reap(self._verify)
-        self._verify = None
-        QMessageBox.information(self, APP_NAME, message)
+        self._start_task("verify")
 
     def _remove_key(self) -> None:
         answer = QMessageBox.question(

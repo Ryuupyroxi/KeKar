@@ -29,8 +29,8 @@ drive. All data stays local; only the AI chat needs the network.
 
 ## Status
 
-Implementation complete through Phase 7. **183 tests passing** (`pytest -q`).
-Source: 47 modules, 4,030 lines.
+Implementation complete through Phase 7. **211 tests passing** (`pytest -q`).
+Source: 48 modules, 4,575 lines.
 
 | Phase | State |
 |---|---|
@@ -74,6 +74,36 @@ trusted so GTK will run it. Pass `--uninstall` to remove it.
 
 The entry records an absolute path, so if the USB drive's mount point changes,
 run the installer again after plugging it in.
+
+## AI providers
+
+The assistant talks to any OpenAI-compatible endpoint. The provider is detected
+from the key's format, so pasting a key usually configures everything:
+
+| Key starts with | Provider | Endpoint |
+|---|---|---|
+| `sk-or-` | OpenRouter | `https://openrouter.ai/api/v1` |
+| `sk-proj-`, `sk-svcacct-` | OpenAI | `https://api.openai.com/v1` |
+| `gsk_` | Groq | `https://api.groq.com/openai/v1` |
+| `csk-` | Cerebras | `https://api.cerebras.ai/v1` |
+| `xai-` | xAI | `https://api.x.ai/v1` |
+| `sk-` (generic) | OpenAI **or** DeepSeek | probed to decide |
+
+To switch providers, open **File → Settings**:
+
+- **Provider** — pick one; the endpoint and its default models fill in.
+- **Detect from key** — identify the provider from the key, confirm it works,
+  and apply it.
+- **Fetch the provider's model list** — list what the provider actually
+  offers, filter it, and tick the models to use. Models are tried in order.
+- **Test connection** — a real one-token completion. It quotes the provider's
+  own error, so "no credits remaining" is distinguishable from "bad key".
+
+A key is never sent to a provider its format does not match. Google AI Studio
+and Anthropic are detected but not usable directly, because their chat APIs are
+not OpenAI-compatible; the app says so rather than guessing.
+
+See `docs/WIRING.md` for how detection and model discovery are wired.
 
 ## The interface
 

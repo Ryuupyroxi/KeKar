@@ -14,6 +14,7 @@ Decision references (D1-D10) are defined in Part 1 of
 | §1 | Single-click tool, no CLI | `assets/launchers/KeKar.bat`, `KeKar.sh`, `tools/install_linux.py` | `test_usb_packaging.py` |
 | §2 | PyQt6 GUI | `src/ui/*` | `test_gui_smoke.py` |
 | §2 | Embedded agent skeleton | **D4** — `src/agent/*` | `test_agent_*.py` |
+| §2 | AI provider detection, switching, and model discovery | `src/agent/providers.py`, `src/ui/settings_dialog.py` | `test_providers.py`, `test_ui_behaviour.py` |
 | §2 | SQLite local database | `src/data/db.py`, `schema.sql` | `test_db.py` |
 | §2 | Playwright/CDP integration | `src/services/browser/*` | `test_cdp_client.py`, `test_launcher.py`, `test_marketplace.py` |
 | §2 | PyInstaller packaging | `KeKar.spec`, `build.sh`, `build.ps1` | real build + `KeKar --version` |

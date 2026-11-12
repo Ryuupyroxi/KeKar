@@ -368,12 +368,13 @@ def test_chat_has_a_stop_button_that_cancels(kekar_app):
 
 # -- settings --------------------------------------------------------------
 
-class _FakeVerify(QThread):
-    done = pyqtSignal(bool, str)
+class _FakeProviderThread(QThread):
+    done = pyqtSignal(bool, object)
 
-    def __init__(self, app):
+    def __init__(self, app, task, **kwargs):
         super().__init__()
         self.app = app
+        self.task = task
 
     def start(self):  # noqa: D102 - test double
         self.done.emit(True, "Connected.")
@@ -381,7 +382,8 @@ class _FakeVerify(QThread):
 
 def test_settings_test_connection_uses_the_provider(kekar_app, monkeypatch):
     from src.ui import settings_dialog
-    monkeypatch.setattr(settings_dialog, "_VerifyThread", _FakeVerify)
+    monkeypatch.setattr(settings_dialog, "_ProviderThread",
+                        _FakeProviderThread)
 
     dialog = settings_dialog.SettingsDialog(kekar_app)
     dialog.key_input.setText("sk-test-key")
@@ -390,18 +392,55 @@ def test_settings_test_connection_uses_the_provider(kekar_app, monkeypatch):
     assert kekar_app.settings.api_key == "sk-test-key"
 
 
-def test_settings_reports_the_test_result(kekar_app, monkeypatch):
+def test_settings_reports_the_task_result(kekar_app, monkeypatch):
     from src.ui import settings_dialog
     shown = []
     monkeypatch.setattr(QMessageBox, "information",
                         lambda *a, **k: shown.append(a))
 
     dialog = settings_dialog.SettingsDialog(kekar_app)
-    dialog._on_test_result(False, "That key was rejected.")
+    dialog._on_task_done(False, "That key was rejected.")
 
     assert dialog.test_btn.isEnabled() is True
     assert dialog.test_btn.text() == "Test connection"
     assert shown
+
+
+def test_settings_saves_the_provider_and_endpoint(kekar_app, monkeypatch):
+    from src.ui import settings_dialog
+    monkeypatch.setattr(QMessageBox, "warning", lambda *a, **k: None)
+
+    dialog = settings_dialog.SettingsDialog(kekar_app)
+    index = dialog.provider.findData("openai")
+    dialog.provider.setCurrentIndex(index)
+    dialog.key_input.setText("sk-test-key")
+    dialog._save()
+
+    assert kekar_app.settings.provider == "openai"
+    assert kekar_app.settings.api_base == "https://api.openai.com/v1"
+
+
+# -- model picker ----------------------------------------------------------
+
+def test_model_picker_returns_checked_models(kekar_app):
+    from src.ui.settings_dialog import ModelPickerDialog
+
+    picker = ModelPickerDialog(["alpha/one", "beta/two", "gamma/three"])
+    picker.list.item(0).setCheckState(Qt.CheckState.Checked)
+    picker.list.item(2).setCheckState(Qt.CheckState.Checked)
+    picker._accept()
+
+    assert picker.selected() == ["alpha/one", "gamma/three"]
+
+
+def test_model_picker_filter_hides_non_matches(kekar_app):
+    from src.ui.settings_dialog import ModelPickerDialog
+
+    picker = ModelPickerDialog(["llama-3.1", "gpt-4o", "llama-3.3"])
+    picker._apply_filter("llama")
+    visible = [picker.list.item(i).text() for i in range(picker.list.count())
+               if not picker.list.item(i).isHidden()]
+    assert visible == ["llama-3.1", "llama-3.3"]
 
 
 # -- connectivity ----------------------------------------------------------

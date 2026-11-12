@@ -15,11 +15,12 @@ SALT_FILE = "settings.salt"
 @dataclass
 class Settings:
     api_key: str = ""
+    provider: str = "openrouter"         # providers.Provider.id, or "custom"
     api_base: str = "https://openrouter.ai/api/v1"
     model_chain: list[str] = field(default_factory=lambda: [
         "meta-llama/llama-3.1-8b-instruct",
-        "google/gemini-flash-1.5",
-        "nousresearch/hermes-3-llama-3.1-8b",
+        "google/gemini-2.5-flash-lite",
+        "deepseek/deepseek-v4.1-flash-1017",
     ])
     request_timeout_s: int = 45
     max_agent_steps: int = 8

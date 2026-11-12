@@ -42,9 +42,12 @@ def _writable(p: Path) -> bool:
 def data_dir() -> Path:
     """Resolve the portable data directory. First match wins.
 
-    Order: KEKAR_DATA_DIR env var -> <exe_dir>/../KeKarData ->
-           <exe_dir>/KeKarData -> OS app-config fallback.
-    Raises RuntimeError if nothing is writable.
+    Order: KEKAR_DATA_DIR env var -> the portable KeKarData location ->
+           OS app-config fallback.
+
+    The portable location depends on how the app is running: a frozen build
+    keeps KeKarData beside the platform folder, while a source checkout keeps
+    it inside the project.
     """
     env = os.environ.get("KEKAR_DATA_DIR")
     if env:
@@ -54,7 +57,16 @@ def data_dir() -> Path:
         raise RuntimeError(f"KEKAR_DATA_DIR is set but not writable: {candidate}")
 
     ex = exe_dir()
-    for candidate in (ex.parent / "KeKarData", ex / "KeKarData"):
+    if getattr(sys, "frozen", False):
+        # Frozen build: KeKarData sits beside the platform folder, so the
+        # repo build uses dist/KeKarData and a USB package uses <usb>/KeKarData.
+        candidates = (ex.parent / "KeKarData", ex / "KeKarData")
+    else:
+        # Source checkout: keep the data inside the project. The old code also
+        # tried ex.parent, which put it in the *parent* of the project
+        # (Documents/KeKarData) and scattered data across two locations.
+        candidates = (ex / "KeKarData",)
+    for candidate in candidates:
         if _writable(candidate):
             return candidate
 

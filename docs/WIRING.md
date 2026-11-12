@@ -107,6 +107,29 @@ app crashed on roughly 1 in 7 launches until this was fixed.
 Two rules, therefore: never drop the last reference to a running thread, and
 never call `reap()` from the worker thread itself.
 
+## AI provider detection
+
+`src/agent/providers.py` holds the provider presets and three operations:
+`detect()` (prefix match), `fetch_models()` (`GET /models`), and `probe()` (one
+minimal completion). `LLMClient` wraps them as `list_models()` and
+`verify_key()`.
+
+Prefix matching takes the **longest** match only, because `sk-proj-…` also
+starts with DeepSeek's generic `sk-`. Ties at the longest length are all
+returned — a plain `sk-` key means OpenAI or DeepSeek, and the settings dialog
+probes both rather than guessing. Guessing would send a key to the wrong host.
+
+`verify_key()` deliberately makes a completion rather than calling `/models`:
+on OpenRouter and OpenAI that endpoint is public and answers 200 for any key,
+so it reported "Connected" for a key the chat endpoint then rejected with 401.
+The probe also quotes the provider's own error message, because HTTP 429 covers
+both "no credits" and "rate limited".
+
+`migrate_default_provider()` repairs settings saved before detection existed —
+a key pasted into the wizard used to leave the endpoint on the built-in default
+forever. It only acts while the provider and endpoint are both still that
+untouched default, so a deliberate choice or a custom proxy is never overridden.
+
 ## Marketplace publishing
 
 ```

@@ -6,6 +6,7 @@ import os
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QLabel, QLineEdit,
                              QMessageBox, QStackedWidget, QVBoxLayout, QWidget)
 
+from ..agent import providers
 from ..paths import data_dir
 
 
@@ -100,11 +101,21 @@ class FirstRunWizard(QDialog):
         self._update_buttons()
 
     def save_key(self) -> tuple[bool, str]:
-        """Store the pasted key. No network involved."""
+        """Store the pasted key and pick the matching provider. No network."""
         key = self.key_input.text().strip()
         if not key:
             return False, "Please paste an API key, or press Cancel to close KeKar."
         self.app.settings.api_key = key
+        # Pick the endpoint from the key's format so the chat call does not
+        # go to the wrong provider. Ambiguous keys are left alone — the
+        # Settings dialog can probe them.
+        prov = providers.best_guess(key)
+        if prov is not None:
+            self.app.settings.provider = prov.id
+            if prov.api_base:
+                self.app.settings.api_base = prov.api_base
+            if prov.default_models:
+                self.app.settings.model_chain = list(prov.default_models)
         try:
             self.app.settings.save()
         except Exception as exc:

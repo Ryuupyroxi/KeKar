@@ -52,10 +52,14 @@ ticked (or the risk explicitly accepted in writing) before v0.1.0 ships.
 ## 3. Network
 
 - [x] `httpx` calls go only to the configured `api_base`
-      (`Settings.api_base`, default `https://openrouter.ai/api/v1`). No other
-      outbound endpoint exists in `src/`.
-      *Verified 2026-11-11:* grepping `https://` across `src/` returns exactly
-      one hit — the `api_base` default.
+      (`Settings.api_base`, default `https://openrouter.ai/api/v1`) or, during
+      provider detection, to a `providers.PROVIDERS` preset's endpoint. No
+      other outbound API endpoint exists in `src/`.
+      *Verified 2026-11-11:* every literal URL in `src/` is the `api_base`
+      default, a `providers.py` preset, or the Facebook Marketplace listing URL
+      used by browser automation. A key is only ever sent to the endpoint the
+      user configured or the preset its own format matched — never to a host
+      picked at random.
 - [x] The model fallback chain walks `Settings.model_chain` in order and stops
       on the first success; it never retries a failing model in a tight loop.
       *Verified by:* `test_falls_back_on_500`, `test_raises_when_all_models_fail`.

@@ -7,6 +7,7 @@ from pathlib import Path
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
+from .agent import providers
 from .agent.client import LLMClient
 from .agent.memory import MemoryStore
 from .agent.runner import AgentRunner
@@ -18,7 +19,6 @@ from .data.backup import open_with_recovery, prune_backups
 from .data.chat_repo import ChatRepo
 from .data.db import Database
 from .data.property_repo import PropertyRepo
-from ._version import APP_NAME, APP_VERSION
 from .ui.main_window import MainWindow
 from .ui.theme import app_font
 
@@ -47,6 +47,9 @@ class Application(QApplication):
         self._load_stylesheet()
 
         self.settings = Settings.load()
+        # A key saved before provider detection existed may point at the
+        # wrong host. Repair it once, then leave the user's choice alone.
+        self.provider_note = providers.migrate_default_provider(self.settings)
         self.db = open_with_recovery(None)
         self.property_repo = PropertyRepo(self.db.conn)
         self.applicant_repo = ApplicantRepo(self.db.conn)

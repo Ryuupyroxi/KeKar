@@ -73,13 +73,28 @@ def main(argv: list[str] | None = None) -> int:
     # First run: run the setup wizard before showing the main window. Kept here
     # (not in Application.__init__) so the app object can be constructed in
     # tests without a modal dialog blocking the suite.
+    #
+    # `start` is a local copy: reassigning the module-level _START here would
+    # make it a local for the whole function and break the reads below.
+    start = _START
     if not app.settings.is_configured():
         from src.ui.wizard import FirstRunWizard
-        if FirstRunWizard(app).exec() != FirstRunWizard.DialogCode.Accepted:
+        wizard = FirstRunWizard(app)
+        # The wizard is the first window the user sees, so it is where the
+        # cold-start measurement belongs. Timing past it would count however
+        # long they spent typing their key.
+        logger.info("startup: %.2fs to the first window (setup wizard)",
+                    time.perf_counter() - start)
+        if wizard.exec() != FirstRunWizard.DialogCode.Accepted:
             return 0
+        start = time.perf_counter()
 
     app.show_main_window()
-    logger.info("startup: %.2fs to a visible window", time.perf_counter() - _START)
+    if app.provider_note:
+        logger.info("provider: %s", app.provider_note)
+        app.main_window.status(app.provider_note)
+    logger.info("startup: %.2fs to a visible window",
+                time.perf_counter() - start)
     try:
         return app.exec()
     finally:

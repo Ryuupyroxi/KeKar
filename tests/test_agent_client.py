@@ -13,16 +13,18 @@ def _settings():
 
 
 class _FakeResponse:
-    def __init__(self, status):
+    def __init__(self, status, payload=None):
         self.status_code = status
+        self._payload = payload if payload is not None else {
+            "choices": [{"message": {"content": "ok", "tool_calls": []},
+                         "finish_reason": "stop"}]}
 
     def raise_for_status(self):
         if self.status_code >= 400:
             raise httpx.HTTPStatusError("err", request=None, response=None)
 
     def json(self):
-        return {"choices": [{"message": {"content": "ok", "tool_calls": []},
-                             "finish_reason": "stop"}]}
+        return self._payload
 
 
 class _FakeClient:
@@ -56,3 +58,17 @@ def test_raises_when_all_models_fail(monkeypatch):
     monkeypatch.setattr("src.agent.client.httpx.AsyncClient", _AllFail)
     with pytest.raises(LLMBusy):
         asyncio.run(LLMClient(_settings()).chat([{"role": "user", "content": "hi"}]))
+
+
+def test_quotes_the_provider_reason_in_the_fallback_message(monkeypatch):
+    """A bare status code hides why every model failed."""
+    class _NoCredits(_FakeClient):
+        async def post(self, url, headers=None, json=None):
+            return _FakeResponse(429, {"error": {
+                "message": "You have no credits remaining."}})
+
+    monkeypatch.setattr("src.agent.client.httpx.AsyncClient", _NoCredits)
+    with pytest.raises(LLMBusy) as exc:
+        asyncio.run(LLMClient(_settings()).chat(
+            [{"role": "user", "content": "hi"}]))
+    assert "no credits" in str(exc.value)
