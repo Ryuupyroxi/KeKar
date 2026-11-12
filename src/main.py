@@ -6,9 +6,17 @@ here raises "attempted relative import with no known parent package".
 """
 from __future__ import annotations
 
+import logging
 import sys
+import time
 
 from src._version import APP_NAME, APP_VERSION
+
+# Set at import time so the startup measurement covers everything the app does
+# between process launch and a visible window.
+_START = time.perf_counter()
+
+logger = logging.getLogger("kekar")
 
 # Flags that must work with no display, no data directory, and no network.
 # They are handled before Qt is imported so `KeKar --version` succeeds on a
@@ -71,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
     app.show_main_window()
+    logger.info("startup: %.2fs to a visible window", time.perf_counter() - _START)
     return app.exec()
 
 

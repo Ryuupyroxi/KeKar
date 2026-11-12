@@ -5,8 +5,9 @@ from pathlib import Path
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import (QFileDialog, QHBoxLayout, QLabel, QMessageBox,
-                             QPushButton, QScrollArea, QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel,
+                             QMessageBox, QProgressDialog, QPushButton,
+                             QScrollArea, QVBoxLayout, QWidget)
 
 from ..services import image_service
 
@@ -126,10 +127,37 @@ class PhotoPanel(QWidget):
     def import_photos(self, paths: list[Path]) -> None:
         if self.property_id is None:
             return
+        progress = QProgressDialog(
+            f"Importing 0 of {len(paths)} photos...", "Cancel", 0, len(paths), self)
+        progress.setWindowTitle("KeKar")
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setMinimumDuration(0)
+        progress.setValue(0)
+
+        imported = 0
+        errors: list[str] = []
         try:
-            image_service.import_photos(self.property_id, paths)
-        except Exception as exc:
-            QMessageBox.warning(self, "KeKar",
-                                f"Some photos could not be imported: {exc}")
+            for index, path in enumerate(paths, start=1):
+                if progress.wasCanceled():
+                    break
+                progress.setLabelText(f"Importing {index} of {len(paths)} photos...")
+                progress.setValue(index)
+                QApplication.processEvents()
+                try:
+                    image_service.import_photos(self.property_id, [path])
+                    imported += 1
+                except Exception as exc:
+                    errors.append(f"{path.name}: {exc}")
+        finally:
+            progress.setValue(len(paths))
+            progress.close()
+
         self.reload()
         self.photos_changed.emit()
+        if errors:
+            QMessageBox.warning(
+                self, "KeKar",
+                f"Imported {imported} of {len(paths)} photos.\n\n"
+                + "\n".join(errors[:5]))
+        elif imported:
+            self.app.main_window.status(f"Imported {imported} photo(s).")

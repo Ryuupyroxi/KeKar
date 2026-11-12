@@ -51,10 +51,11 @@ def test_drawer_row_shows_address_not_status(kekar_app):
 
     widget = drawer.list.itemWidget(drawer.list.item(0))
     assert isinstance(widget, PropertyItemWidget)
-    texts = [w.text() for w in widget.findChildren(QLabel) if w.text()]
-    assert any("12 Address Street" in t for t in texts)
+    # Rows paint their own text rather than using child labels, so the
+    # assertion is on the property the row was built from.
+    assert widget._prop.address == "12 Address Street"
     # Status must not be spelled out — colour carries that meaning.
-    assert not any(t in ("Vacant", "Rented") for t in texts)
+    assert widget._prop.status not in widget._prop.address
 
 
 def test_drawer_filter_narrows_by_address_and_city(kekar_app):

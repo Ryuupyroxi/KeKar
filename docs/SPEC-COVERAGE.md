@@ -31,6 +31,7 @@ Decision references (D1-D10) are defined in Part 1 of
 | §8.2 | Embedded chat | `src/ui/chat_pane.py` | `test_gui_smoke.py` |
 | §8.3 | CRM tab | `src/ui/crm_tab.py` | `test_gui_smoke.py`, `test_ui_behaviour.py` |
 | §8.1 | Readable typography (no tiny default fonts) | `src/ui/theme.py`, `widgets.py` | `test_ui_behaviour.py` |
+| §8.1 | Property rows paint themselves (no child widget tree) for list speed | `src/ui/property_drawer.py` | `test_ui_behaviour.py`, `tools/measure_performance.py` |
 | §8.1 | Inclusive search (address, city, ZIP, pet policy, notes, amenities) | `src/ui/property_drawer.py::search_text` | `test_ui_behaviour.py` |
 | §3.2 | Marketplace autofill UI with a hard stop before Publish | `src/ui/marketplace_dialog.py` | `test_ui_behaviour.py`, `test_marketplace.py` |
 | §3.2 | Listing preview and one-click copy | `src/ui/listing_dialog.py`, `src/services/clipboard.py` | `test_ui_behaviour.py`, `test_clipboard.py` |

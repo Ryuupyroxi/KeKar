@@ -83,6 +83,15 @@ holds the shared `StatusPill`, `OfflineBanner` and `SectionLabel`.
 The property form is wrapped in a `QScrollArea` with `setWidgetResizable(True)`
 so a short window scrolls instead of squeezing the group boxes flat.
 
+## Property list rendering
+
+Rows paint themselves in one `paintEvent` rather than building a child widget
+tree. A tree of five widgets per row cost ~10 ms, which put 50 rows at ~460 ms;
+a painted row is ~1 ms. Cover paths are resolved in a single pass by the
+drawer, and thumbnails are generated on a `QThreadPool` (capped at 4 threads)
+with the pixmap built on the GUI thread — `QPixmap` is not valid off the GUI
+thread. See `docs/PERFORMANCE.md` for measurements.
+
 ## Marketplace publishing
 
 ```

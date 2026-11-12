@@ -43,6 +43,17 @@ Source: 46 modules, 3,755 lines.
 | 6 — Packaging and USB deployment | done |
 | 7 — Hardening, testing, release | in progress — human test matrix pending |
 
+### Phase 7 progress
+
+- Task 7.1 logging + exception hook — done (`src/logging_config.py`, wired in
+  `src/main.py`; log rotates at 2 MB, keys redacted).
+- Task 7.2 security review — done (`docs/SECURITY.md`, all boxes verified).
+- Task 7.3 performance pass — done. All three targets measured and met;
+  see `docs/PERFORMANCE.md`. Property list render went 463 ms → 69 ms for
+  50 rows.
+- Task 7.4 end-to-end test matrix — written, awaiting a human on real hardware.
+- Task 7.5 release checklist — pending.
+
 ## The interface
 
 The window is three regions: a property list on the left, tabs on the right,
