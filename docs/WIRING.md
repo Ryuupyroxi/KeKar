@@ -185,6 +185,19 @@ The overlay is modal: it captures clicks, so the tour is a guided walkthrough
 rather than free play. `Esc` exits, arrow keys navigate, and the Applicants step
 switches to that tab and restores the previous one on exit.
 
+The overlay installs an event filter on the main window for the duration of the
+tour, because a child widget does not resize itself when its parent does —
+without it the dim layer leaves the area exposed by a resize uncovered. It
+emits `closed` before destroying itself so the window drops its reference
+instead of calling into a deleted object later.
+
+Starting a tour finishes any tour that is already running, so two overlays can
+never stack.
+
+Both starting and leaving demo mode wait for a running assistant: swapping the
+database underneath an in-flight agent would make its answer describe
+whichever database it lands on.
+
 A step callback receives the overlay running it, never looked up by `findChild`
 — a stale overlay left behind by an earlier tour would otherwise receive the
 state and the tab would never be restored.

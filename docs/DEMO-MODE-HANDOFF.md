@@ -12,7 +12,7 @@ by reading code.
 **Release:** https://github.com/Ryuupyroxi/KeKar/releases/tag/v0.1.0
 (Windows + Linux zips are attached by CI — see §5 for the current build status)
 
-**Test suite:** 234 passing, 50 source modules, 5,130 lines.
+**Test suite:** 238 passing, 50 source modules, 5,130 lines.
 Run with `pytest` or `python -m pytest` from the project root
 (`/home/Ryuu/Documents/kekar project`).
 
@@ -90,6 +90,27 @@ These were real failures the tests caught. Do not reintroduce them.
    ran `python -m pytest`, which does. Plain `pytest` (what CI used) failed with
    `ModuleNotFoundError: No module named 'src'`.
    Fix: `pythonpath = .` in `pytest.ini`.
+
+### Review pass (same feature, afterwards)
+
+A deliberate re-read of the finished work found four more defects, all fixed
+and covered by tests:
+
+6. **The tour overlay did not follow window resizes.** It was sized once in
+   `start()`; a child widget does not resize itself when its parent does, so
+   the dim layer left the newly exposed area uncovered. Fixed with an event
+   filter on the main window, installed for the duration of the tour.
+7. **Starting a second tour stacked a second overlay.** `_start_tour` now
+   finishes any tour already running.
+8. **A finished overlay destroys itself but `MainWindow` kept a reference.**
+   Exiting demo mode afterwards called `finish()` on a deleted object. The
+   overlay now emits `closed` and the window drops its reference.
+9. **Starting or leaving demo mode mid-run swapped the database under the
+   assistant.** Its answer would have described whichever database it landed
+   on. Both actions now wait and tell the user.
+
+Note: Qt does not deliver resize events to a hidden widget, so the resize test
+shows the main window first — which is exactly what the real app does.
 
 ---
 
