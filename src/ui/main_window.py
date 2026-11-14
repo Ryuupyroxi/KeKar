@@ -5,8 +5,8 @@ import os
 
 from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QLabel, QMainWindow,
-                             QScrollArea, QSplitter, QTabWidget, QVBoxLayout,
-                             QWidget)
+                             QMessageBox, QScrollArea, QSplitter, QTabWidget,
+                             QVBoxLayout, QWidget)
 
 from .._version import APP_NAME, APP_VERSION
 from ..services import connectivity
@@ -17,7 +17,7 @@ from .property_drawer import PropertyDrawer
 from .property_form import PropertyForm
 from . import worker
 from .settings_dialog import SettingsDialog
-from .widgets import OfflineBanner, StatusPill
+from .widgets import DemoBanner, OfflineBanner, StatusPill
 
 PING_INTERVAL_MS = 30_000
 
@@ -66,8 +66,12 @@ class MainWindow(QMainWindow):
 
         self.offline_banner = OfflineBanner(self)
         self.offline_banner.hide()
+        self.demo_banner = DemoBanner(self)
+        self.demo_banner.exited.connect(self._exit_demo_mode)
+        self.demo_banner.hide()
         self.status_pill = StatusPill("Online", "#2e7d32", self)
         self.statusBar().addPermanentWidget(self.status_pill)
+        self._tour = None
 
         self._build_menu()
 
@@ -75,6 +79,7 @@ class MainWindow(QMainWindow):
         outer = QVBoxLayout(central)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.addWidget(self.offline_banner)
+        outer.addWidget(self.demo_banner)
 
         main_splitter = QSplitter(Qt.Orientation.Vertical)
 
@@ -134,13 +139,19 @@ class MainWindow(QMainWindow):
     def _build_menu(self) -> None:
         menubar = self.menuBar()
         file_menu = menubar.addMenu("&File")
-        settings_action = file_menu.addAction("Settings...")
-        settings_action.triggered.connect(self._open_settings)
+        self.settings_action = file_menu.addAction("Settings...")
+        self.settings_action.triggered.connect(self._open_settings)
         file_menu.addSeparator()
         quit_action = file_menu.addAction("Quit")
         quit_action.triggered.connect(self.close)
 
         help_menu = menubar.addMenu("&Help")
+        tour_action = help_menu.addAction("Guided tour...")
+        tour_action.triggered.connect(self._start_tour)
+        self.exit_demo_action = help_menu.addAction("Exit demo mode")
+        self.exit_demo_action.triggered.connect(self._exit_demo_mode)
+        self.exit_demo_action.setVisible(False)
+        help_menu.addSeparator()
         about_action = help_menu.addAction("About...")
         about_action.triggered.connect(lambda: AboutDialog(self).exec())
 
@@ -190,8 +201,37 @@ class MainWindow(QMainWindow):
             self.photo_panel.load_property(current)
 
     def set_demo_mode(self, active: bool) -> None:
-        """Reflect demo mode in the UI. Task 4 adds the banner and menu."""
+        """Reflect demo mode in the UI.
+
+        Settings are shared with the real install, so the Settings dialog is
+        disabled while demo mode is on — otherwise a tour could change the
+        user's real API key.
+        """
         self.demo_mode = active
+        self.demo_banner.setVisible(active)
+        self.settings_action.setEnabled(not active)
+        self.exit_demo_action.setVisible(active)
+
+    def _start_tour(self) -> None:
+        if not self.app.demo_mode:
+            answer = QMessageBox.question(
+                self, APP_NAME,
+                "The tour uses sample data, so you can see everything working.\n\n"
+                "Your own records are never touched.\n\n"
+                "Start the tour?")
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+            self.app.enter_demo_mode()
+        from .tour import TourOverlay, build_tour_steps
+        self._tour = TourOverlay(self, build_tour_steps(self))
+        self._tour.resize(self.size())
+        self._tour.start()
+
+    def _exit_demo_mode(self) -> None:
+        if self._tour is not None:
+            self._tour.finish()
+            self._tour = None
+        self.app.exit_demo_mode()
 
     # -- connectivity ------------------------------------------------------
 

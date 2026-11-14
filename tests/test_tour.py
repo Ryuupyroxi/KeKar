@@ -54,6 +54,7 @@ def test_overlay_navigation(kekar_app):
 
 def test_overlay_switches_to_applicants_tab(kekar_app):
     window = kekar_app.main_window
+    window.tabs.setCurrentIndex(0)  # establish the starting tab explicitly
     steps = build_tour_steps(window)
     overlay = TourOverlay(window, steps)
     overlay.resize(window.size())

@@ -97,3 +97,57 @@ def test_seed_content(db):
     stages = {a.screening_stage for a in ApplicantRepo(db).list()}
     assert stages == {"Inquiry Received", "Background Check",
                       "Approved", "Rejected"}
+
+
+def test_tour_completed_defaults_false(kekar_app):
+    assert kekar_app.settings.tour_completed is False
+
+
+def test_banner_is_hidden_until_demo_mode(kekar_app):
+    from src.ui.widgets import DemoBanner
+
+    banner = kekar_app.main_window.demo_banner
+    assert isinstance(banner, DemoBanner)
+    assert banner.isHidden()
+
+    kekar_app.enter_demo_mode()
+    assert kekar_app.main_window.demo_mode is True
+    kekar_app.exit_demo_mode()
+    assert kekar_app.main_window.demo_mode is False
+
+
+def test_settings_disabled_in_demo_mode(kekar_app):
+    window = kekar_app.main_window
+    assert window.settings_action.isEnabled() is True
+    kekar_app.enter_demo_mode()
+    assert window.settings_action.isEnabled() is False
+    kekar_app.exit_demo_mode()
+    assert window.settings_action.isEnabled() is True
+
+
+def test_exit_demo_action_visible_only_in_demo(kekar_app):
+    window = kekar_app.main_window
+    assert window.exit_demo_action.isVisible() is False
+
+    kekar_app.enter_demo_mode()
+    assert window.exit_demo_action.isVisible() is True
+
+    kekar_app.exit_demo_mode()
+    assert window.exit_demo_action.isVisible() is False
+
+
+def test_maybe_offer_tour_sets_the_flag(kekar_app):
+    kekar_app.settings.tour_completed = False
+    try:
+        kekar_app.maybe_offer_tour()
+        assert kekar_app.settings.tour_completed is True
+    finally:
+        # The dialog is patched to "Yes" in tests, so demo mode is left on.
+        kekar_app.exit_demo_mode()
+    assert kekar_app.demo_mode is False
+
+
+def test_maybe_offer_tour_does_nothing_once_completed(kekar_app):
+    kekar_app.settings.tour_completed = True
+    kekar_app.maybe_offer_tour()
+    assert kekar_app.demo_mode is False

@@ -90,6 +90,9 @@ def main(argv: list[str] | None = None) -> int:
         start = time.perf_counter()
 
     app.show_main_window()
+    # Offer the tour once, after the window is visible so the overlay has
+    # something to cover.
+    app.maybe_offer_tour()
     if app.provider_note:
         logger.info("provider: %s", app.provider_note)
         app.main_window.status(app.provider_note)

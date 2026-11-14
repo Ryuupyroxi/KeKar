@@ -1,8 +1,9 @@
 """Shared widgets: status pill, offline banner, section headings."""
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import (QHBoxLayout, QLabel, QPushButton, QVBoxLayout,
+                             QWidget)
 
 
 class StatusPill(QLabel):
@@ -33,6 +34,28 @@ class OfflineBanner(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.label)
+
+
+class DemoBanner(QWidget):
+    """Shown while demo mode is active, so it is never a surprise.
+
+    Demo mode shares everything except the database, so a visible reminder is
+    the difference between "exploring safely" and "where did my data go".
+    """
+
+    exited = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.label = QLabel(
+            "Demo mode — sample data. Your own records are not shown.")
+        self.label.setStyleSheet("background:#e3f2fd; color:#0d47a1; padding:8px;")
+        exit_button = QPushButton("Exit demo mode")
+        exit_button.clicked.connect(self.exited)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.label, 1)
+        layout.addWidget(exit_button)
 
 
 class SectionLabel(QLabel):

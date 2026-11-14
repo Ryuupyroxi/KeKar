@@ -120,6 +120,39 @@ class Application(QApplication):
         self.main_window.reload_all()
         self.main_window.set_demo_mode(False)
 
+    def maybe_offer_tour(self) -> None:
+        """Offer the tour once, after first-run setup.
+
+        Either answer marks the tour as done, so the question is never asked
+        twice. Choosing "Yes" enters demo mode and starts the tour.
+        """
+        if self.settings.tour_completed:
+            return
+
+        from PyQt6.QtWidgets import QMessageBox
+        from .ui.tour import TourOverlay, build_tour_steps
+
+        answer = QMessageBox.question(
+            self.main_window, "KeKar",
+            "Take a quick tour?\n\n"
+            "The tour uses sample data, so you can see everything working. "
+            "Your own records are never touched.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+        self.settings.tour_completed = True
+        try:
+            self.settings.save()
+        except Exception:
+            pass
+
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        self.enter_demo_mode()
+        self.main_window._tour = TourOverlay(
+            self.main_window, build_tour_steps(self.main_window))
+        self.main_window._tour.resize(self.main_window.size())
+        self.main_window._tour.start()
+
     def _load_stylesheet(self) -> None:
         """Apply styles.qss when present; a missing file must not break startup."""
         path = _stylesheet_path()

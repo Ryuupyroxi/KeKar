@@ -25,12 +25,16 @@ RING = QColor("#ffb300")
 
 @dataclass
 class TourStep:
-    """One tour step. ``target=None`` means a centred, untargeted card."""
+    """One tour step. ``target=None`` means a centred, untargeted card.
+
+    ``on_enter`` receives the overlay running the step, so a step can record
+    state on the overlay that will actually finish it — never a stale one.
+    """
 
     target: object | None
     title: str
     body: str
-    on_enter: Callable[[], None] | None = None
+    on_enter: Callable[["TourOverlay"], None] | None = None
 
 
 class TourOverlay(QWidget):
@@ -168,7 +172,7 @@ class TourOverlay(QWidget):
         self.next_button.setText(
             "Finish" if self.current_index == len(self._steps) - 1 else "Next")
         if step.on_enter is not None:
-            step.on_enter()
+            step.on_enter(self)
         self._place_caption()
         self.update()
 
@@ -207,7 +211,7 @@ def build_tour_steps(window) -> list[TourStep]:
             window.crm_tab, "Applicants",
             "Track every applicant through the pipeline, from first enquiry to "
             "approved or rejected.",
-            on_enter=lambda: _show_applicants(window)),
+            on_enter=lambda overlay: _show_applicants(window, overlay)),
         TourStep(
             window.chat_pane, "The assistant",
             "Ask questions in plain language, or give an instruction like "
@@ -224,9 +228,11 @@ def build_tour_steps(window) -> list[TourStep]:
     ]
 
 
-def _show_applicants(window) -> None:
-    """Switch to the Applicants tab for the duration of its step."""
-    overlay = window.findChild(TourOverlay)
-    if overlay is not None and overlay.restore_tab is None:
+def _show_applicants(window, overlay: "TourOverlay") -> None:
+    """Switch to the Applicants tab for the duration of its step.
+
+    Records the tab to restore on the overlay that is running the step.
+    """
+    if overlay.restore_tab is None:
         overlay.restore_tab = window.tabs.currentIndex()
     window.tabs.setCurrentIndex(1)

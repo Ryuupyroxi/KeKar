@@ -28,6 +28,7 @@ class Settings:
     autofill_enabled: bool = False      # opt-in, experimental
     backup_keep_days: int = 30
     passphrase_protected: bool = False
+    tour_completed: bool = False
 
     def is_configured(self) -> bool:
         return bool(self.api_key)
