@@ -2,6 +2,8 @@ name: build
 on:
   push:
     tags: ["v*"]
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -23,6 +25,15 @@ jobs:
           name: KeKar_Linux
           path: out/KeKar_Linux/
 
+      - name: Zip the Linux package
+        run: cd out && zip -qr KeKar_Linux.zip KeKar_Linux
+
+      - name: Attach the Linux build to the release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/KeKar_Linux.zip
+
   windows:
     runs-on: windows-latest
     steps:
@@ -40,3 +51,13 @@ jobs:
         with:
           name: KeKar_Windows
           path: out/KeKar_Windows/
+
+      - name: Zip the Windows package
+        shell: pwsh
+        run: Compress-Archive -Path out/KeKar_Windows -DestinationPath out/KeKar_Windows.zip
+
+      - name: Attach the Windows build to the release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/KeKar_Windows.zip
