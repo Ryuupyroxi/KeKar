@@ -26,6 +26,8 @@ Decision references (D1-D10) are defined in Part 1 of
 | §5.2 | MEMORY.md + local state | `src/agent/memory.py` → `KeKarData/memory/MEMORY.md` | `test_memory.py` |
 | §5.3 | `browser.use_real_profile` | **D5** — dedicated profile via CDP, `browser/launcher.py` | `test_launcher.py` |
 | §6 | Low-friction onboarding | `src/ui/wizard.py` | `test_gui_smoke.py` |
+| §6 | First-run guided tour on demo data | `src/ui/tour.py`, `src/data/demo_seed.py`, `src/app.py::maybe_offer_tour` | `test_tour.py`, `test_demo_mode.py` |
+| §6 | Demo mode on a separate database, real data untouched | `src/paths.py::demo_database_path`, `src/app.py::enter/exit_demo_mode` | `test_demo_mode.py` |
 | §7.1 | Data folder layout | **D3** — portable `KeKarData/` instead of `%APPDATA%` | `test_paths.py` |
 | §7.2 | Exact table schemas | `src/data/schema.sql` (field names verbatim) | `test_db.py`, `test_bundle_safety.py` |
 | §8.1 | Split-pane dashboard + drawer | `src/ui/main_window.py`, `property_drawer.py` | `test_gui_smoke.py`, `test_ui_behaviour.py` |

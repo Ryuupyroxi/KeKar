@@ -13,7 +13,7 @@ One folder for everything KeKar. No stray files, no scattered repos, no
 | `docs/WIRING.md` | How the pieces connect at runtime — startup, data flow, agent loop, browser automation. |
 | `docs/SPEC-COVERAGE.md` | Every spec requirement traced to the code and the test that proves it. |
 | `src/` | Application source — Python 3.12, PyQt6, SQLite. |
-| `tests/` | pytest suite (28 test modules). |
+| `tests/` | pytest suite (32 test modules). |
 | `config/` | Listing templates, default config, Marketplace selectors. |
 | `tools/` | Build, packaging, and USB copy/verify tools. |
 | `packaging/` | NSIS installer (Windows) and AppImage builder (Linux). |
@@ -29,8 +29,8 @@ drive. All data stays local; only the AI chat needs the network.
 
 ## Status
 
-Implementation complete through Phase 7. **214 tests passing** (`pytest -q`).
-Source: 48 modules, 4,575 lines.
+Implementation complete through Phase 7. **234 tests passing** (`pytest -q`).
+Source: 50 modules, 5,130 lines.
 
 | Phase | State |
 |---|---|
@@ -104,6 +104,26 @@ and Anthropic are detected but not usable directly, because their chat APIs are
 not OpenAI-compatible; the app says so rather than guessing.
 
 See `docs/WIRING.md` for how detection and model discovery are wired.
+
+## Demo mode and guided tour
+
+A new install offers a tour right after setup, and **Help → Guided tour...**
+runs it any time.
+
+The tour runs in **demo mode**: KeKar opens a separate demo database
+(`KeKarData/demo/database.db`) seeded with four sample properties and four
+applicants, so every panel has something to show. Your real database is closed
+and never touched — not read, not written, not seeded. A blue banner under the
+menu bar stays visible for as long as demo mode is on, and **Exit demo mode**
+is in the Help menu and on the banner.
+
+Demo mode is session-only. Nothing on disk records it, so closing the app
+mid-tour brings you back to your real data on the next launch.
+
+Settings are shared with the real install, so **File → Settings is disabled
+while demo mode is active** — otherwise a tour could change your real API key.
+
+See `docs/WIRING.md` for how the switch and the overlay are wired.
 
 ## The interface
 

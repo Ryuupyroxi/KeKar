@@ -30,7 +30,7 @@ applicable on that platform · blank = not yet run
 
 ## Automated coverage
 
-These are covered by the pytest suite (`pytest -q`, 214 tests) and must stay
+These are covered by the pytest suite (`pytest -q`, 234 tests) and must stay
 green:
 
 - Schema creation, WAL mode, foreign keys, migration idempotency (`test_db.py`)
@@ -64,6 +64,15 @@ green:
   (`test_usb_packaging.py`)
 - Frozen-bundle safety: no runtime dependency on an unshipped file
   (`test_bundle_safety.py`)
+- Demo mode: the demo path is separate, entering and leaving swaps the database,
+  a real property survives both, and a changed data directory mid-session does
+  not lose the real database (`test_demo_mode.py`)
+- Demo seed: populates an empty database, is idempotent, and produces the
+  expected properties and applicant stages (`test_demo_mode.py`)
+- Guided tour: step targets resolve to real widgets, the overlay paints without
+  raising, navigation clamps at both ends, Esc closes, the Applicants tab is
+  restored, and the caption stays inside the window at two sizes
+  (`test_tour.py`)
 
 ## How to run a scenario
 

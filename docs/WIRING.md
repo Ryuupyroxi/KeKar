@@ -154,6 +154,41 @@ a key pasted into the wizard used to leave the endpoint on the built-in default
 forever. It only acts while the provider and endpoint are both still that
 untouched default, so a deliberate choice or a custom proxy is never overridden.
 
+## Demo mode
+
+`paths.demo_database_path()` points at `<data_dir>/demo/database.db`. Everything
+else — settings, memory, photos, logs — is shared with the real install.
+
+Both database locations are resolved once in `Application.__init__` and reused.
+Re-resolving on every switch would open a *different* file if the data directory
+changed mid-run, silently losing the real database.
+
+`enter_demo_mode()` closes the real database, opens the demo one, seeds it if
+empty, rebuilds the repositories, reloads the views, and shows the banner.
+`exit_demo_mode()` reverses it. Repositories resolve their connection lazily
+through the `Database`, so rebuilding them is enough; no view is reconstructed.
+
+Demo mode is session-only: nothing on disk records it, so a crash mid-tour
+returns the user to real data. The Settings action is disabled while demo mode
+is active, because settings are shared with the real install.
+
+## Guided tour
+
+`src/ui/tour.py` holds `TourStep`, `TourOverlay` and `build_tour_steps(window)`.
+
+The overlay is a transparent child of the main window. `paintEvent` fills the
+window with a dim colour clipped to everything *except* a hole around the
+current target, then draws an amber ring around it — no composition modes, so
+it cannot fail on a platform that dislikes `CompositionMode_Clear`.
+
+The overlay is modal: it captures clicks, so the tour is a guided walkthrough
+rather than free play. `Esc` exits, arrow keys navigate, and the Applicants step
+switches to that tab and restores the previous one on exit.
+
+A step callback receives the overlay running it, never looked up by `findChild`
+— a stale overlay left behind by an earlier tour would otherwise receive the
+state and the tab would never be restored.
+
 ## Marketplace publishing
 
 ```
