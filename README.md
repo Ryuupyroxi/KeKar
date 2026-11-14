@@ -1,4 +1,4 @@
-# kekar project
+# KeKar Property Manager
 
 One folder for everything KeKar. No stray files, no scattered repos, no
 "where did I put that" — if it belongs to KeKar, it lives here.
@@ -26,6 +26,20 @@ drive on **both Windows 10/11 and Linux x86_64**, for a non-technical landlord.
 
 One codebase, two PyInstaller builds, one shared `KeKarData/` portfolio on the
 drive. All data stays local; only the AI chat needs the network.
+
+## Download
+
+Pre-built packages are attached to every
+[GitHub release](https://github.com/Ryuupyroxi/KeKar/releases):
+
+- **Windows** — `KeKar_Windows.zip`: unzip, then double-click `KeKar.bat`.
+  SmartScreen may warn on first run because the build is not code-signed;
+  click **More info → Run anyway**.
+- **Linux** — `KeKar_Linux.zip`: unzip, then double-click `KeKar.sh`, or run
+  `./install_linux.py --desktop` for a menu entry and a Desktop shortcut.
+
+Your data lives in the `KeKarData` folder next to the program, so the whole
+package can be copied to any PC or USB drive.
 
 ## Status
 
