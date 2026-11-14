@@ -14,8 +14,7 @@ def test_demo_path_is_separate():
 
 
 def test_enter_and_exit_demo_mode(kekar_app):
-    real_repo = PropertyRepo(kekar_app.db)
-    real_id = real_repo.create(Property(address="1 Real Street"))
+    PropertyRepo(kekar_app.db).create(Property(address="1 Real Street"))
 
     kekar_app.enter_demo_mode()
     try:
@@ -24,12 +23,16 @@ def test_enter_and_exit_demo_mode(kekar_app):
         # Demo mode seeds on entry, so it is populated — but with none of the
         # real user's records.
         assert demo_repo.list() != [], "demo database should be seeded"
-        assert demo_repo.get(real_id) is None, "real property leaked into demo"
+        # Compare by address, not id. Both databases start their id sequence
+        # at 1, so an id from one easily collides with a seeded id in the other.
+        assert all(p.address != "1 Real Street" for p in demo_repo.list()), (
+            "real property leaked into demo")
     finally:
         kekar_app.exit_demo_mode()
 
     assert kekar_app.demo_mode is False
-    assert PropertyRepo(kekar_app.db).get(real_id) is not None, (
+    assert any(p.address == "1 Real Street"
+               for p in PropertyRepo(kekar_app.db).list()), (
         "real property vanished after leaving demo mode")
 
 
