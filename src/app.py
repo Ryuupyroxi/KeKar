@@ -18,6 +18,7 @@ from .data.applicant_repo import ApplicantRepo
 from .data.backup import open_with_recovery, prune_backups
 from .data.chat_repo import ChatRepo
 from .data.db import Database
+from .data.demo_seed import seed_if_empty
 from .data.property_repo import PropertyRepo
 from .paths import database_path, demo_database_path
 from .ui.main_window import MainWindow
@@ -105,6 +106,7 @@ class Application(QApplication):
         if self.demo_mode:
             return
         self._open_database(self._demo_db_path)
+        seed_if_empty(self.db)
         self.demo_mode = True
         self.main_window.reload_all()
         self.main_window.set_demo_mode(True)

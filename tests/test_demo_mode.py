@@ -21,7 +21,9 @@ def test_enter_and_exit_demo_mode(kekar_app):
     try:
         assert kekar_app.demo_mode is True
         demo_repo = PropertyRepo(kekar_app.db)
-        assert demo_repo.list() == [], "demo database should start empty"
+        # Demo mode seeds on entry, so it is populated — but with none of the
+        # real user's records.
+        assert demo_repo.list() != [], "demo database should be seeded"
         assert demo_repo.get(real_id) is None, "real property leaked into demo"
     finally:
         kekar_app.exit_demo_mode()
@@ -54,3 +56,44 @@ def test_demo_mode_keeps_the_database_it_started_with(kekar_app, monkeypatch):
 
     assert kekar_app._real_db_path == started_at
     assert PropertyRepo(kekar_app.db).get(real_id) is not None
+
+
+def test_seed_populates_an_empty_database(db):
+    from src.data import demo_seed
+
+    assert demo_seed.seed_if_empty(db) is True
+    assert len(PropertyRepo(db).list()) == 4
+
+
+def test_seed_is_idempotent(db):
+    from src.data import demo_seed
+
+    demo_seed.seed_if_empty(db)
+    assert demo_seed.seed_if_empty(db) is False
+    assert len(PropertyRepo(db).list()) == 4
+
+
+def test_enter_demo_mode_seeds_once(kekar_app):
+    kekar_app.enter_demo_mode()
+    try:
+        assert len(PropertyRepo(kekar_app.db).list()) == 4
+    finally:
+        kekar_app.exit_demo_mode()
+
+
+def test_seed_content(db):
+    from src.data import demo_seed
+    from src.data.applicant_repo import ApplicantRepo
+
+    demo_seed.seed_if_empty(db)
+    props = {p.address: p for p in PropertyRepo(db).list()}
+    assert set(props) == {
+        "123 Main Street", "456 Oak Avenue",
+        "789 Elm Lane", "321 Pine Court"}
+    assert props["123 Main Street"].rent_price == 1200.0
+    assert props["456 Oak Avenue"].status == "Rented"
+    assert props["789 Elm Lane"].amenity_yard is True
+
+    stages = {a.screening_stage for a in ApplicantRepo(db).list()}
+    assert stages == {"Inquiry Received", "Background Check",
+                      "Approved", "Rejected"}
