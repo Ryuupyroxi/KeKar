@@ -9,6 +9,8 @@ on:
 jobs:
   linux:
     runs-on: ubuntu-22.04          # oldest glibc we support -> widest compatibility
+    permissions:
+      contents: write            # needed to attach builds to a release
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -40,6 +42,8 @@ jobs:
 
   windows:
     runs-on: windows-latest
+    permissions:
+      contents: write            # needed to attach builds to a release
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
