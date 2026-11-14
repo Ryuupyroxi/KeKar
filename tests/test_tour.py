@@ -108,3 +108,62 @@ def test_caption_stays_inside_the_window(kekar_app):
                 f"step {index} caption escaped at {size}: {rect}")
 
         overlay.finish()
+
+
+def test_overlay_follows_window_resize(kekar_app):
+    """A child widget does not resize itself when its parent does, so the
+    overlay must follow or the dim layer leaves the new area uncovered.
+
+    The window is shown first because Qt does not deliver resize events to a
+    hidden widget — in the real app the main window is always visible before
+    the tour starts.
+    """
+    window = kekar_app.main_window
+    window.show()
+    kekar_app.processEvents()
+
+    overlay = TourOverlay(window, build_tour_steps(window))
+    overlay.start()  # start() installs the resize filter
+    kekar_app.processEvents()
+
+    window.resize(1400, 900)
+    kekar_app.processEvents()
+    assert overlay.size() == window.size()
+
+    window.resize(1100, 720)
+    kekar_app.processEvents()
+    assert overlay.size() == window.size()
+
+    overlay.finish()
+
+
+def test_starting_a_second_tour_does_not_stack(kekar_app):
+    window = kekar_app.main_window
+    kekar_app.enter_demo_mode()
+    try:
+        window._start_tour()
+        first = window._tour
+        assert first is not None
+
+        window._start_tour()
+        assert window._tour is not first, "a second overlay was stacked"
+        assert first.isHidden(), "the first tour should have been closed"
+
+        window._finish_tour()
+        assert window._tour is None
+    finally:
+        kekar_app.exit_demo_mode()
+
+
+def test_exiting_demo_mode_after_the_tour_ended(kekar_app):
+    """A finished overlay deletes itself, so the window must drop its reference
+    rather than calling into a deleted object later."""
+    window = kekar_app.main_window
+    kekar_app.enter_demo_mode()
+    try:
+        window._start_tour()
+        window._finish_tour()
+        assert window._tour is None
+        kekar_app.processEvents()  # let deleteLater() run
+    finally:
+        kekar_app.exit_demo_mode()  # must not raise

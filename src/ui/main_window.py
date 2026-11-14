@@ -212,7 +212,20 @@ class MainWindow(QMainWindow):
         self.settings_action.setEnabled(not active)
         self.exit_demo_action.setVisible(active)
 
+    def _agent_busy(self) -> bool:
+        return self.chat_pane._thread is not None
+
     def _start_tour(self) -> None:
+        # Never stack two overlays: finish any tour that is already running.
+        self._finish_tour()
+        # Swapping the database under a running agent would make its answer
+        # describe whichever database it lands on, so wait for it instead.
+        if self._agent_busy():
+            QMessageBox.information(
+                self, APP_NAME,
+                "The assistant is still working. Wait for its answer, then "
+                "start the tour.")
+            return
         if not self.app.demo_mode:
             answer = QMessageBox.question(
                 self, APP_NAME,
@@ -223,14 +236,32 @@ class MainWindow(QMainWindow):
                 return
             self.app.enter_demo_mode()
         from .tour import TourOverlay, build_tour_steps
-        self._tour = TourOverlay(self, build_tour_steps(self))
-        self._tour.resize(self.size())
-        self._tour.start()
+        overlay = TourOverlay(self, build_tour_steps(self))
+        overlay.closed.connect(lambda: self._on_tour_closed(overlay))
+        self._tour = overlay
+        overlay.resize(self.size())
+        overlay.start()
+
+    def _finish_tour(self) -> None:
+        tour = self._tour
+        self._tour = None
+        if tour is not None:
+            tour.finish()
+
+    def _on_tour_closed(self, overlay) -> None:
+        # The overlay destroys itself; drop the window's reference to it so a
+        # later exit does not call into a deleted object.
+        if self._tour is overlay:
+            self._tour = None
 
     def _exit_demo_mode(self) -> None:
-        if self._tour is not None:
-            self._tour.finish()
-            self._tour = None
+        if self._agent_busy():
+            QMessageBox.information(
+                self, APP_NAME,
+                "The assistant is still working. Wait for its answer before "
+                "leaving demo mode.")
+            return
+        self._finish_tour()
         self.app.exit_demo_mode()
 
     # -- connectivity ------------------------------------------------------

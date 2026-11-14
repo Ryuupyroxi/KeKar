@@ -154,3 +154,21 @@ def test_maybe_offer_tour_does_nothing_once_completed(kekar_app):
     kekar_app.settings.tour_completed = True
     kekar_app.maybe_offer_tour()
     assert kekar_app.demo_mode is False
+
+
+def test_tour_and_demo_exit_wait_for_the_assistant(kekar_app):
+    """Swapping the database under a running agent would make its answer
+    describe whichever database it lands on, so both actions wait."""
+    window = kekar_app.main_window
+    kekar_app.enter_demo_mode()
+    try:
+        window.chat_pane._thread = object()  # pretend a run is in flight
+
+        window._start_tour()
+        assert window._tour is None, "tour must not start mid-run"
+
+        window._exit_demo_mode()
+        assert kekar_app.demo_mode is True, "must not leave demo mode mid-run"
+    finally:
+        window.chat_pane._thread = None
+        kekar_app.exit_demo_mode()

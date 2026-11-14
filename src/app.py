@@ -130,7 +130,6 @@ class Application(QApplication):
             return
 
         from PyQt6.QtWidgets import QMessageBox
-        from .ui.tour import TourOverlay, build_tour_steps
 
         answer = QMessageBox.question(
             self.main_window, "KeKar",
@@ -148,10 +147,7 @@ class Application(QApplication):
         if answer != QMessageBox.StandardButton.Yes:
             return
         self.enter_demo_mode()
-        self.main_window._tour = TourOverlay(
-            self.main_window, build_tour_steps(self.main_window))
-        self.main_window._tour.resize(self.main_window.size())
-        self.main_window._tour.start()
+        self.main_window._start_tour()
 
     def _load_stylesheet(self) -> None:
         """Apply styles.qss when present; a missing file must not break startup."""

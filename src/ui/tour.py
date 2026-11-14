@@ -12,9 +12,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from PyQt6.QtCore import QEvent, QRect, Qt
-from PyQt6.QtGui import QColor, QKeySequence, QPainter, QPen, QRegion, QShortcut
-from PyQt6.QtWidgets import (QDialogButtonBox, QFrame, QLabel, QPushButton,
+from PyQt6.QtCore import QEvent, QRect, Qt, pyqtSignal
+from PyQt6.QtGui import (QColor, QKeyEvent, QKeySequence, QPainter, QPen,
+                         QRegion, QShortcut)
+from PyQt6.QtWidgets import (QDialogButtonBox, QFrame, QLabel,
                              QVBoxLayout, QWidget)
 
 from .theme import font
@@ -38,6 +39,10 @@ class TourStep:
 
 
 class TourOverlay(QWidget):
+    #: Emitted just before the overlay destroys itself, so whoever created it
+    #: can drop its reference instead of holding a deleted object.
+    closed = pyqtSignal()
+
     def __init__(self, window: QWidget, steps: list[TourStep]):
         super().__init__(window)
         self._window = window
@@ -132,16 +137,27 @@ class TourOverlay(QWidget):
     def start(self) -> None:
         self.current_index = 0
         self.restore_tab = None
+        # Follow the window for the whole tour, not just for the opening size:
+        # a child widget does not resize itself when its parent does, so the
+        # dim layer would otherwise leave the newly exposed area undimmed.
+        self._window.installEventFilter(self)
         self.resize(self._window.size())
         self.raise_()
         self.show()
         self._apply_step()
 
+    def eventFilter(self, obj, event: QEvent) -> bool:
+        if obj is self._window and event.type() == QEvent.Type.Resize:
+            self.resize(self._window.size())
+        return super().eventFilter(obj, event)
+
     def finish(self) -> None:
+        self._window.removeEventFilter(self)
         if self.restore_tab is not None:
             self._window.tabs.setCurrentIndex(self.restore_tab)
             self.restore_tab = None
         self.hide()
+        self.closed.emit()
         self.deleteLater()
 
     def next(self) -> None:
