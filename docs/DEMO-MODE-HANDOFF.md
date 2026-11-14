@@ -156,6 +156,34 @@ The Windows build is **not code-signed**, so SmartScreen warns on first run.
 **More info → Run anyway**. A code-signing certificate is the real fix — Master
 has not decided on that yet.
 
+### CI fixes made while getting the release out
+
+1. `pytest` (as opposed to `python -m pytest`) does not put the project root on
+   `sys.path`, so CI failed with `ModuleNotFoundError: No module named 'src'`.
+   Fixed with `pythonpath = .` in `pytest.ini`.
+2. The Linux runner had no `libEGL.so.1`; PyQt6 would not import. Fixed by
+   installing `libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1`.
+3. The pytest suite is POSIX-oriented (Unix path separators, executable bits,
+   deleting a database file Windows keeps locked). It now runs on the **Linux
+   job only**; the Windows job builds and packages.
+4. `softprops/action-gh-release` needs `contents: write`; both jobs now declare
+   `permissions: contents: write`.
+5. **A release tag must point at the fixed commit.** The first release was
+   created from a tag that predated the CI fixes, so the workflow re-ran the
+   old code. Moving the tag (`git tag -f` + `git push -f origin <tag>`) and
+   re-publishing the release is what makes CI pick up the fixes.
+
+### Verified final state (2026-11-14)
+
+Both jobs green on run `43549456383`. Every step succeeded, including
+`verify_usb.py` on the Windows package — which checks that `KeKar.exe` exists,
+the package holds 100+ files, and no host paths leaked into the build.
+
+Release assets:
+
+- `KeKar_Linux.zip` — 281,586,566 bytes
+- `KeKar_Windows.zip` — 151,245,974 bytes
+
 ---
 
 ## 6. Design docs
