@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
     def __init__(self, app):
         super().__init__()
         self.app = app
+        self.demo_mode = False
         self.setWindowTitle(f"{APP_NAME} Property Manager")
         self.resize(1280, 800)
         self.setMinimumSize(1100, 720)
@@ -187,6 +188,10 @@ class MainWindow(QMainWindow):
         else:
             self.property_form.load_property(current)
             self.photo_panel.load_property(current)
+
+    def set_demo_mode(self, active: bool) -> None:
+        """Reflect demo mode in the UI. Task 4 adds the banner and menu."""
+        self.demo_mode = active
 
     # -- connectivity ------------------------------------------------------
 

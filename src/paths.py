@@ -106,3 +106,9 @@ def logs_dir() -> Path:
 
 def browser_profile_dir() -> Path:
     return data_dir() / "browser_profile"
+
+
+def demo_database_path() -> Path:
+    """The demo database, inside the real data directory but separate from the
+    user's own database so demo mode can never write to it."""
+    return data_dir() / "demo" / "database.db"

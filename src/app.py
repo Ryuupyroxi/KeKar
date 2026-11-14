@@ -19,6 +19,7 @@ from .data.backup import open_with_recovery, prune_backups
 from .data.chat_repo import ChatRepo
 from .data.db import Database
 from .data.property_repo import PropertyRepo
+from .paths import database_path, demo_database_path
 from .ui.main_window import MainWindow
 from .ui.theme import app_font
 
@@ -52,18 +53,16 @@ class Application(QApplication):
         # A key saved before provider detection existed may point at the
         # wrong host. Repair it once, then leave the user's choice alone.
         self.provider_note = providers.migrate_default_provider(self.settings)
-        self.db = open_with_recovery(None)
-        self.property_repo = PropertyRepo(self.db)
-        self.applicant_repo = ApplicantRepo(self.db)
-        self.chat_repo = ChatRepo(self.db)
+        self.demo_mode = False
+        self.db = None
+        # Resolve the two database locations once. Re-resolving on every switch
+        # would open a *different* file if the data directory changed mid-run,
+        # silently losing the real database.
+        self._real_db_path = database_path()
+        self._demo_db_path = demo_database_path()
         self.memory = MemoryStore()
-
         self.client = LLMClient(self.settings)
-        self.ctx = ToolContext(db=self.db, property_repo=self.property_repo,
-                               applicant_repo=self.applicant_repo,
-                               memory=self.memory, settings=self.settings,
-                               on_change=self.data_changed.emit)
-        self.agent_runner = AgentRunner(self.client, self.settings, self.ctx)
+        self._open_database(self._real_db_path)
 
         self.main_window = MainWindow(self)
         self.offline_changed.connect(self.main_window.show_offline)
@@ -71,6 +70,53 @@ class Application(QApplication):
         # the GUI thread, so the sidebar and CRM tab see the change.
         self.data_changed.connect(self.main_window.reload_all)
         prune_backups(self.settings.backup_keep_days)
+
+    def _open_database(self, path: Path | None) -> None:
+        """Open a database and point the repositories at it.
+
+        ``path=None`` means the user's real database; the demo path comes from
+        ``paths.demo_database_path()`` so it can never drift.
+        """
+        if self.db is not None:
+            try:
+                self.db.close()
+            except Exception:
+                pass
+        self.db = open_with_recovery(path)
+        self._rebuild_repos()
+
+    def _rebuild_repos(self) -> None:
+        """Re-point the repositories and the agent at the current database.
+
+        Repositories resolve their connection lazily through the Database, so
+        rebuilding them is enough — no view has to be reconstructed.
+        """
+        self.property_repo = PropertyRepo(self.db)
+        self.applicant_repo = ApplicantRepo(self.db)
+        self.chat_repo = ChatRepo(self.db)
+        self.ctx = ToolContext(db=self.db, property_repo=self.property_repo,
+                               applicant_repo=self.applicant_repo,
+                               memory=self.memory, settings=self.settings,
+                               on_change=self.data_changed.emit)
+        self.agent_runner = AgentRunner(self.client, self.settings, self.ctx)
+
+    def enter_demo_mode(self) -> None:
+        """Switch to the demo database. The real one is closed untouched."""
+        if self.demo_mode:
+            return
+        self._open_database(self._demo_db_path)
+        self.demo_mode = True
+        self.main_window.reload_all()
+        self.main_window.set_demo_mode(True)
+
+    def exit_demo_mode(self) -> None:
+        """Return to the user's real database."""
+        if not self.demo_mode:
+            return
+        self._open_database(self._real_db_path)
+        self.demo_mode = False
+        self.main_window.reload_all()
+        self.main_window.set_demo_mode(False)
 
     def _load_stylesheet(self) -> None:
         """Apply styles.qss when present; a missing file must not break startup."""
