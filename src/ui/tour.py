@@ -21,7 +21,10 @@ from PyQt6.QtWidgets import (QDialogButtonBox, QFrame, QLabel,
 from .theme import font
 
 DIM = QColor(20, 16, 12, 170)
-RING = QColor("#ffb300")
+
+
+def _ring_colour(theme: "Theme") -> QColor:
+    return QColor(theme.accent)
 
 
 @dataclass
@@ -49,13 +52,12 @@ class TourOverlay(QWidget):
         self._steps = steps
         self.current_index = 0
         self.restore_tab: int | None = None
+        self._theme: "Theme | None" = None
 
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
 
         self.caption = QFrame(self)
-        self.caption.setStyleSheet(
-            "background:#fffdf7; border:1px solid #d8cfc0; border-radius:10px;")
         cap_layout = QVBoxLayout(self.caption)
         cap_layout.setContentsMargins(14, 12, 14, 12)
         self.title_label = QLabel()
@@ -64,7 +66,6 @@ class TourOverlay(QWidget):
         self.body_label.setWordWrap(True)
         self.body_label.setFont(font(10))
         self.progress_label = QLabel()
-        self.progress_label.setStyleSheet("color:#7a7268;")
         cap_layout.addWidget(self.title_label)
         cap_layout.addWidget(self.body_label)
         cap_layout.addWidget(self.progress_label)
@@ -82,6 +83,15 @@ class TourOverlay(QWidget):
         cap_layout.addWidget(buttons)
 
         QShortcut(QKeySequence("Escape"), self).activated.connect(self.finish)
+
+    def apply_theme(self, theme: "Theme") -> None:
+        """Restyle the caption card and the highlight ring."""
+        self._theme = theme
+        self.caption.setStyleSheet(
+            f"background:{theme.panel}; border:1px solid {theme.border}; "
+            f"border-radius:10px; color:{theme.text};")
+        self.progress_label.setStyleSheet(f"color:{theme.text_secondary};")
+        self.update()
 
     # -- geometry ----------------------------------------------------------
 
@@ -128,7 +138,7 @@ class TourOverlay(QWidget):
             painter.setClipRegion(QRegion(self.rect()) - QRegion(hole))
             painter.fillRect(self.rect(), DIM)
             painter.setClipRegion(QRegion(self.rect()))
-            painter.setPen(QPen(RING, 3))
+            painter.setPen(QPen(_ring_colour(self._theme), 3))
             painter.drawRoundedRect(hole.adjusted(-4, -4, 4, 4), 10, 10)
         painter.end()
 

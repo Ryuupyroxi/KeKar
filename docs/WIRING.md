@@ -77,6 +77,31 @@ ChatPane -> AgentRunner.run(message)
 The model can only call whitelisted functions. There is no path from a tool
 call to `eval`, `exec`, or a raw SQL string.
 
+## Themes
+
+`src/ui/palette.py` holds one `Theme` per appearance — light, dark, OLED — and
+`src/ui/theme.py::build_stylesheet` renders the QSS from the active palette. The
+stylesheet is generated rather than shipped as a file, so a theme is a single
+switch and a stored stylesheet cannot drift from the code that paints the rest
+of the UI.
+
+`Settings.theme` is `system | light | dark | oled`, default `system`.
+`system` is re-read on every launch from `QGuiApplication.styleHints()
+.colorScheme()`, so following the OS needs no caching. An unrecognised value
+falls back to light rather than raising.
+
+Switching is immediate: `Application.apply_theme` sets the generated stylesheet,
+emits `theme_changed`, and calls `MainWindow.apply_theme`, which pushes the
+palette into every widget that paints its own colours — the painted property
+rows, chat bubbles, banners, status pill, photo borders, tour caption and CRM
+stage tints. Those cannot be reached by a stylesheet alone.
+
+Status hues (vacant, rented, the pipeline stages) keep their meaning in every
+theme; only their brightness moves. `required_pairs()` in palette.py encodes
+the WCAG ratios each palette must meet, and `tests/test_themes.py` asserts
+them, so a palette edit that breaks contrast fails the suite rather than
+shipping.
+
 ## Interface wiring
 
 ```
@@ -259,7 +284,7 @@ string concatenation elsewhere.
 | `config/default_config.json` | file, falls back to `DEFAULTS` | same |
 | `config/listing_templates.json` | file, falls back to `DEFAULT_TEMPLATE` | same |
 | `config/marketplace_selectors.json` | file, falls back to `DEFAULT_SELECTORS` | same |
-| `src/resources/styles.qss` | file, falls back to no stylesheet | shipped in the bundle |
+| `src/resources/styles.qss` | *removed* — the stylesheet is generated from the active palette (`src/ui/palette.py`, `src/ui/theme.py`) | n/a |
 
 The rule: **anything read at runtime must either be declared in `KeKar.spec`
 or embedded in Python.** `tests/test_bundle_safety.py` and

@@ -32,7 +32,7 @@ class ListingDialog(QDialog):
         if problems:
             note = QLabel("Missing details: " + "; ".join(problems))
             note.setFont(font(9))
-            note.setStyleSheet("color:#a15c00;")
+            note.setStyleSheet(f"color:{self.app.current_theme().warn_text};")
             layout.addWidget(note)
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)

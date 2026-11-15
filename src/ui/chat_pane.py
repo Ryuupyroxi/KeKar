@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (QHBoxLayout, QLineEdit, QMessageBox, QPushButton,
 from ..agent.client import LLMBusy
 from ..agent.runner import (AgentCancelled, AgentStepLimit, CancelFlag)
 from . import worker
+from .palette import Theme
 
 
 class _AgentThread(QThread):
@@ -59,6 +60,7 @@ class ChatPane(QWidget):
         self.app = app
         self._thread: _AgentThread | None = None
         self._cancel: CancelFlag | None = None
+        self._theme: Theme | None = None
         self._last_user = ""
         self._pending_from = 0
 
@@ -113,9 +115,16 @@ class ChatPane(QWidget):
     # -- sending -----------------------------------------------------------
 
     def add_message(self, role: str, text: str) -> None:
-        color = "#1565c0" if role == "user" else "#2e7d32"
+        theme = self._theme
+        color = (theme.chat_user if role == "user" else theme.chat_assistant) \
+            if theme is not None else ("#1565c0" if role == "user" else "#2e7d32")
         name = "You" if role == "user" else "KeKar"
         self.view.append(f'<p><b style="color:{color}">{name}:</b> {text}</p>')
+
+    def apply_theme(self, theme: Theme) -> None:
+        """Re-render the stored conversation in the new palette's colours."""
+        self._theme = theme
+        self.load_history()
 
     def send(self) -> None:
         message = self.input.text().strip()

@@ -29,6 +29,8 @@ class Settings:
     backup_keep_days: int = 30
     passphrase_protected: bool = False
     tour_completed: bool = False
+    # system | light | dark | oled — see src/ui/palette.py
+    theme: str = "system"
 
     def is_configured(self) -> bool:
         return bool(self.api_key)

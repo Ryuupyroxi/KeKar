@@ -19,11 +19,29 @@ from PyQt6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QLineEdit,
 from ..data.models import Property
 from ..services import image_service
 from ..services.listing_compiler import AMENITY_LABELS
+from .palette import Theme
 from .theme import font
 
 VACANT_COLOR = "#2e7d32"
 RENTED_COLOR = "#c62828"
 COVER_SIZE = 56
+
+#: The palette the list is painting with. Set by PropertyDrawer.apply_theme;
+#: the rows repaint from it, so they follow a theme change without being
+#: rebuilt.
+_current_theme: Theme | None = None
+
+
+def status_color(status: str) -> str:
+    """The light-theme status colours, kept as a stable helper for callers."""
+    return VACANT_COLOR if status == "Vacant" else RENTED_COLOR
+
+
+def _status_colour(status: str) -> str:
+    theme = _current_theme
+    if theme is not None:
+        return theme.vacant if status == "Vacant" else theme.rented
+    return status_color(status)
 
 # One shared pool for thumbnail work. Generating a thumbnail means decoding a
 # JPEG and resampling it; doing that for every row on the UI thread is what
@@ -176,14 +194,19 @@ class PropertyItemWidget(QWidget):
 
         # status stripe
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(status_color(self._prop.status)))
+        painter.setBrush(QColor(_status_colour(self._prop.status)))
         painter.drawRoundedRect(0, 6, 5, self.height() - 12, 2, 2)
 
         # cover
         cover_x = 14
         cover_y = 6
-        painter.setBrush(QColor("#f0ede8"))
-        painter.setPen(QColor("#ddd8d0"))
+        theme = _current_theme
+        cover_bg = theme.panel if theme is not None else "#f0ede8"
+        cover_border = theme.border if theme is not None else "#ddd8d0"
+        text_colour = theme.text if theme is not None else "#2b2b28"
+        sub_colour = theme.text_secondary if theme is not None else "#6b655c"
+        painter.setBrush(QColor(cover_bg))
+        painter.setPen(QColor(cover_border))
         painter.drawRoundedRect(cover_x, cover_y, COVER_SIZE, COVER_SIZE, 5, 5)
         cover = self._cover
         if cover is None or cover.isNull():
@@ -192,13 +215,13 @@ class PropertyItemWidget(QWidget):
 
         # address + city/ZIP
         text_x = cover_x + COVER_SIZE + 12
-        painter.setPen(QColor("#2b2b28"))
+        painter.setPen(QColor(text_colour))
         f = font(11, bold=True)
         painter.setFont(f)
         painter.drawText(QRect(text_x, 8, self.width() - text_x - 8, 20),
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                          self._prop.address)
-        painter.setPen(QColor("#6b655c"))
+        painter.setPen(QColor(sub_colour))
         f2 = font(9)
         painter.setFont(f2)
         subtitle = f"{self._prop.city or ''}, {self._prop.zip_code or ''}".strip(", ")
@@ -237,6 +260,16 @@ class PropertyItemWidget(QWidget):
 class PropertyDrawer(QWidget):
     property_selected = pyqtSignal(int)
     add_requested = pyqtSignal()
+
+    def apply_theme(self, theme: Theme) -> None:
+        """Repaint the rows in the new palette.
+
+        The rows paint themselves, so they cannot simply inherit a stylesheet —
+        the palette is stored and the viewport is asked to repaint.
+        """
+        global _current_theme
+        _current_theme = theme
+        self.list.viewport().update()
 
     def __init__(self, app, parent=None):
         super().__init__(parent)

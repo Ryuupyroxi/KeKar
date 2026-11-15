@@ -10,9 +10,13 @@ from PyQt6.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel,
                              QScrollArea, QVBoxLayout, QWidget)
 
 from ..services import image_service
+from .palette import Theme
 
-SELECTED_BORDER = "border:2px solid #2e5e4e; border-radius:4px;"
 PLAIN_BORDER = "border:2px solid transparent; border-radius:4px;"
+
+
+def _selected_border(theme: Theme) -> str:
+    return f"border:2px solid {theme.accent}; border-radius:4px;"
 
 
 class PhotoPanel(QWidget):
@@ -24,6 +28,7 @@ class PhotoPanel(QWidget):
         self.property_id: int | None = None
         self.paths: list[Path] = []
         self.selected: Path | None = None
+        self._theme: Theme | None = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -77,14 +82,20 @@ class PhotoPanel(QWidget):
         self._apply_selection()
 
     def _apply_selection(self) -> None:
+        accent = self._theme.accent if self._theme is not None else "#2e5e4e"
+        selected_border = f"border:2px solid {accent}; border-radius:4px;"
         for index in range(self.grid.count()):
             widget = self.grid.itemAt(index).widget()
             if not isinstance(widget, QLabel):
                 continue
             stored = widget.property("photo_path")
             widget.setStyleSheet(
-                SELECTED_BORDER if stored and Path(stored) == self.selected
+                selected_border if stored and Path(stored) == self.selected
                 else PLAIN_BORDER)
+
+    def apply_theme(self, theme: Theme) -> None:
+        self._theme = theme
+        self._apply_selection()
 
     def _select(self, path: Path) -> None:
         self.selected = path

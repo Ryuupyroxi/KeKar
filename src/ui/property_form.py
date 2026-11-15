@@ -12,6 +12,7 @@ from ..services import image_service
 from ..services.listing_compiler import (AMENITY_LABELS as AMENITY_FIELDS,
                                          compile_listing, validate_listing)
 from .listing_dialog import ListingDialog
+from .palette import Theme
 from .theme import font
 from .widgets import StatusPill
 
@@ -25,6 +26,7 @@ class PropertyForm(QWidget):
         super().__init__(parent)
         self.app = app
         self.current_id: int | None = None
+        self._theme: Theme | None = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -136,19 +138,45 @@ class PropertyForm(QWidget):
 
     # -- loading and saving ------------------------------------------------
 
+    def _status_colour(self, status: str) -> str:
+        theme = self._theme
+        if theme is None:
+            return "#2e7d32" if status == "Vacant" else "#c62828"
+        return theme.vacant if status == "Vacant" else theme.rented
+
+    def _neutral_colour(self) -> str:
+        return self._theme.neutral if self._theme is not None else "#616161"
+
+    def apply_theme(self, theme: Theme) -> None:
+        self._theme = theme
+        current = self.app.property_repo.get(self.current_id) \
+            if self.current_id is not None else None
+        if current is None:
+            self.pill.set_color(self._neutral_colour())
+        else:
+            self.pill.set_color(self._status_colour(current.status))
+        self._restyle_labels()
+
+    def _restyle_labels(self) -> None:
+        colour = self._theme.text_secondary if self._theme is not None \
+            else "#4a453e"
+        for label in self.findChildren(QLabel):
+            if label.property("muted") is True:
+                label.setStyleSheet(f"color:{colour};")
+
     def load_property(self, property_id: int | None) -> None:
         self.current_id = property_id
         if property_id is None:
             self._clear_fields()
             self.pill.setText("New property")
-            self.pill.set_color("#616161")
+            self.pill.set_color(self._neutral_colour())
             return
         prop = self.app.property_repo.get(property_id)
         if prop is None:
             return
         self._fill_fields(prop)
         self.pill.setText(prop.status)
-        self.pill.set_color("#2e7d32" if prop.status == "Vacant" else "#c62828")
+        self.pill.set_color(self._status_colour(prop.status))
 
     def _clear_fields(self) -> None:
         for widget in (self.address_input, self.city_input, self.zip_input,
@@ -207,7 +235,7 @@ class PropertyForm(QWidget):
         else:
             self.app.property_repo.update(prop)
         self.pill.setText(prop.status)
-        self.pill.set_color("#2e7d32" if prop.status == "Vacant" else "#c62828")
+        self.pill.set_color(self._status_colour(prop.status))
         self.property_saved.emit(self.current_id)
         self.app.main_window.status(f"Saved {prop.address}")
 
@@ -229,7 +257,7 @@ class PropertyForm(QWidget):
         self.current_id = None
         self._clear_fields()
         self.pill.setText("No property selected")
-        self.pill.set_color("#616161")
+        self.pill.set_color(self._neutral_colour())
         self.property_deleted.emit()
 
     # -- listing -----------------------------------------------------------
@@ -279,8 +307,13 @@ class PropertyForm(QWidget):
 
 
 def _form_label(text: str) -> QLabel:
-    """A form label with a slightly muted colour."""
+    """A form label with a slightly muted colour.
+
+    The colour is applied later by PropertyForm._restyle_labels so it follows
+    the theme; the ``muted`` property marks it for that pass.
+    """
     label = QLabel(text)
     label.setFont(font(10))
+    label.setProperty("muted", True)
     label.setStyleSheet("color:#4a453e;")
     return label

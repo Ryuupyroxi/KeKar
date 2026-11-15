@@ -22,25 +22,16 @@ from .data.demo_seed import seed_if_empty
 from .data.property_repo import PropertyRepo
 from .paths import database_path, demo_database_path
 from .ui.main_window import MainWindow
-from .ui.theme import app_font
-
-
-def _stylesheet_path() -> Path | None:
-    """Locate styles.qss in dev and inside a bundle."""
-    if getattr(sys, "frozen", False):
-        base = Path(getattr(sys, "_MEIPASS",
-                            Path(sys.executable).resolve().parent))
-        bundled = base / "resources" / "styles.qss"
-        if bundled.exists():
-            return bundled
-    dev = Path(__file__).resolve().parent / "resources" / "styles.qss"
-    return dev if dev.exists() else None
+from .ui.palette import Theme, is_valid, resolve
+from .ui.theme import app_font, build_stylesheet
 
 
 class Application(QApplication):
     offline_changed = pyqtSignal(bool)
     #: Emitted after the assistant changes stored data, so the GUI can reload.
     data_changed = pyqtSignal()
+    #: Emitted when the theme changes, so custom-painted widgets can restyle.
+    theme_changed = pyqtSignal(object)
 
     def __init__(self, argv):
         super().__init__(argv)
@@ -48,7 +39,6 @@ class Application(QApplication):
         self.setApplicationVersion(APP_VERSION)
         self.setApplicationDisplayName(f"{APP_NAME} Property Manager")
         self.setFont(app_font())
-        self._load_stylesheet()
 
         self.settings = Settings.load()
         # A key saved before provider detection existed may point at the
@@ -71,6 +61,8 @@ class Application(QApplication):
         # the GUI thread, so the sidebar and CRM tab see the change.
         self.data_changed.connect(self.main_window.reload_all)
         prune_backups(self.settings.backup_keep_days)
+        # Applied last so the main window and every custom-painted widget exist.
+        self.apply_theme(self.settings.theme)
 
     def _open_database(self, path: Path | None) -> None:
         """Open a database and point the repositories at it.
@@ -149,15 +141,28 @@ class Application(QApplication):
         self.enter_demo_mode()
         self.main_window._start_tour()
 
-    def _load_stylesheet(self) -> None:
-        """Apply styles.qss when present; a missing file must not break startup."""
-        path = _stylesheet_path()
-        if path is None:
-            return
-        try:
-            self.setStyleSheet(path.read_text(encoding="utf-8"))
-        except OSError:
-            pass
+    def apply_theme(self, key: str) -> Theme:
+        """Switch the whole application to a theme and persist the choice.
+
+        ``system`` follows the operating system, so it is re-read every time
+        rather than cached. An unrecognised value falls back to light.
+        """
+        key = key if is_valid(key) else "system"
+        theme = resolve(key)
+        self.setStyleSheet(build_stylesheet(theme))
+        self._theme = theme
+        if self.settings.theme != key:
+            self.settings.theme = key
+            try:
+                self.settings.save()
+            except Exception:
+                pass
+        self.theme_changed.emit(theme)
+        self.main_window.apply_theme(theme)
+        return theme
+
+    def current_theme(self) -> Theme:
+        return getattr(self, "_theme", resolve(self.settings.theme))
 
     def show_main_window(self) -> None:
         self.main_window.show()

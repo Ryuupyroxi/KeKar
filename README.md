@@ -43,8 +43,8 @@ package can be copied to any PC or USB drive.
 
 ## Status
 
-Implementation complete through Phase 7. **234 tests passing** (`pytest -q`).
-Source: 50 modules, 5,130 lines.
+Implementation complete through Phase 7. **254 tests passing** (`pytest -q`).
+Source: 51 modules, 5,798 lines.
 
 | Phase | State |
 |---|---|
@@ -138,6 +138,17 @@ Settings are shared with the real install, so **File → Settings is disabled
 while demo mode is active** — otherwise a tour could change your real API key.
 
 See `docs/WIRING.md` for how the switch and the overlay are wired.
+
+## Themes
+
+**View → Follow system / Light / Dark / OLED** switches immediately, and the
+choice is remembered in Settings (the same preference is in the Settings
+dialog's Theme dropdown).
+
+`system` follows your operating system's light/dark setting. `OLED` is pure
+black for OLED screens and night use. Every palette must clear the WCAG contrast
+ratios encoded in `src/ui/palette.py::required_pairs`, and the test suite
+enforces it.
 
 ## The interface
 

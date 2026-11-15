@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (QComboBox, QHBoxLayout, QHeaderView, QLabel,
 
 from ..data.applicant_repo import STAGES
 from ..services.clipboard import copy_text
+from .palette import Theme
 from .theme import font
 
 PRE_SCREENING_QUESTIONS = """Thanks for your interest! Please reply with:
@@ -36,6 +37,7 @@ class CrmTab(QWidget):
     def __init__(self, app, parent=None):
         super().__init__(parent)
         self.app = app
+        self._theme: Theme | None = None
         layout = QVBoxLayout(self)
 
         actions = QHBoxLayout()
@@ -88,12 +90,22 @@ class CrmTab(QWidget):
         self.table.blockSignals(False)
 
     def _tint_stage(self, row: int, stage: str) -> None:
-        """Colour the stage cell so the pipeline reads at a glance."""
-        color = QColor(STAGE_COLORS.get(stage, "#8a8f98"))
+        """Colour the stage cell so the pipeline reads at a glance.
+
+        The hues come from the active palette so they stay legible on a dark
+        background; their meaning never changes.
+        """
+        theme = self._theme
+        fallback = "#8a8f98"
+        color = QColor(theme.stages.get(stage, fallback) if theme else fallback)
         for column in range(self.table.columnCount()):
             item = self.table.item(row, column)
             if item is not None:
                 item.setForeground(color)
+
+    def apply_theme(self, theme: Theme) -> None:
+        self._theme = theme
+        self.reload()
 
     def add_applicant(self) -> None:
         from PyQt6.QtWidgets import QInputDialog

@@ -145,6 +145,24 @@ class MainWindow(QMainWindow):
         quit_action = file_menu.addAction("Quit")
         quit_action.triggered.connect(self.close)
 
+        view_menu = menubar.addMenu("&View")
+        from PyQt6.QtGui import QActionGroup
+
+        theme_group = QActionGroup(self)
+        theme_group.setExclusive(True)
+        self._theme_actions = {}
+        for key, label in (("system", "Follow system"),
+                           ("light", "Light"),
+                           ("dark", "Dark"),
+                           ("oled", "OLED")):
+            action = view_menu.addAction(label)
+            action.setCheckable(True)
+            action.setActionGroup(theme_group)
+            action.triggered.connect(
+                lambda _=False, chosen=key: self._set_theme(chosen))
+            self._theme_actions[key] = action
+        self._refresh_theme_actions()
+
         help_menu = menubar.addMenu("&Help")
         tour_action = help_menu.addAction("Guided tour...")
         tour_action.triggered.connect(self._start_tour)
@@ -238,6 +256,7 @@ class MainWindow(QMainWindow):
         from .tour import TourOverlay, build_tour_steps
         overlay = TourOverlay(self, build_tour_steps(self))
         overlay.closed.connect(lambda: self._on_tour_closed(overlay))
+        overlay.apply_theme(self.app.current_theme())
         self._tour = overlay
         overlay.resize(self.size())
         overlay.start()
@@ -283,8 +302,37 @@ class MainWindow(QMainWindow):
 
     def show_offline(self, offline: bool) -> None:
         self.offline_banner.setVisible(offline)
+        theme = self.app.current_theme()
         self.status_pill.setText("Offline" if offline else "Online")
-        self.status_pill.set_color("#f9a825" if offline else "#2e7d32")
+        self.status_pill.set_color(theme.offline if offline else theme.online)
+
+    def _set_theme(self, key: str) -> None:
+        self.app.apply_theme(key)
+        self._refresh_theme_actions()
+
+    def _refresh_theme_actions(self) -> None:
+        """Tick the View menu entry matching the stored preference."""
+        current = self.app.settings.theme
+        for key, action in self._theme_actions.items():
+            action.setChecked(key == current)
+
+    def apply_theme(self, theme) -> None:
+        """Push the palette into every widget that paints its own colours.
+
+        The generated stylesheet covers the standard widgets; these are the
+        ones that set colours in code and would otherwise stay light.
+        """
+        self.offline_banner.apply_theme(theme)
+        self.demo_banner.apply_theme(theme)
+        self.status_pill.apply_theme(theme)
+        self.drawer.apply_theme(theme)
+        self.property_form.apply_theme(theme)
+        self.photo_panel.apply_theme(theme)
+        self.crm_tab.apply_theme(theme)
+        self.chat_pane.apply_theme(theme)
+        if getattr(self, "_tour", None) is not None:
+            self._tour.apply_theme(theme)
+        self._refresh_theme_actions()
 
     def status(self, message: str) -> None:
         self.statusBar().showMessage(message, 4000)

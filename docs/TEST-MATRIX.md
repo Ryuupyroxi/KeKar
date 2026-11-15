@@ -30,7 +30,7 @@ applicable on that platform · blank = not yet run
 
 ## Automated coverage
 
-These are covered by the pytest suite (`pytest -q`, 238 tests) and must stay
+These are covered by the pytest suite (`pytest -q`, 254 tests) and must stay
 green:
 
 - Schema creation, WAL mode, foreign keys, migration idempotency (`test_db.py`)
@@ -73,6 +73,9 @@ green:
   raising, navigation clamps at both ends, Esc closes, the Applicants tab is
   restored, and the caption stays inside the window at two sizes
   (`test_tour.py`)
+- Themes: every palette clears the WCAG contrast ratios, resolution falls back
+  safely, switching recolours the painted rows, and the View menu reflects the
+  stored preference (`test_themes.py`)
 
 ## How to run a scenario
 

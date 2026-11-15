@@ -130,6 +130,17 @@ class SettingsDialog(QDialog):
         self.key_input.setText(app.settings.api_key)
         form.addRow("API key", self.key_input)
 
+        self.theme = QComboBox()
+        for key, label in (("system", "Follow system"),
+                           ("light", "Light"),
+                           ("dark", "Dark"),
+                           ("oled", "OLED")):
+            self.theme.addItem(label, key)
+        theme_index = self.theme.findData(app.settings.theme)
+        self.theme.setCurrentIndex(theme_index if theme_index >= 0 else 0)
+        self.theme.currentIndexChanged.connect(self._on_theme_changed)
+        form.addRow("Theme", self.theme)
+
         self.provider = QComboBox()
         for prov in providers.PROVIDERS:
             self.provider.addItem(prov.name, prov.id)
@@ -222,6 +233,11 @@ class SettingsDialog(QDialog):
         self.accept()
 
     # -- provider detection and model discovery -----------------------------
+
+    def _on_theme_changed(self, index: int) -> None:
+        key = self.theme.itemData(index)
+        if key:
+            self.app.apply_theme(key)
 
     def _on_provider_changed(self, index: int) -> None:
         """Fill the endpoint and default models when a provider is picked."""
