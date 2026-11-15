@@ -196,7 +196,7 @@ Re-check:
 
 ```bash
 cd "/home/Ryuu/Documents/kekar project"
-.venv/bin/python -m pytest -q          # 356 passed
+.venv/bin/python -m pytest -q          # 359 passed
 bash build.sh                          # rebuild + package + verify
 ```
 
@@ -207,3 +207,46 @@ shows the logo with the body fully inside the dialog.
 Still open: the NSIS installer itself is not built by CI (it never was) — it is
 a manual `makensis packaging/windows/KeKar_Installer.nsi` step on Windows. The
 icon is staged for it, but no CI job compiles or attaches the installer.
+
+## Panel borders, 2026-11-15
+
+The three regions were separated only by 1 px `#ddd8d0` hairlines on a
+`#f5f4f1` window, so they read as one continuous surface. They are now cards.
+
+- New `Theme.panel_border` (light `#b5ad9f`, dark `#5f5952`, OLED `#484848`),
+  held to a 1.5:1 floor against the window in `required_pairs()`. `border` is
+  kept for inner hairlines.
+- `QWidget[panel="true"]` in `theme.py` draws a 2 px outline, 10 px radius and
+  the `panel` fill. The drawer, the tab area and the chat pane opt in; the tab
+  area is wrapped in a `tabs_card` so the card can carry the padding.
+- Content widgets inside a card (list, table, chat transcript, tab pane) have
+  their own borders switched off, so no region draws two nested outlines.
+- `MainWindow`'s outer layout now has an 8 px gutter, so the cards are inset
+  from the window edges instead of sitting flush against them.
+- The two menu-bar collapse buttons are 32 px tall (were ~14 px), bold, with
+  the arrow beside the label.
+
+**Two bugs the real-display check caught:**
+
+- A stylesheet background is not painted on a plain `QWidget` unless
+  `WA_StyledBackground` is set. The cards drew their border but kept the window
+  fill, so they still did not read as cards. Fixed on all three panels.
+- The card padding narrowed the detail pane below the form's minimum width.
+  Six action buttons in one row gave the form a 901 px minimum, so the pane
+  scrolled horizontally and the City field was clipped by the card edge. The
+  actions are now two rows of three, and the Amenities group wraps at three
+  columns; the form's minimum is 535 px and the horizontal scrollbar is gone.
+
+New tests: `test_stylesheet_draws_panel_cards`,
+`test_top_level_regions_are_cards`, `test_detail_form_needs_no_horizontal_scroll`.
+
+Re-check:
+
+```bash
+cd "/home/Ryuu/Documents/kekar project"
+.venv/bin/python -m pytest -o addopts='' -q   # 359 passed
+```
+
+Real-display evidence (X on `:0`, 1280x800): the three regions render as
+outlined cards in Light, Dark and OLED; the collapse buttons are 32 px tall;
+the detail form fits its card with no horizontal scrollbar.

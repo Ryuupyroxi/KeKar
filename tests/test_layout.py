@@ -200,3 +200,35 @@ def test_handle_still_draws_a_grip(kekar_app):
 def test_splitter_is_the_collapsible_kind(kekar_app):
     assert isinstance(kekar_app.main_window.top_splitter, CollapsibleSplitter)
     assert isinstance(kekar_app.main_window.main_splitter, CollapsibleSplitter)
+
+
+def test_top_level_regions_are_cards(kekar_app):
+    """The drawer, the tab area and the chat pane are each an outlined card.
+
+    The stylesheet only draws the card fill when the widget carries the
+    ``panel`` property, so a region that loses it silently becomes a bare
+    widget again.
+    """
+    window = kekar_app.main_window
+    for widget in (window.drawer, window.tabs_card, window.chat_pane):
+        assert widget.property("panel") is True
+
+
+def test_detail_form_needs_no_horizontal_scroll(kekar_app):
+    """The detail form must fit the card without scrolling sideways.
+
+    Six action buttons in one row once gave the form a ~900 px minimum width,
+    so the pane scrolled horizontally and the last field was clipped by the
+    panel edge.
+    """
+    from PyQt6.QtWidgets import QScrollArea
+
+    window = kekar_app.main_window
+    window.resize(1280, 820)
+    kekar_app.processEvents()
+
+    scrolls = [area for area in window.findChildren(QScrollArea)
+               if area.widget() is window.property_form]
+    assert len(scrolls) == 1
+    assert scrolls[0].horizontalScrollBar().maximum() == 0
+    assert window.property_form.minimumSizeHint().width() <= scrolls[0].viewport().width()

@@ -275,10 +275,16 @@ class PropertyDrawer(QWidget):
         super().__init__(parent)
         self.app = app
         self._props: list[Property] = []
+        # A stylesheet background is only painted when Qt is told the widget
+        # has one; without this the card's border draws but the fill stays
+        # the window colour, so the panel does not read as a card.
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         _THUMB_SIGNALS.ready.connect(self._on_thumb_ready)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        # The card border is drawn by the stylesheet; the padding keeps the
+        # header, search box and list off that border.
+        layout.setContentsMargins(10, 10, 10, 10)
 
         header = QHBoxLayout()
         header.addWidget(QLabel("<b>Properties</b>"))

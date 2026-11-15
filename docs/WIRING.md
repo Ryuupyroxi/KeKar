@@ -102,6 +102,23 @@ the WCAG ratios each palette must meet, and `tests/test_themes.py` asserts
 them, so a palette edit that breaks contrast fails the suite rather than
 shipping.
 
+### Panel cards
+
+The three top-level regions (property list, tab area, assistant) are cards:
+a two-pixel `panel_border` outline, a 10 px radius and the `panel` fill, with
+the window colour left in the splitter gutters. `panel_border` is a separate
+palette field from `border` — `border` is for inner hairlines (list row
+separators, table gridlines, header rules) and `panel_border` is for the
+outlines that separate one region from another, so it is held to a stronger
+contrast floor (1.5:1 against the window) than a decorative separator.
+
+A region opts in with `setProperty("panel", True)` plus
+`setAttribute(WA_StyledBackground, True)`. The attribute matters: without it
+Qt draws the card's border but not its fill, so the panel silently reverts to
+the window colour. Content widgets inside a card (list, table, chat transcript,
+tab pane) have their own borders switched off by descendant rules, so a region
+never draws two nested outlines.
+
 ## Interface wiring
 
 ```

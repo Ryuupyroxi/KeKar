@@ -47,8 +47,8 @@ QMainWindow, QDialog {{
 
 QGroupBox {{
     font-weight: 600;
-    border: 1px solid {t.border};
-    border-radius: 6px;
+    border: 1px solid {t.panel_border};
+    border-radius: 8px;
     margin-top: 12px;
     padding-top: 10px;
     background: {t.panel};
@@ -59,6 +59,31 @@ QGroupBox::title {{
     left: 10px;
     padding: 0 4px;
     color: {t.text};
+}}
+
+/* A top-level region is a card: an outline, rounded corners and its own
+   fill. The window colour shows through the splitter gutters, so the cards
+   read as separate panels rather than one continuous surface. */
+QWidget[panel="true"] {{
+    border: 2px solid {t.panel_border};
+    border-radius: 10px;
+    background: {t.panel};
+}}
+
+/* Inside a card the card is the frame; a border on the content widget too
+   would draw a double outline around the same region. */
+QWidget[panel="true"] QListWidget,
+QWidget[panel="true"] QTableWidget,
+QWidget[panel="true"] QTextBrowser {{
+    border: none;
+    border-radius: 0;
+    background: transparent;
+}}
+
+QWidget[panel="true"] QTabWidget::pane {{
+    border: none;
+    background: transparent;
+    top: 0;
 }}
 
 QPushButton {{
@@ -127,8 +152,8 @@ QSpinBox::down-button, QDoubleSpinBox::down-button {{
 }}
 
 QListWidget, QListWidget QWidget {{
-    border: 1px solid {t.border};
-    border-radius: 6px;
+    border: 1px solid {t.panel_border};
+    border-radius: 8px;
     background: {t.panel};
     color: {t.text};
 }}
@@ -142,8 +167,8 @@ QListWidget::item:selected {{
 }}
 
 QTableWidget {{
-    border: 1px solid {t.border};
-    border-radius: 6px;
+    border: 1px solid {t.panel_border};
+    border-radius: 8px;
     gridline-color: {t.border};
     background: {t.panel};
     color: {t.text};
@@ -170,8 +195,8 @@ QScrollArea > QWidget > QWidget {{
 QTextBrowser {{
     background: {t.panel};
     color: {t.text};
-    border: 1px solid {t.border};
-    border-radius: 6px;
+    border: 1px solid {t.panel_border};
+    border-radius: 8px;
     padding: 4px;
 }}
 
@@ -191,7 +216,7 @@ QMenuBar::item:selected {{
 }}
 
 QTabWidget::pane {{
-    border: 1px solid {t.border};
+    border: 1px solid {t.panel_border};
     background: {t.panel};
     top: -1px;
 }}
@@ -200,13 +225,16 @@ QTabBar::tab {{
     background: {t.window};
     color: {t.text_secondary};
     padding: 8px 16px;
-    border: 1px solid {t.border};
+    border: 1px solid {t.panel_border};
     border-bottom: none;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
 }}
 
 QTabBar::tab:selected {{
     background: {t.panel};
     color: {t.text};
+    border-bottom: 1px solid {t.panel};
 }}
 
 QTabBar::tab:hover {{

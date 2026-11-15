@@ -59,6 +59,14 @@ def test_stylesheet_carries_the_palette_colours():
     assert "#f5f4f1" not in sheet, "light palette leaked into the dark sheet"
 
 
+def test_stylesheet_draws_panel_cards():
+    """The top-level regions are outlined cards, not bare widgets."""
+    sheet = build_stylesheet(DARK)
+    assert DARK.panel_border in sheet
+    assert 'QWidget[panel="true"]' in sheet
+    assert "border: 2px solid" in sheet
+
+
 def test_settings_defaults_to_system():
     assert Settings().theme == "system"
 

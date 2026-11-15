@@ -22,6 +22,9 @@ class Theme:
     text: str
     text_secondary: str
     border: str
+    #: Outline of a panel card (drawer, tab area, chat) and of group boxes.
+    #: Stronger than ``border``, which is only for inner separators.
+    panel_border: str
     border_input: str
     accent: str
     accent_hover: str
@@ -50,7 +53,7 @@ LIGHT = Theme(
     key="light", name="Light",
     window="#f5f4f1", panel="#ffffff", input_bg="#ffffff",
     text="#2b2b28", text_secondary="#6b655c",
-    border="#ddd8d0", border_input="#8f8880",
+    border="#ddd8d0", panel_border="#b5ad9f", border_input="#8f8880",
     accent="#2e5e4e", accent_hover="#265042", accent_pressed="#1f4236",
     on_accent="#ffffff",
     selection="#e3efe9", scroll_handle="#9a948a",
@@ -73,7 +76,7 @@ DARK = Theme(
     key="dark", name="Dark",
     window="#1e1c1a", panel="#2a2724", input_bg="#232019",
     text="#ece7e0", text_secondary="#a8a098",
-    border="#3d3833", border_input="#7a7268",
+    border="#3d3833", panel_border="#5f5952", border_input="#7a7268",
     accent="#4c9a82", accent_hover="#5aae94", accent_pressed="#3d7d69",
     on_accent="#0b1a15",
     selection="#2f4a41", scroll_handle="#8a8178",
@@ -96,7 +99,7 @@ OLED = Theme(
     key="oled", name="OLED",
     window="#000000", panel="#0a0a0a", input_bg="#000000",
     text="#f2f2f2", text_secondary="#9a9a9a",
-    border="#262626", border_input="#5a5a5a",
+    border="#262626", panel_border="#484848", border_input="#5a5a5a",
     accent="#4c9a82", accent_hover="#5aae94", accent_pressed="#3d7d69",
     on_accent="#0b1a15",
     selection="#16211d", scroll_handle="#6a6a6a",
@@ -184,7 +187,7 @@ def text_on(background: str) -> str:
     return "#111111" if dark >= light else "#ffffff"
 
 
-def required_pairs(theme: Theme) -> list[tuple[str, str, float]]:
+def required_pairs(theme: Theme) -> list[tuple[str, str, str, float]]:
     """The colour pairs that must stay readable, with their minimum ratio.
 
     4.5:1 is the WCAG AA threshold for body text; 3:0:1 applies to large text
@@ -201,6 +204,9 @@ def required_pairs(theme: Theme) -> list[tuple[str, str, float]]:
         # held to the WCAG non-text ratio. The group border is decorative.
         ("input border", theme.border_input, theme.input_bg, 3.0),
         ("decorative border", theme.border, theme.window, 1.2),
+        # A panel card is what separates one region from another, so it is
+        # held to a stronger floor than a hairline separator.
+        ("panel border", theme.panel_border, theme.window, 1.5),
         ("warn text", theme.warn_text, theme.warn_bg, 4.5),
         ("info text", theme.info_text, theme.info_bg, 4.5),
         ("status stripe", theme.vacant, theme.window, 3.0),

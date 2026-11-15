@@ -95,13 +95,15 @@ class PropertyForm(QWidget):
 
         # --- amenities ---------------------------------------------------
         amenities_box = QGroupBox("Amenities", self)
-        amenities_layout = QHBoxLayout(amenities_box)
+        # Three per row: five checkboxes in one row made the group box ~725 px
+        # wide at its minimum, which is wider than a short window's detail pane.
+        amenities_layout = QGridLayout(amenities_box)
         self.amenity_boxes: dict[str, QCheckBox] = {}
-        for attr, label in AMENITY_FIELDS:
+        for index, (attr, label) in enumerate(AMENITY_FIELDS):
             box = QCheckBox(label)
             self.amenity_boxes[attr] = box
-            amenities_layout.addWidget(box)
-        amenities_layout.addStretch(1)
+            amenities_layout.addWidget(box, index // 3, index % 3)
+        amenities_layout.setColumnStretch(2, 1)
         layout.addWidget(amenities_box)
 
         # --- notes -------------------------------------------------------
@@ -129,11 +131,20 @@ class PropertyForm(QWidget):
         self.vacant_btn.clicked.connect(lambda: self._set_status("Vacant"))
         self.publish_btn = QPushButton("Publish to Marketplace...")
         self.publish_btn.clicked.connect(self.publish_to_marketplace)
-        for btn in (self.save_btn, self.preview_btn, self.copy_btn,
-                    self.publish_btn, self.rented_btn, self.vacant_btn):
+        # Two rows of three: six buttons in one row gave the form a ~900 px
+        # minimum width, so the detail pane scrolled horizontally on a 1280 px
+        # window and the last field was clipped by the panel edge.
+        actions = QHBoxLayout()
+        for btn in (self.save_btn, self.preview_btn, self.copy_btn):
             actions.addWidget(btn)
         actions.addStretch(1)
         layout.addLayout(actions)
+
+        actions_two = QHBoxLayout()
+        for btn in (self.publish_btn, self.rented_btn, self.vacant_btn):
+            actions_two.addWidget(btn)
+        actions_two.addStretch(1)
+        layout.addLayout(actions_two)
         layout.addStretch(1)
 
     # -- loading and saving ------------------------------------------------

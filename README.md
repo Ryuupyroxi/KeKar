@@ -43,8 +43,8 @@ package can be copied to any PC or USB drive.
 
 ## Status
 
-Implementation complete through Phase 7. **356 tests passing** (`pytest -q`).
-Source: 59 modules, 7,479 lines.
+Implementation complete through Phase 7. **359 tests passing** (`pytest -q`).
+Source: 59 modules, 7,564 lines.
 
 | Phase | State |
 |---|---|
@@ -153,7 +153,10 @@ enforces it.
 ## The interface
 
 The window is three regions: a property list on the left, tabs on the right,
-and the assistant along the bottom.
+and the assistant along the bottom. Each region is drawn as a card — a
+two-pixel outline in the theme's `panel_border` colour, rounded corners and
+its own fill — with the window colour showing through the splitter gutters, so
+the three panels stay visually separate at any window size.
 
 - **Property list** — each row is a cover thumbnail, the address as the title,
   and the city/ZIP underneath. Status is a coloured stripe on the left edge
@@ -161,10 +164,10 @@ and the assistant along the bottom.
   badge. The search box is deliberately inclusive: it matches address, city,
   ZIP, pet policy, free-form notes **and every enabled amenity**, so
   "dishwasher" or "fenced yard" finds the right properties.
-- **Properties tab** — a two-column form (Details, Financials, Amenities,
-  Notes) that scrolls when the window is short, so no field is ever squeezed
-  to nothing. Quick actions: Save, Copy listing, Preview listing, Publish to
-  Marketplace, Mark as rented / vacant, Delete.
+- **Properties tab** — a two-column form (Details, Amenities, Notes) that
+  scrolls when the window is short, so no field is ever squeezed to nothing.
+  Quick actions: Save, Copy listing, Preview listing, Publish to Marketplace,
+  Mark as rented / vacant, Delete.
 - **Photos** — import, thumbnail, set cover, delete. The cover becomes the
   row's thumbnail in the list.
 - **Applicants tab** — a table of applicants with a colour-coded screening
@@ -180,6 +183,8 @@ and the assistant along the bottom.
 - **Panels** — the property list and the assistant collapse to the edge. Two
   buttons at the right end of the menu bar toggle them (their arrows show
   which way the panel will move), and **View** lists the same two actions.
+  Both are 32 px tall, so they work as pointer targets rather than menu-bar
+  crumbs.
   The layout is remembered between runs.
 - **Assistant** — the chat pane talks to the in-app agent, which can only call
   whitelisted tools (never raw SQL, never `eval`). Offline is handled with a

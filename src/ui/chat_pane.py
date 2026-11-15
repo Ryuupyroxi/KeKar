@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, Qt, pyqtSignal
 from PyQt6.QtWidgets import (QHBoxLayout, QLineEdit, QMessageBox, QPushButton,
                              QTextBrowser, QVBoxLayout, QWidget)
 
@@ -63,9 +63,14 @@ class ChatPane(QWidget):
         self._theme: Theme | None = None
         self._last_user = ""
         self._pending_from = 0
+        # The chat pane is a card; it must paint its stylesheet background
+        # (see PropertyDrawer).
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        # The chat pane is a card; the padding keeps the conversation and the
+        # input row off its border.
+        layout.setContentsMargins(10, 10, 10, 10)
 
         self.view = QTextBrowser()
         self.view.setOpenExternalLinks(True)

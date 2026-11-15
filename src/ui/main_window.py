@@ -210,7 +210,9 @@ class MainWindow(QMainWindow):
 
         central = QWidget()
         outer = QVBoxLayout(central)
-        outer.setContentsMargins(0, 0, 0, 0)
+        # A gutter around the cards: without it the panel borders sit flush
+        # against the window edge and the regions stop reading as cards.
+        outer.setContentsMargins(8, 4, 8, 8)
         self.logo_label = QLabel()
         # Left-aligned and exactly the logo's height: a centred logo in a
         # full-width band left most of the strip empty.
@@ -226,6 +228,7 @@ class MainWindow(QMainWindow):
 
         self.top_splitter = CollapsibleSplitter(app, Qt.Orientation.Horizontal)
         self.drawer = PropertyDrawer(app)
+        self.drawer.setProperty("panel", True)
         self.tabs = QTabWidget()
 
         self.property_form = PropertyForm(app)
@@ -248,11 +251,24 @@ class MainWindow(QMainWindow):
         self.lease_tab = LeaseTab(app)
         self.tabs.addTab(self.lease_tab, "Leases")
 
+        # The tab area is a card too, so the right-hand region is outlined
+        # like the drawer and the chat pane. The card carries the padding;
+        # QTabWidget's own pane border is switched off by the stylesheet so
+        # the region does not draw two nested outlines.
+        self.tabs_card = QWidget()
+        self.tabs_card.setProperty("panel", True)
+        self.tabs_card.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        tabs_layout = QVBoxLayout(self.tabs_card)
+        tabs_layout.setContentsMargins(10, 8, 10, 10)
+        tabs_layout.setSpacing(0)
+        tabs_layout.addWidget(self.tabs)
+
         self.top_splitter.addWidget(self.drawer)
-        self.top_splitter.addWidget(self.tabs)
+        self.top_splitter.addWidget(self.tabs_card)
         self.top_splitter.setSizes([340, 900])
         self.main_splitter.addWidget(self.top_splitter)
         self.chat_pane = ChatPane(app)
+        self.chat_pane.setProperty("panel", True)
         self.main_splitter.addWidget(self.chat_pane)
         self.main_splitter.setSizes([560, 200])
 
@@ -571,16 +587,23 @@ class MainWindow(QMainWindow):
         """
         holder = QWidget()
         layout = QHBoxLayout(holder)
-        layout.setContentsMargins(6, 0, 8, 0)
-        layout.setSpacing(2)
+        layout.setContentsMargins(6, 3, 8, 3)
+        layout.setSpacing(4)
 
         self.sidebar_toggle = QToolButton(holder)
-        self.sidebar_toggle.setCursor(Qt.CursorShape.PointingHandCursor)
         self.sidebar_toggle.clicked.connect(self._toggle_sidebar)
 
         self.chat_toggle = QToolButton(holder)
-        self.chat_toggle.setCursor(Qt.CursorShape.PointingHandCursor)
         self.chat_toggle.clicked.connect(self._toggle_chat)
+
+        # These are the only always-reachable collapse controls, so they are
+        # sized as real targets rather than menu-bar crumbs.
+        for button in (self.sidebar_toggle, self.chat_toggle):
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.setMinimumHeight(32)
+            button.setFont(font(10, bold=True))
+            button.setToolButtonStyle(
+                Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
         layout.addWidget(self.sidebar_toggle)
         layout.addWidget(self.chat_toggle)
