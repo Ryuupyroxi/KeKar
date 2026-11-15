@@ -13,7 +13,7 @@ One folder for everything KeKar. No stray files, no scattered repos, no
 | `docs/WIRING.md` | How the pieces connect at runtime — startup, data flow, agent loop, browser automation. |
 | `docs/SPEC-COVERAGE.md` | Every spec requirement traced to the code and the test that proves it. |
 | `src/` | Application source — Python 3.12, PyQt6, SQLite. |
-| `tests/` | pytest suite (32 test modules). |
+| `tests/` | pytest suite (38 test modules). |
 | `config/` | Listing templates, default config, Marketplace selectors. |
 | `tools/` | Build, packaging, and USB copy/verify tools. |
 | `packaging/` | NSIS installer (Windows) and AppImage builder (Linux). |
@@ -43,8 +43,8 @@ package can be copied to any PC or USB drive.
 
 ## Status
 
-Implementation complete through Phase 7. **254 tests passing** (`pytest -q`).
-Source: 51 modules, 5,798 lines.
+Implementation complete through Phase 7. **356 tests passing** (`pytest -q`).
+Source: 59 modules, 7,479 lines.
 
 | Phase | State |
 |---|---|
@@ -171,9 +171,83 @@ and the assistant along the bottom.
   stage (Inquiry Received → Questionnaire Sent → Background Check →
   Approved / Rejected). Adding an applicant asks which property they are
   applying for. Pre-screening questions copy to the clipboard in one click.
+- **Leases tab** — draw up a lease from the example lease your client provided.
+  Load it once (paste it, or open the file) and it becomes the template;
+  `{{address}}`, `{{rent}}`, `{{tenant}}` and the rest are filled in for the
+  selected property and tenant. Generate, then **copy**, **print** or **email**
+  the result, or save it to the lease list. KeKar never sends mail itself —
+  the email button opens your own mail app with the lease pre-filled.
+- **Panels** — the property list and the assistant collapse to the edge. Two
+  buttons at the right end of the menu bar toggle them (their arrows show
+  which way the panel will move), and **View** lists the same two actions.
+  The layout is remembered between runs.
 - **Assistant** — the chat pane talks to the in-app agent, which can only call
   whitelisted tools (never raw SQL, never `eval`). Offline is handled with a
   banner and a status pill rather than a crash.
+
+## Listing channels
+
+The Properties tab's **Preview listing** dialog picks a channel:
+
+- **Any site (generic)** — the template from `config/listing_templates.json`.
+- **Zillow** and **apartments.com** — a package shaped like that site's form:
+  a title, a body, and every field the site asks for separately, plus the
+  warnings that matter (title length, missing rent or square footage).
+
+Neither Zillow nor apartments.com offers an API for creating a rental listing,
+and both sit behind a logged-in session, so KeKar builds the listing and the
+user pastes it. Posting always stays with the person. Facebook Marketplace
+keeps its opt-in browser auto-fill, which fills a draft and stops before
+Publish.
+
+## Branding
+
+Two supplied assets are used, and each has its own job:
+
+- **`kekar-mark.png`** (the house/"A" mark) → the **icon**. Centred on a
+  transparent square so the proportions survive, then written as
+  `kekar.ico` with 7 frames (16, 24, 32, 48, 64, 128, 256) and expanded into
+  the hicolor PNGs Linux launchers look for. `Application` and `MainWindow` both
+  set it as the window icon, so the title bar, taskbar and start menu all show
+  it.
+- **`kekar-logo.png`** (the wordmark with the tagline) → the **logo**. It has a
+  real alpha channel, so it composites onto any theme. It appears left-aligned
+  in a slim strip at the top of the window and centred in the About dialog.
+
+`tools/build_icon_assets.py` rebuilds the square master and the `.ico` from the
+mark; `tools/make_icons.py` then regenerates the hicolor PNGs. `KeKar.spec`
+already ships `src/resources`, so the frozen build picks all of it up. The
+stretching alternative was rejected — the mark is 228x269, and squashing it to a
+square would visibly distort the house.
+
+The same art reaches the packages. `KeKar.spec` sets `kekar.ico` as the Windows
+executable icon; `tools/make_usb_package.py` stages it at the Windows package
+root, where the NSIS installer and its Desktop/Start-menu shortcuts read it;
+and `packaging/linux/` carries `kekar.png` beside a `.desktop` entry whose
+`Icon=kekar` gives the AppImage a real launcher icon instead of a placeholder.
+
+## Accounts and login
+
+**File → Accounts** manages the accounts, and **File → Lock session** hides the
+portfolio. This is the plumbing for the client-facing feature that needs a
+login; the portal itself is not built yet.
+
+- Passwords are PBKDF2-HMAC-SHA256, 310,000 iterations, a fresh 16-byte salt per
+  password, via `cryptography` (already a dependency — nothing new to install).
+  A password is never stored in plaintext or in a reversible form.
+- Sessions are random 32-byte tokens with a 7-day expiry, stored in a `sessions`
+  table and re-checked on every launch. An expired token is dropped and purged.
+- Wrong usernames are answered without running the KDF, so a failed guess costs
+  the same whether or not the account exists. The dialog says only "not
+  recognised", never which half was wrong.
+- **Off by default.** `require_login` is false until you turn it on, so nothing
+  about the app changes — and a login can never be demanded before an account
+  exists, because Accounts refuses to enable it with zero accounts.
+- A minimum of one account is enforced, so the owner cannot lock themselves out.
+
+The window is the unit of locking: `set_locked()` swaps the central widget for a
+login panel, so a locked window shows nothing of the portfolio rather than a
+greyed-out one.
 
 ## Verified by real execution
 
@@ -189,11 +263,26 @@ and the assistant along the bottom.
 - `tools/install_linux.py --desktop` writes a validated `.desktop` entry plus
   icon-theme PNGs. `desktop-file-validate` reports the entry clean, and
   launching it on a real display opens the KeKar main window.
+- The packaging pass was verified on a rebuild: `packaging/linux/kekar.png` is a
+  square PNG, the AppImage `.desktop` names `Icon=kekar`, and the Windows
+  package stages `kekar.ico` at its root (`tests/test_usb_packaging.py`).
+- `bash build.sh` ran the suite and PyInstaller end to end; the rebuilt
+  `out/KeKar_Linux` ships `kekar-logo.png`, `kekar-mark.png` and `kekar.ico`
+  under `_internal/resources/icons/`.
 - `tools/seed_first_run.py` writes an encrypted key and the resulting settings
   file loads back with `is_configured() == True`.
 - The app was launched on a real display and screenshotted: the property list,
   the populated form (address, rent, bedrooms, amenities) and the photo panel
   all render with readable text at 1280x800.
+- The Leases tab was run on a real display: the template editor shows the
+  example lease with its `{{markers}}`, and the preview shows the generated
+  lease with the address, landlord, tenant and today's date substituted.
+- The listing dialog was run on a real display with Zillow selected: title,
+  body and the per-field list all render, and the channel dropdown offers
+  generic, Zillow and apartments.com.
+- Both collapsible panels were toggled on a real display: the sidebar and the
+  chat collapse to the edge, and the menu-bar buttons stay visible with their
+  arrows flipped to the expand direction.
 - Startup crash fixed and re-verified. A `QThread` was destroyed while its
   thread was still unwinding, which makes Qt abort the whole process. It was a
   race, so it survived casual testing: 2 of 15 launches died. After the fix

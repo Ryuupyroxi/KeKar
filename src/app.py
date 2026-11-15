@@ -5,7 +5,8 @@ import sys
 from pathlib import Path
 
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
 
 from .agent import providers
 from .agent.client import LLMClient
@@ -19,8 +20,10 @@ from .data.backup import open_with_recovery, prune_backups
 from .data.chat_repo import ChatRepo
 from .data.db import Database
 from .data.demo_seed import seed_if_empty
+from .data.lease_repo import LeaseRepo
 from .data.property_repo import PropertyRepo
-from .paths import database_path, demo_database_path
+from .data.user_repo import UserRepo
+from .paths import database_path, demo_database_path, icon_path
 from .ui.main_window import MainWindow
 from .ui.palette import Theme, is_valid, resolve
 from .ui.theme import app_font, build_stylesheet
@@ -41,6 +44,8 @@ class Application(QApplication):
         self.setFont(app_font())
 
         self.settings = Settings.load()
+        # The taskbar, the start menu and the title bar all read this.
+        self.setWindowIcon(QIcon(str(icon_path())))
         # A key saved before provider detection existed may point at the
         # wrong host. Repair it once, then leave the user's choice alone.
         self.provider_note = providers.migrate_default_provider(self.settings)
@@ -63,6 +68,80 @@ class Application(QApplication):
         prune_backups(self.settings.backup_keep_days)
         # Applied last so the main window and every custom-painted widget exist.
         self.apply_theme(self.settings.theme)
+        # Accounts are opt-in; with require_login off this does nothing.
+        self.current_user = None
+        self.session_token = self.settings.session_token or None
+        self._restore_session()
+
+    # -- accounts ----------------------------------------------------------
+
+    def _restore_session(self) -> None:
+        """Pick up a saved session, dropping one that has expired."""
+        if not self.session_token:
+            return
+        user = self.user_repo.session_user(self.session_token)
+        if user is None:
+            self.session_token = None
+            self.settings.session_token = ""
+            try:
+                self.settings.save()
+            except Exception:
+                pass
+            return
+        self.current_user = user
+
+    def login(self, username: str, password: str) -> bool:
+        """Validate credentials and open a session. Returns True on success."""
+        user = self.user_repo.authenticate(username, password)
+        if user is None:
+            return False
+        self.current_user = user
+        self.session_token = self.user_repo.create_session(user["id"])
+        self.settings.session_token = self.session_token
+        try:
+            self.settings.save()
+        except Exception:
+            pass
+        self.main_window.set_locked(False)
+        self.main_window.status(f"Signed in as {user['display_name'] or user['username']}.")
+        return True
+
+    def logout(self) -> None:
+        """Drop the session. The window locks if a login is required."""
+        if self.session_token:
+            self.user_repo.delete_session(self.session_token)
+        self.session_token = None
+        self.current_user = None
+        self.settings.session_token = ""
+        try:
+            self.settings.save()
+        except Exception:
+            pass
+        if self.settings.require_login:
+            self.main_window.set_locked(True)
+        self.main_window.status("Signed out.")
+
+    def lock(self) -> None:
+        """Hide the portfolio behind the login panel."""
+        self.main_window.set_locked(True)
+        self.main_window.status("Locked.")
+
+    def unlock_with_dialog(self) -> bool:
+        """Show the login dialog; True when the user got in."""
+        from .ui.login_dialog import LoginDialog
+
+        dialog = LoginDialog(self, self.main_window)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return False
+        return self.current_user is not None
+
+    def maybe_require_login(self) -> None:
+        """Lock at startup when a login is required and there is no session."""
+        if not self.settings.require_login:
+            return
+        if self.current_user is not None:
+            return
+        self.main_window.set_locked(True)
 
     def _open_database(self, path: Path | None) -> None:
         """Open a database and point the repositories at it.
@@ -86,6 +165,8 @@ class Application(QApplication):
         """
         self.property_repo = PropertyRepo(self.db)
         self.applicant_repo = ApplicantRepo(self.db)
+        self.lease_repo = LeaseRepo(self.db)
+        self.user_repo = UserRepo(self.db)
         self.chat_repo = ChatRepo(self.db)
         self.ctx = ToolContext(db=self.db, property_repo=self.property_repo,
                                applicant_repo=self.applicant_repo,

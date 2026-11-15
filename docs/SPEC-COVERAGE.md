@@ -50,6 +50,13 @@ Decision references (D1-D10) are defined in Part 1 of
 | §12.2 | Zero-touch subsequent launches | `Settings.load()` in `src/app.py` | `test_settings.py` |
 | §14.1 | Questionnaire + document storage | `src/data/applicant_repo.py` (`add_document`, `documents`) | `test_applicant_repo.py` |
 | §14.2 | AI applicant summaries | `src/agent/tools.py` + `chat_pane.py` | `test_agent_tools.py` |
+| §3.5 | Lease drawn up from the client's example lease | `src/services/lease_builder.py`, `src/data/lease_repo.py`, `src/ui/lease_tab.py` | `test_leases.py` |
+| §3.2 | Per-channel listing packages (Zillow, apartments.com) | `src/services/listing_channels.py`, `src/ui/listing_dialog.py` | `test_listing_channels.py` |
+| §8.1 | Collapsible property list and chat panels | `src/ui/main_window.py` (`CollapsibleSplitter`, menu-bar toggles) | `test_layout.py` |
+| §8.1 | Light, dark and OLED themes with WCAG contrast | `src/ui/palette.py`, `src/ui/theme.py`, `src/config/settings.py` | `test_themes.py` |
+| §6 | Guided tour covers the Leases tab | `src/ui/tour.py` | `test_tour.py`, `test_leases.py` |
+| §8.1 | Supplied icon and logo wired into the window, start menu, About and the packages | `src/paths.py::resource_path`, `src/ui/main_window.py::_set_logo`, `src/app.py`, `packaging/linux/kekar.desktop`, `packaging/linux/kekar.png`, `packaging/windows/kekar.ico`, `tools/make_usb_package.py` | `test_branding.py`, `test_usb_packaging.py` |
+| §8.1 | Accounts and login plumbing (the client-facing feature's foundation) | `src/services/auth.py`, `src/data/user_repo.py`, `src/ui/login_dialog.py`, `src/ui/users_dialog.py` | `test_auth.py` |
 
 ## Deliberate deviations from the spec
 

@@ -31,6 +31,17 @@ class Settings:
     tour_completed: bool = False
     # system | light | dark | oled — see src/ui/palette.py
     theme: str = "system"
+    # Panel layout, remembered between runs. True = collapsed to the edge.
+    sidebar_collapsed: bool = False
+    chat_collapsed: bool = False
+    # The client's example lease. Empty means "use the built-in template".
+    lease_template: str = ""
+    landlord_name: str = ""
+    # Accounts. Off by default, so nothing about the app changes until the user
+    # turns it on in File -> Accounts.
+    require_login: bool = False
+    auto_lock_minutes: int = 0
+    session_token: str = ""
 
     def is_configured(self) -> bool:
         return bool(self.api_key)

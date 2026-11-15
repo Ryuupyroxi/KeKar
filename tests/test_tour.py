@@ -10,12 +10,37 @@ def test_tour_steps_target_real_widgets(kekar_app):
     window = kekar_app.main_window
     steps = build_tour_steps(window)
 
-    assert len(steps) == 8
+    assert len(steps) == 10
     for step in steps:
         assert isinstance(step, TourStep)
         if step.target is not None:
             assert step.target.parent() is not None, (
                 f"{step.title!r} target is not in the widget tree")
+
+
+def test_tour_covers_every_tab(kekar_app):
+    """A tab nobody visits in the tour is a feature the user may never find.
+
+    A step aimed inside a tab counts: the details form is the Properties tab.
+    """
+    window = kekar_app.main_window
+    steps = build_tour_steps(window)
+    for index in range(window.tabs.count()):
+        page = window.tabs.widget(index)
+        covered = any(
+            step.target is page
+            or (step.target is not None and page.isAncestorOf(step.target))
+            for step in steps)
+        assert covered, f"tab {window.tabs.tabText(index)!r} is not in the tour"
+
+
+def test_tour_describes_the_real_feature_set(kekar_app):
+    """The wording must match what the app can actually do."""
+    steps = build_tour_steps(kekar_app.main_window)
+    text = " ".join(f"{step.title} {step.body}" for step in steps)
+    for phrase in ("collapse", "Light", "OLED", "Zillow", "apartments.com",
+                   "Leases", "template", "Accounts", "print"):
+        assert phrase in text, f"the tour never mentions {phrase!r}"
 
 
 def test_overlay_paints_without_raising(kekar_app):

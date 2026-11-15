@@ -112,3 +112,28 @@ def demo_database_path() -> Path:
     """The demo database, inside the real data directory but separate from the
     user's own database so demo mode can never write to it."""
     return data_dir() / "demo" / "database.db"
+
+
+def resource_path(*parts: str) -> Path:
+    """Locate a shipped resource, in a source checkout or inside a bundle.
+
+    `KeKar.spec` copies `src/resources` to `resources/`, so a frozen build reads
+    them from `_MEIPASS`. Returns the path whether or not it exists — callers
+    decide how to degrade — so a missing asset is a visible fallback rather than
+    an import-time crash.
+    """
+    if getattr(sys, "frozen", False):
+        base = Path(getattr(sys, "_MEIPASS",
+                            Path(sys.executable).resolve().parent))
+        bundled = base / "resources" / Path(*parts)
+        if bundled.exists():
+            return bundled
+    return Path(__file__).resolve().parent / "resources" / Path(*parts)
+
+
+def icon_path() -> Path:
+    return resource_path("icons", "kekar.ico")
+
+
+def logo_path() -> Path:
+    return resource_path("icons", "kekar-logo.png")

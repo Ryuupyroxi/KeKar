@@ -6,21 +6,31 @@
 !define COMPANY "KeKar Rental Properties"
 !define VERSION "0.1.0"
 
+; Installer, uninstaller and shortcut icons. ${__FILEDIR__} is this script's
+; own directory, so the path holds wherever makensis is invoked from. The
+; same .ico is staged into the Windows package root by
+; tools/make_usb_package.py and the shortcuts read it from there.
+!define MUI_ICON "${__FILEDIR__}\kekar.ico"
+!define MUI_UNICON "${__FILEDIR__}\kekar.ico"
+
 Name "${APPNAME} ${VERSION}"
 OutFile "KeKar_Setup_${VERSION}.exe"
 InstallDir "$LOCALAPPDATA\KeKar"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
 
-Page directory
-Page instfiles
-UninstPage instfiles
+!include "MUI2.nsh"
+
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
 
 Section "Install"
   SetOutPath "$INSTDIR"
   File /r "KeKar_Windows\*.*"
-  CreateShortcut "$DESKTOP\KeKar.lnk" "$INSTDIR\KeKar.exe"
-  CreateShortcut "$SMPROGRAMS\KeKar.lnk" "$INSTDIR\KeKar.exe"
+  CreateShortcut "$DESKTOP\KeKar.lnk" "$INSTDIR\KeKar.exe" "" "$INSTDIR\kekar.ico"
+  CreateShortcut "$SMPROGRAMS\KeKar.lnk" "$INSTDIR\KeKar.exe" "" "$INSTDIR\kekar.ico"
   WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
 

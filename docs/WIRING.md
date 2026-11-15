@@ -112,11 +112,18 @@ MainWindow (src/ui/main_window.py)
   │           (address, city, ZIP, pet policy, notes, enabled amenities)
   ├─ QTabWidget
   │     ├─ Properties tab = PropertyForm inside a QScrollArea + PhotoPanel
-  │     └─ Applicants tab = CrmTab (stage combo box, colour per stage)
+  │     ├─ Applicants tab = CrmTab (stage combo box, colour per stage)
+  │     └─ Leases tab = LeaseTab (template editor, preview, saved list)
   ├─ ChatPane (bottom) ──▶ AgentRunner
   ├─ OfflineBanner + StatusPill ◀── _PingThread every 30 s
   │     └─ connectivity.provider_reachable(api_base)  (plain TCP, no API key)
   └─ menu: Settings → SettingsDialog, Help → AboutDialog
+
+CollapsibleSplitter (sidebar | tabs) and (content | chat)
+  └─ both are QSplitters; the handle paints a grip only
+  └─ menuBar().setCornerWidget(holder) → sidebar_toggle + chat_toggle
+        └─ CollapsibleSplitter.toggle_pane(index)  →  collapse() / is_collapsed()
+              └─ _remember_layout() persists sidebar_collapsed / chat_collapsed
 ```
 
 `src/ui/theme.py` is the single source of typography (`DejaVu Sans`, 11 pt);
@@ -244,6 +251,103 @@ The thread reports `autofilled`, `needs_review` or `failed`. In every case the
 dialog says plainly that nothing was published and points at **Copy listing**
 as the reliable fallback. Auto-fill is off unless the user enables it in
 Settings, and it can never click Publish.
+
+## Listing channels
+
+```
+PropertyForm.preview_listing_btn
+  └─ ListingDialog(app, prop)
+       └─ QComboBox: generic | zillow | apartments_com
+            ├─ generic      → listing_compiler.compile_listing(prop)
+            └─ a channel    → listing_channels.compile_channel(prop, channel)
+                                ├─ title  (per-site length limit)
+                                ├─ body   (per-site wording)
+                                ├─ fields (each field the site's form asks for)
+                                └─ warnings (title length, missing rent/sqft)
+```
+
+Zillow and apartments.com have no posting API, so the dialog produces a copy
+package rather than posting. Facebook Marketplace keeps its own opt-in
+autofill path above.
+
+## Leases
+
+```
+LeaseTab
+  ├─ template editor  ←  settings.lease_template, or the built-in default
+  │     └─ "Load example lease…" reads a .txt/.md file; "Save as template"
+  │        writes settings.lease_template (encrypted with the rest of Settings)
+  ├─ Generate → lease_builder.render(template, tokens_for(prop, tenant, …))
+  │     └─ {{marker}} substitution only; unknown markers are left in place
+  │        and listed in the "KeKar does not fill" note
+  ├─ Copy   → clipboard.copy_text
+  ├─ Print  → QPrintDialog + QTextDocument.print(QPrinter)
+  ├─ Email  → QDesktopServices.openUrl("mailto:?subject=…&body=…")
+  │     └─ KeKar holds no SMTP credentials; the user's own mail app sends it
+  └─ Save   → LeaseRepo (leases table) → saved-leases combo box
+```
+
+`LeaseRepo` resolves its connection lazily through `Database`, so it is safe
+from a worker thread like every other repository.
+
+## Branding
+
+```
+src/resources/icons/
+  ├─ kekar-mark.png     the supplied mark (228x269, alpha)
+  ├─ kekar-master.png   mark centred on a 256x256 transparent square
+  ├─ kekar.ico          7 frames: 16 24 32 48 64 128 256
+  ├─ kekar-<size>.png   hicolor sizes for Linux launchers
+  └─ kekar-logo.png     the supplied wordmark + tagline (1408x768, alpha)
+
+paths.icon_path() / paths.logo_path()  →  resource_path("icons", …)
+        └─ frozen: _MEIPASS/resources/…   ·   dev: src/resources/…
+
+Application.__init__   → self.setWindowIcon(QIcon(icon_path()))
+MainWindow.__init__    → self.setWindowIcon(QIcon(icon_path()))
+MainWindow             → logo_label at the top of the window, 44 px tall,
+                         left-aligned, _set_logo()
+AboutDialog             → logo_label centred at 96 px, word-wrapped body
+```
+
+The mark is not square, so it is letterboxed onto a transparent square rather
+than stretched. `_set_logo` degrades silently if the file is missing — a missing
+logo must not stop the window opening.
+
+## Accounts and login
+
+```
+File → Accounts ────────▶ UsersDialog
+                          ├─ UserRepo.create / set_password / delete
+                          └─ settings.require_login  (refused with 0 accounts,
+                                                     and the last account cannot
+                                                     be removed)
+
+File → Lock session ────▶ MainWindow.set_locked(True)
+                          ├─ parks the real central widget
+                          └─ setCentralWidget(lock panel) + show()
+
+Lock panel "Log in" ─────▶ Application.unlock_with_dialog()
+                          └─ LoginDialog.exec() → Application.login()
+                               ├─ UserRepo.authenticate(username, password)
+                               │    └─ auth.verify_password → PBKDF2-HMAC-SHA256
+                               │       (unknown username still runs one KDF)
+                               ├─ UserRepo.create_session() → 7-day token
+                               └─ settings.session_token saved
+
+Application.__init__ ────▶ _restore_session()
+                          └─ UserRepo.session_user(token); expired → cleared
+main.py ─────────────────▶ app.maybe_require_login() before the tour offer
+```
+
+`src/services/auth.py` owns hashing, tokens and expiry; `src/data/user_repo.py`
+owns the rows. Nothing here is wired to a portal — it exists so the feature that
+needs a login has real accounts to check against.
+
+Locking swaps the central widget rather than disabling the contents, so a locked
+window reveals nothing. Qt hides a swapped-out central widget and does **not**
+unhide it when it is swapped back, so `set_locked(False)` calls `show()`
+explicitly; without that the portfolio returns invisible with no error.
 
 ## Browser automation
 

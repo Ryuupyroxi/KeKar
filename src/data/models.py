@@ -33,3 +33,19 @@ class Applicant:
     screening_stage: str = "Inquiry Received"
     notes: str | None = None
     id: int | None = None
+
+
+@dataclass
+class Lease:
+    """A lease drawn up from the client's example template.
+
+    ``body`` is the finished text, not the template: the template lives in the
+    settings so one example lease serves every property.
+    """
+
+    tenant_name: str = ""
+    property_id: int | None = None
+    body: str = ""
+    id: int | None = None
+    created_at: str | None = None
+    updated_at: str | None = None

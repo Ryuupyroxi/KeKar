@@ -27,10 +27,17 @@ applicable on that platform · blank = not yet run
 | 16 | Copy listing to clipboard, paste into Facebook Marketplace manually | | | |
 | 17 | Daily backup appears in `KeKarData/backups/` after 24 h | | | |
 | 18 | Uninstall/remove the drive -> no leftover data in `%APPDATA%` or `~/.config` | | | |
+| 19 | Leases: load the client's example lease, generate for a tenant, copy, print, email | | | |
+| 20 | Leases: save one, restart, it is still listed and reloads | | | |
+| 21 | Listings: pick Zillow and apartments.com, copy, paste into a text editor | | | |
+| 22 | Collapse the property list and the chat from the menu bar, restart, layout returns | | | |
+| 23 | Switch to Light, Dark and OLED, restart, the choice returns | | | |
+| 24 | Start menu / taskbar / title bar show the KeKar icon; the logo shows in the window header and About | | | |
+| 25 | Accounts: add an account, turn on "Ask for a password", restart, log in, lock, unlock | | | |
 
 ## Automated coverage
 
-These are covered by the pytest suite (`pytest -q`, 254 tests) and must stay
+These are covered by the pytest suite (`pytest -q`, 356 tests) and must stay
 green:
 
 - Schema creation, WAL mode, foreign keys, migration idempotency (`test_db.py`)
@@ -60,8 +67,8 @@ green:
   linking, CRM stage colours (`test_ui_behaviour.py`)
 - CLI flags `--version`, `-V`, `--help` (`test_main_cli.py`)
 - First-run key seeding roundtrip (`test_seed_first_run.py`)
-- USB packaging: launcher sources stay in sync, package layout, reproducibility
-  (`test_usb_packaging.py`)
+- USB packaging: launcher sources stay in sync, package layout, reproducibility,
+  Windows `.ico` staging, and the AppImage icon (`test_usb_packaging.py`)
 - Frozen-bundle safety: no runtime dependency on an unshipped file
   (`test_bundle_safety.py`)
 - Demo mode: the demo path is separate, entering and leaving swaps the database,
@@ -76,6 +83,19 @@ green:
 - Themes: every palette clears the WCAG contrast ratios, resolution falls back
   safely, switching recolours the painted rows, and the View menu reflects the
   stored preference (`test_themes.py`)
+- Collapsible panels: collapse and restore return the remembered split, the
+  collapsed flags persist, the menu-bar toggles stay reachable while a panel is
+  collapsed, and the splitter handle never overrides Qt's mouse events
+  (`test_layout.py`)
+- Leases: marker substitution, unknown markers left intact, money formatting,
+  the repository round trip, the saved-lease list, print via the system dialog,
+  and the `mailto:` hand-off (`test_leases.py`)
+- Listing channels: Zillow and apartments.com packages, per-field lists,
+  title-length and missing-rent warnings, and the dialog's channel switching
+  (`test_listing_channels.py`)
+- Branding: the `.ico` carries every frame size, the hicolor PNGs exist, the
+  window icon is set, and the logo renders in the header and About
+  (`test_branding.py`)
 
 ## How to run a scenario
 

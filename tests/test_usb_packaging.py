@@ -191,3 +191,44 @@ def test_installer_validates_clean_when_the_tool_is_present():
     complaints = inst.validate(Path.home() / ".local" / "share"
                                / "applications" / "kekar.desktop")
     assert complaints == []
+
+
+def test_windows_package_stages_the_installer_icon(tool, tmp_path):
+    """The NSIS installer points its shortcuts at the package-root .ico."""
+    source = tmp_path / "dist" / "KeKar"
+    source.mkdir(parents=True)
+    (source / "KeKar.exe").write_text("binary", encoding="utf-8")
+
+    out = tmp_path / "out"
+    tool.make_platform_package("windows", source, out)
+
+    staged = out / "KeKar_Windows" / "kekar.ico"
+    assert staged.is_file(), "Windows package must carry kekar.ico at its root"
+    assert staged.read_bytes() == (ROOT / "src" / "resources" / "icons"
+                                   / "kekar.ico").read_bytes()
+
+
+def test_appimage_desktop_entry_names_the_kekar_icon():
+    desktop = (ROOT / "packaging" / "linux" / "kekar.desktop").read_text(
+        encoding="utf-8")
+    assert "Icon=kekar" in desktop
+    assert "utilities-terminal" not in desktop, "placeholder icon still wired"
+
+
+def test_appimage_icon_is_a_square_png():
+    from PIL import Image
+
+    path = ROOT / "packaging" / "linux" / "kekar.png"
+    assert path.is_file(), "AppImage needs packaging/linux/kekar.png"
+    with Image.open(path) as image:
+        assert image.format == "PNG"
+        assert image.width == image.height, "launcher icons must be square"
+
+
+def test_packaged_icons_match_the_source_art():
+    """The packaging copies must not drift from the generated assets."""
+    icons = ROOT / "src" / "resources" / "icons"
+    assert (ROOT / "packaging" / "windows" / "kekar.ico").read_bytes() \
+        == (icons / "kekar.ico").read_bytes()
+    assert (ROOT / "packaging" / "linux" / "kekar.png").read_bytes() \
+        == (icons / "kekar-master.png").read_bytes()

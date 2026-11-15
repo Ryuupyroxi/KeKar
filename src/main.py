@@ -90,6 +90,9 @@ def main(argv: list[str] | None = None) -> int:
         start = time.perf_counter()
 
     app.show_main_window()
+    # Accounts are opt-in: this locks the window only when the user asked for a
+    # login and no saved session is still valid.
+    app.maybe_require_login()
     # Offer the tour once, after the window is visible so the overlay has
     # something to cover.
     app.maybe_offer_tour()

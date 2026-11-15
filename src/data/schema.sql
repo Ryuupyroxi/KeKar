@@ -66,7 +66,39 @@ CREATE TABLE IF NOT EXISTS listing_runs (
   created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
+CREATE TABLE IF NOT EXISTS leases (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  property_id INTEGER REFERENCES properties(id) ON DELETE SET NULL,
+  tenant_name TEXT NOT NULL DEFAULT '',
+  body        TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_applicants_property ON applicants(property_id);
 CREATE INDEX IF NOT EXISTS idx_applicants_stage    ON applicants(screening_stage);
 CREATE INDEX IF NOT EXISTS idx_chat_created        ON chat_messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_leases_property    ON leases(property_id);
 CREATE INDEX IF NOT EXISTS idx_listing_property    ON listing_runs(property_id);
+
+-- Accounts. This is the plumbing for the client-facing feature: a user logs in
+-- before the portal is opened. Nothing here is wired to a portal yet.
+CREATE TABLE IF NOT EXISTS users (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  username      TEXT NOT NULL UNIQUE,
+  display_name  TEXT NOT NULL DEFAULT '',
+  password_hash TEXT NOT NULL,
+  role          TEXT NOT NULL DEFAULT 'member'
+                CHECK (role IN ('owner','member')),
+  created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token      TEXT PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  expires_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);

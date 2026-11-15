@@ -23,8 +23,8 @@ from .theme import font
 DIM = QColor(20, 16, 12, 170)
 
 
-def _ring_colour(theme: "Theme") -> QColor:
-    return QColor(theme.accent)
+def _ring_colour(theme) -> QColor:
+    return QColor(theme.accent) if theme is not None else QColor("#ffb300")
 
 
 @dataclass
@@ -52,7 +52,10 @@ class TourOverlay(QWidget):
         self._steps = steps
         self.current_index = 0
         self.restore_tab: int | None = None
-        self._theme: "Theme | None" = None
+        # Default to the app's theme so a caller that does not call
+        # apply_theme explicitly still paints with the right palette.
+        app = getattr(window, "app", None)
+        self._theme = app.current_theme() if app is not None else None
 
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
@@ -214,21 +217,30 @@ class TourOverlay(QWidget):
 
 
 def build_tour_steps(window) -> list[TourStep]:
-    """The tour content, bound to a concrete MainWindow."""
+    """The tour content, bound to a concrete MainWindow.
+
+    Every step names a feature the app actually has. When a feature is added,
+    the tour is part of the change — a tour that describes an older app is
+    worse than none.
+    """
     return [
         TourStep(
             None, "Welcome to KeKar",
-            "KeKar keeps your properties, listings, photos and applicant notes "
-            "in one place, stored only on this device. This short tour shows "
-            "you around. Your own data is not touched."),
+            "KeKar keeps your properties, listings, photos, applicant notes "
+            "and leases in one place, stored only on this device. This short "
+            "tour shows you around. Your own data is not touched."),
         TourStep(
             window.drawer, "Your properties",
-            "This is your property list. The search box filters as you type. "
-            "Use '+ Add New Property' to add your first listing."),
+            "This is your property list. The search box filters as you type — "
+            "it matches the address, city, ZIP, pet policy, notes and every "
+            "enabled amenity. Use '+ Add New Property' to add your first "
+            "listing."),
         TourStep(
             window.property_form, "The details form",
-            "Address, rent, deposit and the rest. Fields with a red outline "
-            "are needed before a listing can be published."),
+            "Address, rent, deposit and the rest. The quick actions include "
+            "'Preview listing', which builds a copy package for Zillow, "
+            "apartments.com or any other site, and 'Publish to Marketplace' "
+            "for the opt-in Facebook auto-fill."),
         TourStep(
             window.photo_panel, "Photos",
             "Add photos for a property and choose one as the cover. The cover "
@@ -237,15 +249,27 @@ def build_tour_steps(window) -> list[TourStep]:
             window.crm_tab, "Applicants",
             "Track every applicant through the pipeline, from first enquiry to "
             "approved or rejected.",
-            on_enter=lambda overlay: _show_applicants(window, overlay)),
+            on_enter=lambda overlay: _show_tab(window, overlay, 1)),
+        TourStep(
+            window.lease_tab, "Leases",
+            "Draw up a lease from the example lease your client provided. Load "
+            "it once as the template, then generate a filled-in copy for any "
+            "property and tenant, and copy, print, email or save the result.",
+            on_enter=lambda overlay: _show_tab(window, overlay, 2)),
         TourStep(
             window.chat_pane, "The assistant",
             "Ask questions in plain language, or give an instruction like "
             "'draft a message to John'. It can read and update your records."),
         TourStep(
-            window.menuBar(), "Settings and providers",
-            "Choose your AI provider and models, manage backups, and control "
-            "marketplace auto-fill."),
+            window.menuBar(), "Panels, themes and accounts",
+            "The two buttons at the right end of this bar collapse the "
+            "property list and the chat, and View switches between Light, Dark "
+            "and OLED. File → Accounts sets up a login and decides whether "
+            "KeKar asks for one when it starts."),
+        TourStep(
+            window.logo_label, "The brand",
+            "The KeKar logo sits here and in the About dialog; the same mark is "
+            "the window, taskbar and start-menu icon. Find it in Help → About."),
         TourStep(
             None, "You're in demo mode",
             "Everything you see is sample data. Your own records are safe and "
@@ -254,11 +278,13 @@ def build_tour_steps(window) -> list[TourStep]:
     ]
 
 
-def _show_applicants(window, overlay: "TourOverlay") -> None:
-    """Switch to the Applicants tab for the duration of its step.
+def _show_tab(window, overlay: "TourOverlay", index: int) -> None:
+    """Switch to a tab for the duration of its step.
 
-    Records the tab to restore on the overlay that is running the step.
+    Records the tab to restore on the overlay that is running the step. Only
+    the first switch is recorded, so a tour that visits several tabs still
+    returns to wherever the user started.
     """
     if overlay.restore_tab is None:
         overlay.restore_tab = window.tabs.currentIndex()
-    window.tabs.setCurrentIndex(1)
+    window.tabs.setCurrentIndex(index)

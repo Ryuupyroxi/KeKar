@@ -3,6 +3,6 @@ Type=Application
 Name=KeKar Property Manager
 Comment=Manage rental properties offline
 Exec=KeKar
-Icon=utilities-terminal
+Icon=kekar
 Terminal=false
 Categories=Office;

@@ -37,6 +37,10 @@ def _empty_portfolio(kekar_app):
         kekar_app.property_repo.delete(prop.id)
     for applicant in kekar_app.applicant_repo.list():
         kekar_app.applicant_repo.delete(applicant.id)
+    for lease in kekar_app.lease_repo.list():
+        kekar_app.lease_repo.delete(lease.id)
+    for user in kekar_app.user_repo.list():
+        kekar_app.user_repo.delete(user["id"])
     kekar_app.chat_repo.clear()
     shutil.rmtree(root / "photos", ignore_errors=True)
     kekar_app.main_window.reload_all()

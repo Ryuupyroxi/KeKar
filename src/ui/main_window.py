@@ -3,23 +3,134 @@ from __future__ import annotations
 
 import os
 
-from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
-from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QLabel, QMainWindow,
-                             QMessageBox, QScrollArea, QSplitter, QTabWidget,
+from PyQt6.QtCore import Qt, QThread, QTimer, QPoint, pyqtSignal
+from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap, QPolygon
+from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QHBoxLayout, QLabel,
+                             QMainWindow, QMessageBox, QPushButton,
+                             QScrollArea, QSplitter,
+                             QSplitterHandle, QTabWidget, QToolButton,
                              QVBoxLayout, QWidget)
 
 from .._version import APP_NAME, APP_VERSION
+from ..paths import icon_path, logo_path
 from ..services import connectivity
 from .chat_pane import ChatPane
 from .crm_tab import CrmTab
+from .lease_tab import LeaseTab
 from .photo_panel import PhotoPanel
 from .property_drawer import PropertyDrawer
 from .property_form import PropertyForm
 from . import worker
 from .settings_dialog import SettingsDialog
+from .theme import font
+from .users_dialog import UsersDialog
 from .widgets import DemoBanner, OfflineBanner, StatusPill
 
 PING_INTERVAL_MS = 30_000
+
+#: Height of the logo in the window header and the About dialog.
+LOGO_HEIGHT = 44
+
+
+def _set_logo(label: QLabel, height: int = LOGO_HEIGHT) -> None:
+    """Scale the shipped logo onto a QLabel, keeping its proportions.
+
+    The logo has an alpha channel, so it composites onto whatever theme is
+    active. A missing or unreadable file leaves the label empty rather than
+    raising — a missing logo must not stop the window from opening.
+    """
+    label.setFixedHeight(height)
+    path = logo_path()
+    if not path.exists():
+        return
+    pixmap = QPixmap(str(path))
+    if pixmap.isNull():
+        return
+    label.setPixmap(pixmap.scaledToHeight(
+        height, Qt.TransformationMode.SmoothTransformation))
+
+
+class _PaneHandle(QSplitterHandle):
+    """A splitter handle that just draws a grip.
+
+    It paints only. QSplitter owns the handle's press, move and release, and
+    overriding any of those breaks drag-to-resize; collapsing is driven by the
+    panel toggles in the menu bar instead.
+    """
+
+    def __init__(self, app, splitter):
+        super().__init__(splitter.orientation(), splitter)
+        self._app = app
+
+    def paintEvent(self, event) -> None:
+        """Draw a grip so the boundary reads as draggable.
+
+        Deliberately no mouse handling: QSplitter owns the handle's press,
+        move and release, and overriding any of them breaks drag-to-resize.
+        Collapsing is driven by the panel toggles in the menu bar instead.
+        """
+        theme = self._app.current_theme()
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.fillRect(self.rect(), QColor(theme.window))
+        painter.setPen(QPen(QColor(theme.text_secondary), 2))
+        cx, cy = self.rect().center().x(), self.rect().center().y()
+        if self.orientation() == Qt.Orientation.Horizontal:
+            points = QPolygon([QPoint(cx - 2, cy - 5), QPoint(cx - 2, cy + 5),
+                               QPoint(cx + 4, cy)])
+        else:
+            points = QPolygon([QPoint(cx - 5, cy - 2), QPoint(cx + 5, cy - 2),
+                               QPoint(cx, cy + 4)])
+        painter.drawPolygon(points)
+        painter.end()
+
+
+class CollapsibleSplitter(QSplitter):
+    """A QSplitter whose panes can be collapsed to zero and brought back.
+
+    The expanded sizes are remembered per pane, so collapsing and restoring
+    returns the layout the user had rather than an arbitrary split.
+    """
+
+    def __init__(self, app, orientation, parent=None):
+        super().__init__(orientation, parent)
+        self._app = app
+        self._expanded: dict[int, list[int]] = {}
+        self.setHandleWidth(14)
+
+    def createHandle(self):
+        return _PaneHandle(self._app, self)
+
+    def toggle_pane(self, index: int) -> None:
+        sizes = list(self.sizes())
+        if index < 0 or index >= len(sizes):
+            return
+        widget = self.widget(index)
+        # Qt's own collapsible handling would collapse on press and swallow
+        # drag-to-resize, so the pane is collapsed manually: relaxing the
+        # minimum size lets setSizes() take the pane to zero.
+        widget.setMinimumSize(0, 0)
+        if sizes[index] == 0:
+            restored = self._expanded.get(index)
+            if not restored or len(restored) != len(sizes):
+                total = sum(sizes) or 1
+                restored = [total // len(sizes)] * len(sizes)
+            self.setSizes(restored)
+            self._expanded.pop(index, None)
+        else:
+            # Copy: `sizes` is about to be mutated, and storing the same list
+            # would leave the remembered layout with a zero in it.
+            self._expanded[index] = list(sizes)
+            sizes[index] = 0
+            self.setSizes(sizes)
+
+    def is_collapsed(self, index: int) -> bool:
+        return self.sizes()[index] == 0
+
+    def collapse(self, index: int, collapsed: bool = True) -> None:
+        if collapsed == self.is_collapsed(index):
+            return
+        self.toggle_pane(index)
 
 
 class _PingThread(QThread):
@@ -36,12 +147,20 @@ class _PingThread(QThread):
 
 
 class AboutDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, app=None, parent=None):
         super().__init__(parent)
+        self.app = app
         self.setWindowTitle(f"About {APP_NAME}")
-        self.resize(440, 220)
+        self.setWindowIcon(QIcon(str(icon_path())))
+        self.resize(460, 340)
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel(
+
+        self.logo_label = QLabel()
+        self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        _set_logo(self.logo_label, height=96)
+        layout.addWidget(self.logo_label)
+
+        body = QLabel(
             f"<h2>{APP_NAME} {APP_VERSION}</h2>"
             f"<p>A portable rental property manager.</p>"
             f"<p>Your properties, photos and applicant notes live in the "
@@ -49,10 +168,20 @@ class AboutDialog(QDialog):
             f"drive except the questions you choose to send to the "
             f"assistant.</p>"
             f"<p>Data is stored locally in SQLite and backed up automatically."
-            f"</p>"))
+            f"</p>")
+        # Rich-text labels do not wrap unless told to, and the paragraph was
+        # running off the right edge of the dialog.
+        body.setWordWrap(True)
+        layout.addWidget(body)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+        # A fixed height clipped the last paragraph at the dialog's bottom
+        # edge. Size the dialog to the word-wrapped body's real need instead,
+        # so a larger system font grows the window rather than cutting text.
+        layout.activate()
+        self.setMinimumSize(460, 0)
+        self.resize(460, max(340, layout.totalSizeHint().height()))
 
 
 class MainWindow(QMainWindow):
@@ -61,6 +190,8 @@ class MainWindow(QMainWindow):
         self.app = app
         self.demo_mode = False
         self.setWindowTitle(f"{APP_NAME} Property Manager")
+        # The taskbar, the start menu and the title bar all read this.
+        self.setWindowIcon(QIcon(str(icon_path())))
         self.resize(1280, 800)
         self.setMinimumSize(1100, 720)
 
@@ -72,18 +203,28 @@ class MainWindow(QMainWindow):
         self.status_pill = StatusPill("Online", "#2e7d32", self)
         self.statusBar().addPermanentWidget(self.status_pill)
         self._tour = None
-
-        self._build_menu()
+        # Set when the window is locked: the real central widget is parked
+        # here so unlocking can put it back.
+        self._real_central: QWidget | None = None
+        self._lock_panel: QWidget | None = None
 
         central = QWidget()
         outer = QVBoxLayout(central)
         outer.setContentsMargins(0, 0, 0, 0)
+        self.logo_label = QLabel()
+        # Left-aligned and exactly the logo's height: a centred logo in a
+        # full-width band left most of the strip empty.
+        self.logo_label.setAlignment(Qt.AlignmentFlag.AlignLeft
+                                     | Qt.AlignmentFlag.AlignVCenter)
+        self.logo_label.setContentsMargins(16, 0, 0, 0)
+        _set_logo(self.logo_label)
+        outer.addWidget(self.logo_label)
         outer.addWidget(self.offline_banner)
         outer.addWidget(self.demo_banner)
 
-        main_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.main_splitter = CollapsibleSplitter(app, Qt.Orientation.Vertical)
 
-        top = QSplitter(Qt.Orientation.Horizontal)
+        self.top_splitter = CollapsibleSplitter(app, Qt.Orientation.Horizontal)
         self.drawer = PropertyDrawer(app)
         self.tabs = QTabWidget()
 
@@ -104,16 +245,18 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(properties_tab, "Properties")
         self.crm_tab = CrmTab(app)
         self.tabs.addTab(self.crm_tab, "Applicants")
+        self.lease_tab = LeaseTab(app)
+        self.tabs.addTab(self.lease_tab, "Leases")
 
-        top.addWidget(self.drawer)
-        top.addWidget(self.tabs)
-        top.setSizes([340, 900])
-        main_splitter.addWidget(top)
+        self.top_splitter.addWidget(self.drawer)
+        self.top_splitter.addWidget(self.tabs)
+        self.top_splitter.setSizes([340, 900])
+        self.main_splitter.addWidget(self.top_splitter)
         self.chat_pane = ChatPane(app)
-        main_splitter.addWidget(self.chat_pane)
-        main_splitter.setSizes([560, 200])
+        self.main_splitter.addWidget(self.chat_pane)
+        self.main_splitter.setSizes([560, 200])
 
-        outer.addWidget(main_splitter, 1)
+        outer.addWidget(self.main_splitter, 1)
         self.setCentralWidget(central)
 
         # wiring
@@ -136,11 +279,21 @@ class MainWindow(QMainWindow):
             self._ping_timer.start()
             self.check_online()
 
+        # Menu first: its panel toggles read the splitter state, and the
+        # layout restore below updates their labels.
+        self._build_menu()
+        self._restore_layout()
+
     def _build_menu(self) -> None:
         menubar = self.menuBar()
         file_menu = menubar.addMenu("&File")
         self.settings_action = file_menu.addAction("Settings...")
         self.settings_action.triggered.connect(self._open_settings)
+        accounts_action = file_menu.addAction("Accounts…")
+        accounts_action.triggered.connect(self._open_accounts)
+        self.lock_action = file_menu.addAction("Lock session")
+        self.lock_action.triggered.connect(self._lock_session)
+        self.lock_action.setVisible(False)
         file_menu.addSeparator()
         quit_action = file_menu.addAction("Quit")
         quit_action.triggered.connect(self.close)
@@ -163,6 +316,14 @@ class MainWindow(QMainWindow):
             self._theme_actions[key] = action
         self._refresh_theme_actions()
 
+        view_menu.addSeparator()
+        self.sidebar_action = view_menu.addAction("Collapse property list")
+        self.sidebar_action.triggered.connect(self._toggle_sidebar)
+        self.chat_action = view_menu.addAction("Collapse chat")
+        self.chat_action.triggered.connect(self._toggle_chat)
+
+        self._build_panel_toggles(menubar)
+
         help_menu = menubar.addMenu("&Help")
         tour_action = help_menu.addAction("Guided tour...")
         tour_action.triggered.connect(self._start_tour)
@@ -171,7 +332,7 @@ class MainWindow(QMainWindow):
         self.exit_demo_action.setVisible(False)
         help_menu.addSeparator()
         about_action = help_menu.addAction("About...")
-        about_action.triggered.connect(lambda: AboutDialog(self).exec())
+        about_action.triggered.connect(lambda: AboutDialog(self.app, self).exec())
 
     def _open_settings(self) -> None:
         SettingsDialog(self.app, self).exec()
@@ -208,6 +369,7 @@ class MainWindow(QMainWindow):
         """Refresh every view — used after a backup restore."""
         self.drawer.reload()
         self.crm_tab.reload()
+        self.lease_tab.reload()
         current = self.property_form.current_id
         if current is None:
             return
@@ -217,6 +379,70 @@ class MainWindow(QMainWindow):
         else:
             self.property_form.load_property(current)
             self.photo_panel.load_property(current)
+
+    # -- locking -----------------------------------------------------------
+
+    def is_locked(self) -> bool:
+        """True while the login panel is covering the portfolio."""
+        return self._lock_panel is not None and \
+            self.centralWidget() is self._lock_panel
+
+    def set_locked(self, locked: bool) -> None:
+        """Hide the portfolio behind the login panel.
+
+        The central widget is swapped rather than the contents disabled, so a
+        locked window shows nothing of the portfolio at all.
+        """
+        if locked:
+            if self._real_central is None:
+                self._real_central = self.centralWidget()
+            if self._lock_panel is None:
+                self._lock_panel = self._build_lock_panel()
+            self.setCentralWidget(self._lock_panel)
+            self._lock_panel.show()
+        elif self._real_central is not None:
+            self.setCentralWidget(self._real_central)
+            # Qt hides a central widget when it is swapped out and does not
+            # unhide it when it is swapped back, so the restored portfolio
+            # would stay invisible with no error anywhere.
+            self._real_central.show()
+        self.lock_action.setVisible(not locked)
+        self._refresh_theme_actions()
+
+    def _build_lock_panel(self) -> QWidget:
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.addStretch(1)
+        logo = QLabel()
+        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        _set_logo(logo, height=72)
+        layout.addWidget(logo)
+        title = QLabel(f"{APP_NAME} is locked")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setFont(font(16, bold=True))
+        layout.addWidget(title)
+        hint = QLabel("Log in to see your properties, leases and applicants.")
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+        button = QPushButton("Log in")
+        button.clicked.connect(self._unlock)
+        row = QHBoxLayout()
+        row.addStretch(1)
+        row.addWidget(button)
+        row.addStretch(1)
+        layout.addLayout(row)
+        layout.addStretch(1)
+        return panel
+
+    def _unlock(self) -> None:
+        self.app.unlock_with_dialog()
+
+    def _open_accounts(self) -> None:
+        UsersDialog(self.app, self).exec()
+
+    def _lock_session(self) -> None:
+        self.app.lock()
 
     def set_demo_mode(self, active: bool) -> None:
         """Reflect demo mode in the UI.
@@ -316,6 +542,81 @@ class MainWindow(QMainWindow):
         for key, action in self._theme_actions.items():
             action.setChecked(key == current)
 
+    # -- collapsible panels ------------------------------------------------
+
+    def _toggle_sidebar(self) -> None:
+        self.top_splitter.toggle_pane(0)
+        self._remember_layout()
+
+    def _toggle_chat(self) -> None:
+        self.main_splitter.toggle_pane(1)
+        self._remember_layout()
+
+    def _remember_layout(self) -> None:
+        self.app.settings.sidebar_collapsed = self.top_splitter.is_collapsed(0)
+        self.app.settings.chat_collapsed = self.main_splitter.is_collapsed(1)
+        try:
+            self.app.settings.save()
+        except Exception:
+            pass
+        self._refresh_panel_actions()
+
+    def _build_panel_toggles(self, menubar) -> None:
+        """Two always-visible buttons collapsing the property list and chat.
+
+        They live in the menu bar's corner rather than on the splitter handle:
+        QSplitter owns the handle's mouse events (overriding them breaks
+        drag-to-resize), and a pane collapsed to zero would hide any button
+        placed inside it.
+        """
+        holder = QWidget()
+        layout = QHBoxLayout(holder)
+        layout.setContentsMargins(6, 0, 8, 0)
+        layout.setSpacing(2)
+
+        self.sidebar_toggle = QToolButton(holder)
+        self.sidebar_toggle.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.sidebar_toggle.clicked.connect(self._toggle_sidebar)
+
+        self.chat_toggle = QToolButton(holder)
+        self.chat_toggle.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.chat_toggle.clicked.connect(self._toggle_chat)
+
+        layout.addWidget(self.sidebar_toggle)
+        layout.addWidget(self.chat_toggle)
+        menubar.setCornerWidget(holder)
+        self._refresh_panel_actions()
+
+    def _refresh_panel_actions(self) -> None:
+        sidebar_collapsed = self.top_splitter.is_collapsed(0)
+        chat_collapsed = self.main_splitter.is_collapsed(1)
+
+        self.sidebar_action.setText(
+            "Expand property list" if sidebar_collapsed
+            else "Collapse property list")
+        self.chat_action.setText(
+            "Expand chat" if chat_collapsed else "Collapse chat")
+
+        # The arrows point the way the panel will move.
+        if hasattr(self, "sidebar_toggle"):
+            self.sidebar_toggle.setText("▶ Properties" if sidebar_collapsed
+                                        else "◀ Properties")
+            self.sidebar_toggle.setToolTip(
+                "Expand the property list" if sidebar_collapsed
+                else "Collapse the property list")
+        if hasattr(self, "chat_toggle"):
+            self.chat_toggle.setText("▲ Chat" if chat_collapsed else "▼ Chat")
+            self.chat_toggle.setToolTip(
+                "Expand the chat" if chat_collapsed else "Collapse the chat")
+
+    def _restore_layout(self) -> None:
+        """Put back the panel layout the user left behind."""
+        if self.app.settings.sidebar_collapsed:
+            self.top_splitter.collapse(0, True)
+        if self.app.settings.chat_collapsed:
+            self.main_splitter.collapse(1, True)
+        self._refresh_panel_actions()
+
     def apply_theme(self, theme) -> None:
         """Push the palette into every widget that paints its own colours.
 
@@ -329,9 +630,13 @@ class MainWindow(QMainWindow):
         self.property_form.apply_theme(theme)
         self.photo_panel.apply_theme(theme)
         self.crm_tab.apply_theme(theme)
+        self.lease_tab.apply_theme(theme)
         self.chat_pane.apply_theme(theme)
         if getattr(self, "_tour", None) is not None:
             self._tour.apply_theme(theme)
+        for splitter in (self.top_splitter, self.main_splitter):
+            for i in range(splitter.count()):
+                splitter.handle(i).update()
         self._refresh_theme_actions()
 
     def status(self, message: str) -> None:

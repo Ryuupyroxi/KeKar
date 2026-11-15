@@ -17,6 +17,8 @@ import shutil
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parent.parent
+
 BAT = """@echo off
 rem KeKar launcher (Windows)
 rem
@@ -120,8 +122,23 @@ def make_platform_package(platform: str, source: Path, out: Path) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     target = out / f"KeKar_{platform.capitalize()}"
     shutil.copytree(source, target)
+    if platform == "windows":
+        _stage_icon(target)
     _write_launchers(out)
     return out
+
+
+def _stage_icon(target: Path) -> None:
+    """Copy the kekar .ico to the Windows package root.
+
+    The NSIS installer points its shortcuts at $INSTDIR\\kekar.ico. The same
+    .ico also ships inside _internal/resources/icons, but a stable
+    package-root path keeps the installer independent of PyInstaller's
+    internal layout.
+    """
+    source = ROOT / "src" / "resources" / "icons" / "kekar.ico"
+    if source.exists():
+        shutil.copy2(source, target / "kekar.ico")
 
 
 def combine(linux_dir: Path, windows_dir: Path, out: Path) -> Path:
@@ -130,6 +147,7 @@ def combine(linux_dir: Path, windows_dir: Path, out: Path) -> Path:
     out.mkdir(parents=True)
     if windows_dir.exists():
         shutil.copytree(windows_dir, out / "KeKar_Windows")
+        _stage_icon(out / "KeKar_Windows")
     if linux_dir.exists():
         shutil.copytree(linux_dir, out / "KeKar_Linux")
     _write_launchers(out)
