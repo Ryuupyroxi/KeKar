@@ -250,7 +250,8 @@ def test_installer_attach_step_is_not_pinned_to_one_version():
     """The filename carries the version, so the attach step must glob it."""
     nsi = (ROOT / "packaging" / "windows" / "KeKar_Installer.nsi").read_text(
         encoding="utf-8")
-    assert 'OutFile "KeKar_Setup_${VERSION}.exe"' in nsi
+    assert 'KEKAR_OUT_FILE "KeKar_Setup_${VERSION}.exe"' in nsi, (
+        "the default output name must still carry the version")
     workflow = (ROOT / ".github" / "workflows" / "build.yml").read_text(
         encoding="utf-8")
     assert "KeKar_Setup_*.exe" in workflow, (
@@ -258,3 +259,6 @@ def test_installer_attach_step_is_not_pinned_to_one_version():
     assert "KEKAR_PACKAGE_DIR" in workflow and "KEKAR_PACKAGE_DIR" in nsi, (
         "the source folder must be a define: NSIS anchors a relative File "
         "path to the script, not the working directory")
+    assert "KEKAR_OUT_FILE" in workflow and "KEKAR_OUT_FILE" in nsi, (
+        "the output path must be a define too: NSIS anchors a relative "
+        "OutFile to the script as well")

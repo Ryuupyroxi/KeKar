@@ -14,6 +14,12 @@
   !define KEKAR_PACKAGE_DIR "KeKar_Windows"
 !endif
 
+; Where the compiled installer is written. NSIS anchors a relative OutFile to
+; the script as well, so CI passes an absolute path.
+!ifndef KEKAR_OUT_FILE
+  !define KEKAR_OUT_FILE "KeKar_Setup_${VERSION}.exe"
+!endif
+
 ; Installer, uninstaller and shortcut icons. The same .ico is staged into the
 ; Windows package root by tools/make_usb_package.py and the shortcuts read it
 ; from there.
@@ -25,7 +31,7 @@
 !define MUI_UNICON "${__FILEDIR__}\kekar.ico"
 
 Name "${APPNAME} ${VERSION}"
-OutFile "KeKar_Setup_${VERSION}.exe"
+OutFile "${KEKAR_OUT_FILE}"
 InstallDir "$LOCALAPPDATA\KeKar"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma

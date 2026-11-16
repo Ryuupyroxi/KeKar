@@ -75,14 +75,16 @@ jobs:
           choco install nsis --yes --no-progress
           $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
           & $nsis /VERSION
-          Push-Location out
-          # Absolute script path: NSIS resolves ${__FILEDIR__} against the CWD
-          # when the script is given relatively, which looks for
-          # packaging\packaging\windows\kekar.ico and fails.
+          $ver = (Select-String -Path "$env:GITHUB_WORKSPACE\packaging\windows\KeKar_Installer.nsi" `
+                  -Pattern '^!define VERSION "([^"]+)"').Matches.Groups[1].Value
+          $out = "$env:GITHUB_WORKSPACE\out\KeKar_Setup_$ver.exe"
+          # Both the package folder and the output path are absolute: NSIS
+          # anchors relative File and OutFile paths to the script, not to the
+          # working directory.
           & $nsis "/DKEKAR_PACKAGE_DIR=$env:GITHUB_WORKSPACE\out\KeKar_Windows" `
-            "$env:GITHUB_WORKSPACE\packaging\windows\KeKar_Installer.nsi"
-          Pop-Location
-          Get-Item out\KeKar_Setup_*.exe | Select-Object Name, Length
+                  "/DKEKAR_OUT_FILE=$out" `
+                  "$env:GITHUB_WORKSPACE\packaging\windows\KeKar_Installer.nsi"
+          Get-Item $out | Select-Object Name, Length
 
       - name: Attach the installer to the release
         if: github.event_name == 'release'
