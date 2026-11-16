@@ -1,0 +1,7 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  nsis:
+    runs-on: windows-latest
+    steps:
+      - run: makensis /VERSION
