@@ -43,6 +43,9 @@ observation and the paste-back.
 **D4 — build the installer on the Windows runner, not under wine.** `windows-latest`
 is a real Windows environment, so `makensis` runs natively and the artifact is a
 genuine Windows installer. Wine on the Linux job would be a second, flaky path.
+The probe (Task 1.1) refined this: NSIS is **not** on the runner image and
+choco's PATH update does not reach the job, so the step installs NSIS via choco
+and invokes `makensis.exe` by full path.
 
 ## Gap inventory
 
@@ -139,29 +142,31 @@ In `.github/workflows/build.yml`, in the `windows` job, after
 `Compress-Archive ... KeKar_Windows.zip` and before the attach step:
 
 ```yaml
+      # NSIS is not on the runner image. Probed 2026-11-16: `makensis` is not
+      # on PATH, `choco install nsis` deploys it to
+      # C:\Program Files (x86)\NSIS but does NOT add it to PATH (a registry
+      # Path refresh in-step does not help either), so call it by full path.
       - name: Compile the NSIS installer
         shell: pwsh
         run: |
-          $ver = Select-String -Path packaging/windows/KeKar_Installer.nsi `
-                          -Pattern '^!define VERSION "([^"]+)"' |
-                  ForEach-Object { $_.Matches.Groups[1].Value }
-          if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) {
-            choco install nsis --yes
-          }
+          choco install nsis --yes --no-progress
+          $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          & $nsis /VERSION
           Push-Location out
-          makensis ..\packaging\windows\KeKar_Installer.nsi
+          & $nsis ..\packaging\windows\KeKar_Installer.nsi
           Pop-Location
-          Get-Item out\KeKar_Setup_$ver.exe | Select-Object Name, Length
+          Get-Item out\KeKar_Setup_*.exe | Select-Object Name, Length
 
       - name: Attach the installer to the release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: out/KeKar_Setup_${{ github.ref_name }}.exe
+          files: out/KeKar_Setup_*.exe
 ```
 
-`${{ github.ref_name }}` is the tag (`v1.2.0`); the script's `OutFile` uses the
-`!define VERSION` value, so the two must agree — the test in Task 1.3 guards it.
+The tag is `v1.2.0` while the script's `OutFile` is `KeKar_Setup_1.2.0.exe`, so
+the attach step globs rather than deriving the name from the tag. Task 1.3
+guards both the `OutFile` pattern and the glob.
 
 - [ ] **Step 4: Run the test to verify it passes**
 

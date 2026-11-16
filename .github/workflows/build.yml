@@ -66,6 +66,26 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path out/KeKar_Windows -DestinationPath out/KeKar_Windows.zip
 
+      # NSIS is not on the runner image. choco installs it to
+      # C:\Program Files (x86)\NSIS but does not put it on PATH, so the
+      # compiler is invoked by full path (probed on the runner, 2026-11-16).
+      - name: Compile the NSIS installer
+        shell: pwsh
+        run: |
+          choco install nsis --yes --no-progress
+          $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          & $nsis /VERSION
+          Push-Location out
+          & $nsis ..\packaging\windows\KeKar_Installer.nsi
+          Pop-Location
+          Get-Item out\KeKar_Setup_*.exe | Select-Object Name, Length
+
+      - name: Attach the installer to the release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/KeKar_Setup_*.exe
+
       - name: Attach the Windows build to the release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2

@@ -232,3 +232,23 @@ def test_packaged_icons_match_the_source_art():
         == (icons / "kekar.ico").read_bytes()
     assert (ROOT / "packaging" / "linux" / "kekar.png").read_bytes() \
         == (icons / "kekar-master.png").read_bytes()
+
+
+def test_ci_builds_and_attaches_the_windows_installer():
+    """A Windows release must carry the NSIS installer, not just the zip."""
+    workflow = (ROOT / ".github" / "workflows" / "build.yml").read_text(
+        encoding="utf-8")
+    assert "makensis" in workflow, "CI never compiles the NSIS installer"
+    assert "KeKar_Setup_" in workflow, "CI never attaches the installer"
+    assert "choco install nsis" in workflow, "no fallback if NSIS is absent"
+
+
+def test_installer_attach_step_is_not_pinned_to_one_version():
+    """The filename carries the version, so the attach step must glob it."""
+    nsi = (ROOT / "packaging" / "windows" / "KeKar_Installer.nsi").read_text(
+        encoding="utf-8")
+    assert 'OutFile "KeKar_Setup_${VERSION}.exe"' in nsi
+    workflow = (ROOT / ".github" / "workflows" / "build.yml").read_text(
+        encoding="utf-8")
+    assert "KeKar_Setup_*.exe" in workflow, (
+        "attach the produced installer by glob, not a hard-coded version")
