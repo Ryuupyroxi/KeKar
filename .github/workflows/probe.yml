@@ -4,4 +4,15 @@ jobs:
   nsis:
     runs-on: windows-latest
     steps:
-      - run: makensis /VERSION
+      - name: Install NSIS
+        shell: pwsh
+        run: choco install nsis --yes
+      - name: Locate and run makensis
+        shell: pwsh
+        run: |
+          Get-ChildItem "C:\Program Files (x86)\NSIS" -ErrorAction SilentlyContinue |
+            Select-Object Name
+          Write-Host "--- bare name ---"
+          makensis /VERSION
+          Write-Host "--- full path ---"
+          & "C:\Program Files (x86)\NSIS\makensis.exe" /VERSION
