@@ -6,10 +6,13 @@
 !define COMPANY "KeKar Rental Properties"
 !define VERSION "1.2.0"
 
-; Installer, uninstaller and shortcut icons. ${__FILEDIR__} is this script's
-; own directory, so the path holds wherever makensis is invoked from. The
-; same .ico is staged into the Windows package root by
-; tools/make_usb_package.py and the shortcuts read it from there.
+; Installer, uninstaller and shortcut icons. The same .ico is staged into the
+; Windows package root by tools/make_usb_package.py and the shortcuts read it
+; from there.
+;
+; Invoke makensis with an ABSOLUTE path to this script (CI does). NSIS resolves
+; ${__FILEDIR__} against the current directory when the script is named
+; which makes it look for packaging\packaging\windows\kekar.ico.
 !define MUI_ICON "${__FILEDIR__}\kekar.ico"
 !define MUI_UNICON "${__FILEDIR__}\kekar.ico"
 

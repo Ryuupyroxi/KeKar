@@ -241,6 +241,9 @@ def test_ci_builds_and_attaches_the_windows_installer():
     assert "makensis" in workflow, "CI never compiles the NSIS installer"
     assert "KeKar_Setup_" in workflow, "CI never attaches the installer"
     assert "choco install nsis" in workflow, "no fallback if NSIS is absent"
+    assert "GITHUB_WORKSPACE" in workflow, (
+        "makensis needs an absolute script path, or ${__FILEDIR__} resolves "
+        "against the CWD and the icon is not found")
 
 
 def test_installer_attach_step_is_not_pinned_to_one_version():

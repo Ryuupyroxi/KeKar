@@ -76,7 +76,10 @@ jobs:
           $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
           & $nsis /VERSION
           Push-Location out
-          & $nsis ..\packaging\windows\KeKar_Installer.nsi
+          # Absolute script path: NSIS resolves ${__FILEDIR__} against the CWD
+          # when the script is given relatively, which looks for
+          # packaging\packaging\windows\kekar.ico and fails.
+          & $nsis "$env:GITHUB_WORKSPACE\packaging\windows\KeKar_Installer.nsi"
           Pop-Location
           Get-Item out\KeKar_Setup_*.exe | Select-Object Name, Length
 
