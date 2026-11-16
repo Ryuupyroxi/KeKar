@@ -45,7 +45,7 @@ Decision references (D1-D10) are defined in Part 1 of
 | §10.3 | Pre-bundled toolsets | `src/agent/tools.py` (four toolsets as functions) | `test_agent_tools.py` |
 | §11.1 | Offline degradation + friendly errors | `src/ui/main_window.py` (offline banner), `chat_pane.py` | `test_gui_smoke.py` |
 | §11.2 | Image compression + attachment | `src/services/image_service.py` | `test_image_service.py` |
-| §11.3 | The four named tools | `src/agent/tools.py` | `test_agent_tools.py` |
+| §11.3 | The four named toolsets — `db_query_tool`, `listing_compiler_tool`, `clipboard_bridge_tool`, `browser_automation_tool` — exposed as 12 whitelisted functions | `src/agent/tools.py` (`TOOL_SCHEMAS`: property/applicant CRUD + status + stage, `listing_compile`, `clipboard_copy`, `marketplace_autofill`, memory read/write) | `test_agent_tools.py` |
 | §12.1 | First-run welcome + key handshake | `src/ui/wizard.py` | `test_gui_smoke.py` |
 | §12.2 | Zero-touch subsequent launches | `Settings.load()` in `src/app.py` | `test_settings.py` |
 | §14.1 | Questionnaire + document storage | `src/data/applicant_repo.py` (`add_document`, `documents`) | `test_applicant_repo.py` |
