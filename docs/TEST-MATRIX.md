@@ -7,43 +7,50 @@ only after watching the scenario pass.
 **Legend:** PASS = observed working · FAIL = observed broken · n/a = not
 applicable on that platform · blank = not yet run
 
-| # | Scenario | Windows | Linux | Notes / evidence |
-|---|---|---|---|---|
-| 1 | First run: wizard creates `KeKarData/` and accepts a key | | | |
-| 2 | Second run: wizard is skipped | | | |
-| 3 | Add a property, save, restart, data persists | | | |
-| 4 | Mark Vacant -> Rented -> Vacant | | | |
-| 5 | Copy listing -> paste into Notepad/text editor, content correct | | | |
-| 6 | Add photos, thumbnails appear, restart, photos persist | | | |
-| 7 | Add applicant, change stage, restart, stage persists | | | |
-| 8 | Chat: ask "which properties allow pets?" -> correct answer | | | |
-| 9 | Chat with no network -> friendly message, no crash | | | |
-| 10 | Kill the app mid-write, restart -> integrity check passes or restores | | | |
-| 11 | Unplug and replug into a different machine -> data intact | | | |
-| 12 | Marketplace autofill (if enabled) -> fills fields, never publishes | | | |
-| 13 | Drive set to read-only -> app falls back to OS config dir with a warning | | | |
-| 14 | Corrupt the DB -> app restores the newest backup automatically | | | |
-| 15 | Run from a drive letter other than the build machine's | | n/a | |
-| 16 | Copy listing to clipboard, paste into Facebook Marketplace manually | | | |
-| 17 | Daily backup appears in `KeKarData/backups/` after 24 h | | | |
-| 18 | Uninstall/remove the drive -> no leftover data in `%APPDATA%` or `~/.config` | | | |
-| 19 | Leases: load the client's example lease, generate for a tenant, copy, print, email | | | |
-| 20 | Leases: save one, restart, it is still listed and reloads | | | |
-| 21 | Listings: pick Zillow and apartments.com, copy, paste into a text editor | | | |
-| 22 | Collapse the property list and the chat from the menu bar, restart, layout returns | | | |
-| 23 | Switch to Light, Dark and OLED, restart, the choice returns | | | |
-| 24 | Start menu / taskbar / title bar show the KeKar icon; the logo shows in the window header and About | | | |
-| 25 | Accounts: add an account, turn on "Ask for a password", restart, log in, lock, unlock | | | |
-| 26 | Short stay: set Type to Short stay, the form swaps to nightly rate, fees, minimum stay, occupancy, check-in/out, Instant Book, house rules | | | |
-| 27 | Short stay: the list row shows a "Short stay" subtitle and no Vacant/Rented stripe | | | |
-| 28 | Stays: add a stay, its days are marked on the calendar, restart, it persists | | | |
-| 29 | Stays: adding an overlapping stay is refused with a readable message; cancelling frees the dates | | | |
-| 30 | Portals: run `tools/live_sync_check.py` against a real portal calendar, then Sync now in the app twice (second run reports "unchanged") | | | |
-| 31 | Portals: set a price/min-stay override, open Portal listing, the preview shows the override and says so; Export calendar writes an .ics | | | |
+`Runs in` is **demo** (safe: Help → Start demo mode, nothing touches the real
+portfolio), **real** (needs the real `KeKarData` — persistence across a restart,
+the install or the drive itself) or **either**. Demo mode is session-only, so a
+scenario that must survive a restart is always `real`. Settings are shared with
+the real install even in demo mode, so a scenario that asserts a *setting*
+returning after a restart is `real` too.
+
+| # | Scenario | Runs in | Windows | Linux | Notes / evidence |
+|---|---|---|---|---|---|
+| 1 | First run: wizard creates `KeKarData/` and accepts a key | real | | | |
+| 2 | Second run: wizard is skipped | real | | | |
+| 3 | Add a property, save, restart, data persists | real | | | |
+| 4 | Mark Vacant -> Rented -> Vacant | demo | | | |
+| 5 | Copy listing -> paste into Notepad/text editor, content correct | demo | | | |
+| 6 | Add photos, thumbnails appear, restart, photos persist | real | | | |
+| 7 | Add applicant, change stage, restart, stage persists | real | | | |
+| 8 | Chat: ask "which properties allow pets?" -> correct answer | demo | | | |
+| 9 | Chat with no network -> friendly message, no crash | demo | | | |
+| 10 | Kill the app mid-write, restart -> integrity check passes or restores | real | | | |
+| 11 | Unplug and replug into a different machine -> data intact | real | | | |
+| 12 | Marketplace autofill (if enabled) -> fills fields, never publishes | demo | | | |
+| 13 | Drive set to read-only -> app falls back to OS config dir with a warning | real | | | |
+| 14 | Corrupt the DB -> app restores the newest backup automatically | real | | | |
+| 15 | Run from a drive letter other than the build machine's | real | | n/a | |
+| 16 | Copy listing to clipboard, paste into Facebook Marketplace manually | demo | | | |
+| 17 | Daily backup appears in `KeKarData/backups/` after 24 h | real | | | |
+| 18 | Uninstall/remove the drive -> no leftover data in `%APPDATA%` or `~/.config` | real | | | |
+| 19 | Leases: load the client's example lease, generate for a tenant, copy, print, email | demo | | | |
+| 20 | Leases: save one, restart, it is still listed and reloads | real | | | |
+| 21 | Listings: pick Zillow and apartments.com, copy, paste into a text editor | demo | | | |
+| 22 | Collapse the property list and the chat from the menu bar, restart, layout returns | real | | | |
+| 23 | Switch to Light, Dark and OLED, restart, the choice returns | demo | | | |
+| 24 | Start menu / taskbar / title bar show the KeKar icon; the logo shows in the window header and About | real | | | |
+| 25 | Accounts: add an account, turn on "Ask for a password", restart, log in, lock, unlock | real | | | |
+| 26 | Short stay: set Type to Short stay, the form swaps to nightly rate, fees, minimum stay, occupancy, check-in/out, Instant Book, house rules | demo | | | |
+| 27 | Short stay: the list row shows a "Short stay" subtitle and no Vacant/Rented stripe | demo | | | |
+| 28 | Stays: add a stay, its days are marked on the calendar, restart, it persists | real | | | |
+| 29 | Stays: adding an overlapping stay is refused with a readable message; cancelling frees the dates | demo | | | |
+| 30 | Portals: run `tools/live_sync_check.py` against a real portal calendar, then Sync now in the app twice (second run reports "unchanged") | demo | | | |
+| 31 | Portals: set a price/min-stay override, open Portal listing, the preview shows the override and says so; Export calendar writes an .ics | demo | | | |
 
 ## Automated coverage
 
-These are covered by the pytest suite (`pytest -q`, 387 tests) and must stay
+These are covered by the pytest suite (`pytest -q`, 392 tests) and must stay
 green:
 
 - Schema creation, WAL mode, foreign keys, migration idempotency (`test_db.py`)
@@ -113,6 +120,24 @@ green:
   `UID`, reports `unchanged`, and logs the attempt; the Stays tab and the
   listing dialog apply what the form stores (`test_short_stay.py`)
 
+## Scenario 12 — live Marketplace autofill
+
+Needs Facebook logged in once in KeKar's dedicated browser profile
+(`KeKarData/browser_profile/`) and **Settings → Marketplace autofill** turned on.
+
+1. File → Settings → enable Marketplace autofill. Close the dialog.
+2. Select a rental property that has a photo, then **Publish to Marketplace…**
+3. The KeKar browser profile opens and navigates to the Marketplace listing form.
+4. Watch it fill title, price, description and photos. It then **stops**.
+5. Read the report in the dialog. Expect `autofilled` or `needs_review`.
+   `failed` is also a legitimate result — record the message verbatim.
+6. Confirm the browser tab still shows an **unpublished draft**: no Publish click.
+7. Paste the report text and a screenshot of the dialog into row 12.
+
+If the report says `needs_review`, the selectors in
+`config/marketplace_selectors.json` have drifted: update them and bump that
+file's `schema_version`.
+
 ## Scenario 30 — live portal sync
 
 Needs a real calendar export URL. Airbnb: the listing's Availability → Export
@@ -145,6 +170,27 @@ calendar. Vrbo and Booking.com expose one in the owner/extranet dashboard.
 3. Perform the steps in the scenario.
 4. Record the result and, for anything that failed, attach the relevant lines
    from `KeKarData/logs/kekar.log`.
+
+## Windows hardware pass
+
+Run on the target Windows 10/11 machine, from the release zip or the installer.
+
+1. Unzip `KeKar_Windows.zip` to a folder and double-click `KeKar.bat`.
+   SmartScreen may warn because the build is not code-signed: click
+   **More info → Run anyway**. Record whether the warning appeared.
+2. Or run `KeKar_Setup_<version>.exe` and confirm the Start-menu and Desktop
+   shortcuts, then launch from the shortcut.
+3. Run rows 1-9 in order.
+4. Row 11 needs a second machine or a VM.
+5. Row 13: set the drive read-only (a physical switch, or a read-only bind
+   mount) and confirm the app warns and falls back instead of dying.
+6. Row 14: corrupt `KeKarData/database.db`, relaunch, confirm the restore path.
+7. Row 24: confirm the house mark in the Start menu, Desktop, taskbar and title
+   bar, and the wordmark in the window header and About.
+8. Rows 26-31: the short-stay pass.
+9. Paste back `KeKarData/logs/kekar.log` (`tail -40`) and one screenshot per row.
+
+What proves it: every row marked PASS with an observation, not "looked fine".
 
 ## Known gaps
 
