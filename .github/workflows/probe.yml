@@ -4,15 +4,20 @@ jobs:
   nsis:
     runs-on: windows-latest
     steps:
-      - name: Install NSIS
-        shell: pwsh
-        run: choco install nsis --yes
-      - name: Locate and run makensis
+      - uses: actions/checkout@v4
+      - name: Install NSIS and compile the installer end to end
         shell: pwsh
         run: |
-          Get-ChildItem "C:\Program Files (x86)\NSIS" -ErrorAction SilentlyContinue |
-            Select-Object Name
-          Write-Host "--- bare name ---"
+          choco install nsis --yes --no-progress
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+                      [System.Environment]::GetEnvironmentVariable("Path", "User")
+          Write-Host "--- version ---"
           makensis /VERSION
-          Write-Host "--- full path ---"
-          & "C:\Program Files (x86)\NSIS\makensis.exe" /VERSION
+          Write-Host "--- fake windows build ---"
+          New-Item -ItemType Directory -Force -Path out/KeKar_Windows | Out-Null
+          "dummy" | Set-Content out/KeKar_Windows/KeKar.exe
+          Copy-Item packaging/windows/kekar.ico out/KeKar_Windows/kekar.ico
+          Push-Location out
+          makensis ..\packaging\windows\KeKar_Installer.nsi
+          Pop-Location
+          Get-Item out/KeKar_Setup_*.exe | Select-Object Name, Length
