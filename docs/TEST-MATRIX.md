@@ -38,7 +38,7 @@ applicable on that platform · blank = not yet run
 | 27 | Short stay: the list row shows a "Short stay" subtitle and no Vacant/Rented stripe | | | |
 | 28 | Stays: add a stay, its days are marked on the calendar, restart, it persists | | | |
 | 29 | Stays: adding an overlapping stay is refused with a readable message; cancelling frees the dates | | | |
-| 30 | Portals: paste a real portal iCal URL, Sync now imports the events once and reports "unchanged" on a second sync | | | |
+| 30 | Portals: run `tools/live_sync_check.py` against a real portal calendar, then Sync now in the app twice (second run reports "unchanged") | | | |
 | 31 | Portals: set a price/min-stay override, open Portal listing, the preview shows the override and says so; Export calendar writes an .ics | | | |
 
 ## Automated coverage
@@ -102,6 +102,9 @@ green:
 - Branding: the `.ico` carries every frame size, the hicolor PNGs exist, the
   window icon is set, and the logo renders in the header and About
   (`test_branding.py`)
+- Live sync harness: `tools/live_sync_check.py` copies the portfolio, stores
+  the URL it is given, syncs and reports counts without writing to the real
+  `KeKarData` (`tests/test_live_sync_check.py`)
 - Short stays: the migration adds the columns to an old database and defaults
   `kind` to `rental`; the kind round-trips; the Airbnb/Vrbo/Booking.com
   packages, their warnings and the per-portal overrides; booking nights derived
@@ -109,6 +112,31 @@ green:
   `build_ical`/`parse_ical` round-trip including folded lines; sync imports by
   `UID`, reports `unchanged`, and logs the attempt; the Stays tab and the
   listing dialog apply what the form stores (`test_short_stay.py`)
+
+## Scenario 30 — live portal sync
+
+Needs a real calendar export URL. Airbnb: the listing's Availability → Export
+calendar. Vrbo and Booking.com expose one in the owner/extranet dashboard.
+
+1. Copy the URL, then run the check against a **copy** of your portfolio:
+
+   ```bash
+   .venv/bin/python tools/live_sync_check.py \
+     --url "<paste the portal URL>" --portal airbnb
+   ```
+
+   Expect `status: ok` with `added:` / `updated:` / `skipped:` counts and
+   `dry_run: True`. The tool copies `KeKarData` to a throwaway directory, so
+   your real bookings are never written. Paste the whole output into row 30.
+2. Switch to KeKar, open the short-stay property's **Portals** group, paste the
+   same URL into the portal's Calendar field and press **Sync now**.
+   Expect the same counts and `Last sync:` to update.
+3. Press **Sync now** again. Expect `unchanged` and `0` new.
+4. Add one booking in KeKar, then **Export calendar (.ics)…** and open the file
+   in a text editor. Expect `BEGIN:VCALENDAR` and one `VEVENT` per live booking,
+   with `UID`, `DTSTART`, `DTEND` and `SUMMARY`.
+5. If a portal's calendar uses a dialect the parser rejects, the tool says so
+   with the provider's own message — paste it verbatim rather than paraphrasing.
 
 ## How to run a scenario
 
@@ -129,4 +157,4 @@ green:
   `test_prune`.
 - Scenario 30 needs a real portal calendar URL. The automated tests use a
   local fixture (`tests/test_short_stay.py::CALENDAR`), so the live fetch and
-  the portals' real iCal dialect are unverified.
+  the portals' real iCal dialect are unverified until this row is filled.

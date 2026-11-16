@@ -395,29 +395,25 @@ Expected: PASS.
 
 ```bash
 SCRATCH=$(mktemp -d)
-cp -r dist/KeKarData "$SCRATCH/KeKarData"
-.venv/bin/python - "$SCRATCH" <<'PY'
-import sys
-sys.path.insert(0, ".")
+mkdir -p "$SCRATCH/KeKarData"
+KEKAR_DATA_DIR="$SCRATCH/KeKarData" .venv/bin/python -c "
+import sys; sys.path.insert(0, '.')
 from src.data.db import Database
 from src.data.models import Property
 from src.data.property_repo import PropertyRepo
-d = sys.argv[1]
-db = Database(f"{d}/KeKarData/database.db")
-PropertyRepo(db).create(Property(address="7 Airbnb Way", kind="short_stay"))
-db.close()
-PY
-.venv/bin/python -c "import tests.test_short_stay as t; print(t.CALENDAR)" > "$SCRATCH/cal.ics"
-(cd "$SCRATCH" && .venv/bin/python -m http.server 8765 >/dev/null 2>&1 &)
-sleep 2
+db = Database('$SCRATCH/KeKarData/database.db')
+PropertyRepo(db).create(Property(address='7 Airbnb Way', kind='short_stay'))
+db.close()"
+.venv/bin/python -c "import tests.test_short_stay as t; print(t.CALENDAR)" \
+  > "$SCRATCH/cal.ics"
 .venv/bin/python tools/live_sync_check.py \
-  --url http://127.0.0.1:8765/cal.ics --portal airbnb \
+  --url "file://$SCRATCH/cal.ics" --portal airbnb \
   --source-dir "$SCRATCH/KeKarData"
-pkill -f "http.server 8765"
 ```
 
-Expected: `status: ok`, `added: 1`, `dry_run: True`, and the scratch directory
-path printed. Leave `$SCRATCH` for the tmp reaper.
+`fetch_ical` is `urllib`, so a `file://` URL exercises the real fetch path with
+no server to run. Expected: `status: ok`, `added: 1`, `dry_run: True`, and no
+`copied_to` line (the copy is deleted unless `--commit` is passed).
 
 - [ ] **Step 6: Commit**
 
