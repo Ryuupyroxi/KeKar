@@ -237,10 +237,13 @@ def build_tour_steps(window) -> list[TourStep]:
             "listing."),
         TourStep(
             window.property_form, "The details form",
-            "Address, rent, deposit and the rest. The quick actions include "
-            "'Preview listing', which builds a copy package for Zillow, "
-            "apartments.com or any other site, and 'Publish to Marketplace' "
-            "for the opt-in Facebook auto-fill."),
+            "Address, rent, deposit and the rest. Use Type to switch a unit to "
+            "a short stay, which brings its own nightly rate, fees, minimum "
+            "stay and portal calendars. 'Preview listing' builds a copy "
+            "package — Zillow and apartments.com for a rental, Airbnb, Vrbo "
+            "and Booking.com for a short stay — and the action button reads "
+            "'Publish to Marketplace' (the opt-in Facebook auto-fill) for a "
+            "rental, or 'Portal listing…' for a short stay."),
         TourStep(
             window.photo_panel, "Photos",
             "Add photos for a property and choose one as the cover. The cover "
@@ -256,6 +259,12 @@ def build_tour_steps(window) -> list[TourStep]:
             "it once as the template, then generate a filled-in copy for any "
             "property and tenant, and copy, print, email or save the result.",
             on_enter=lambda overlay: _show_tab(window, overlay, 2)),
+        TourStep(
+            window.stays_tab, "Stays",
+            "For Airbnb-style units: every reservation on a calendar, with the "
+            "guest, portal, dates and payout. Add a stay by hand, or import a "
+            "portal's own calendar from the Portals section of the property "
+            "form.", on_enter=lambda overlay: _show_tab(window, overlay, 3)),
         TourStep(
             window.chat_pane, "The assistant",
             "Ask questions in plain language, or give an instruction like "

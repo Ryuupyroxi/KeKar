@@ -31,12 +31,25 @@ CREATE TABLE IF NOT EXISTS properties (
   pet_policy     TEXT,
   status         TEXT NOT NULL DEFAULT 'Vacant'
                  CHECK (status IN ('Vacant','Rented')),
+  kind           TEXT NOT NULL DEFAULT 'rental'
+                 CHECK (kind IN ('rental','short_stay')),
   amenity_wd         INTEGER NOT NULL DEFAULT 0 CHECK (amenity_wd IN (0,1)),
   amenity_ac         INTEGER NOT NULL DEFAULT 0 CHECK (amenity_ac IN (0,1)),
   amenity_yard       INTEGER NOT NULL DEFAULT 0 CHECK (amenity_yard IN (0,1)),
   amenity_dishwasher INTEGER NOT NULL DEFAULT 0 CHECK (amenity_dishwasher IN (0,1)),
   amenity_parking    INTEGER NOT NULL DEFAULT 0 CHECK (amenity_parking IN (0,1)),
   notes          TEXT,
+  -- Short-stay (Airbnb-style) terms. NULL for a long-term rental.
+  nightly_price      REAL,
+  cleaning_fee       REAL,
+  extra_guest_fee    REAL,
+  min_stay_nights    INTEGER,
+  max_guests         INTEGER,
+  check_in_time      TEXT,
+  check_out_time     TEXT,
+  instant_book       INTEGER NOT NULL DEFAULT 0 CHECK (instant_book IN (0,1)),
+  cancellation_policy TEXT,
+  house_rules        TEXT,
   created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
@@ -88,11 +101,64 @@ CREATE TABLE IF NOT EXISTS leases (
   updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
+-- Reservations on a short-stay property. ``external_uid`` is the iCal UID the
+-- portal assigned, so a sync updates rather than duplicates.
+CREATE TABLE IF NOT EXISTS bookings (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  property_id  INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  portal       TEXT NOT NULL DEFAULT '',
+  guest_name   TEXT NOT NULL DEFAULT '',
+  guest_contact TEXT,
+  check_in     TEXT NOT NULL DEFAULT '',
+  check_out    TEXT NOT NULL DEFAULT '',
+  nights       INTEGER,
+  payout       REAL,
+  status       TEXT NOT NULL DEFAULT 'confirmed'
+               CHECK (status IN ('confirmed','cancelled','blocked','inquiry')),
+  external_uid TEXT,
+  source       TEXT NOT NULL DEFAULT 'manual'
+               CHECK (source IN ('manual','ical')),
+  notes        TEXT,
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+-- Per-portal settings for a short-stay property: whether it is listed there,
+-- a price/min-stay override, and the portal's own iCal URL.
+CREATE TABLE IF NOT EXISTS property_portals (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  property_id         INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  portal              TEXT NOT NULL
+                      CHECK (portal IN ('airbnb','vrbo','booking_com')),
+  enabled             INTEGER NOT NULL DEFAULT 0 CHECK (enabled IN (0,1)),
+  price_override      REAL,
+  min_stay_override   INTEGER,
+  external_ical_url   TEXT,
+  external_listing_url TEXT,
+  last_sync_at        TEXT,
+  UNIQUE(property_id, portal)
+);
+
+-- One row per sync attempt, newest last, so the UI can show what happened.
+CREATE TABLE IF NOT EXISTS portal_sync_log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  portal      TEXT NOT NULL,
+  started_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  finished_at TEXT,
+  result      TEXT NOT NULL DEFAULT 'ok'
+              CHECK (result IN ('ok','failed','unchanged')),
+  detail      TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_applicants_property ON applicants(property_id);
 CREATE INDEX IF NOT EXISTS idx_applicants_stage    ON applicants(screening_stage);
 CREATE INDEX IF NOT EXISTS idx_chat_created        ON chat_messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_leases_property    ON leases(property_id);
 CREATE INDEX IF NOT EXISTS idx_listing_property    ON listing_runs(property_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_property  ON bookings(property_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_dates     ON bookings(property_id, check_in, check_out);
+CREATE INDEX IF NOT EXISTS idx_portals_property   ON property_portals(property_id);
 
 -- Accounts. This is the plumbing for the client-facing feature: a user logs in
 -- before the portal is opened. Nothing here is wired to a portal yet.

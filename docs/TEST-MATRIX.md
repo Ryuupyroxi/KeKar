@@ -1,8 +1,8 @@
 # KeKar End-to-End Test Matrix
 
-Release gate for v0.1.0. Every scenario must be run by a human on real hardware
-— these cannot be automated from the build machine. Check the box only after
-watching the scenario pass.
+Release gate for the current release. Every scenario must be run by a human on
+real hardware — these cannot be automated from the build machine. Check the box
+only after watching the scenario pass.
 
 **Legend:** PASS = observed working · FAIL = observed broken · n/a = not
 applicable on that platform · blank = not yet run
@@ -34,10 +34,16 @@ applicable on that platform · blank = not yet run
 | 23 | Switch to Light, Dark and OLED, restart, the choice returns | | | |
 | 24 | Start menu / taskbar / title bar show the KeKar icon; the logo shows in the window header and About | | | |
 | 25 | Accounts: add an account, turn on "Ask for a password", restart, log in, lock, unlock | | | |
+| 26 | Short stay: set Type to Short stay, the form swaps to nightly rate, fees, minimum stay, occupancy, check-in/out, Instant Book, house rules | | | |
+| 27 | Short stay: the list row shows a "Short stay" subtitle and no Vacant/Rented stripe | | | |
+| 28 | Stays: add a stay, its days are marked on the calendar, restart, it persists | | | |
+| 29 | Stays: adding an overlapping stay is refused with a readable message; cancelling frees the dates | | | |
+| 30 | Portals: paste a real portal iCal URL, Sync now imports the events once and reports "unchanged" on a second sync | | | |
+| 31 | Portals: set a price/min-stay override, open Portal listing, the preview shows the override and says so; Export calendar writes an .ics | | | |
 
 ## Automated coverage
 
-These are covered by the pytest suite (`pytest -q`, 359 tests) and must stay
+These are covered by the pytest suite (`pytest -q`, 387 tests) and must stay
 green:
 
 - Schema creation, WAL mode, foreign keys, migration idempotency (`test_db.py`)
@@ -96,6 +102,13 @@ green:
 - Branding: the `.ico` carries every frame size, the hicolor PNGs exist, the
   window icon is set, and the logo renders in the header and About
   (`test_branding.py`)
+- Short stays: the migration adds the columns to an old database and defaults
+  `kind` to `rental`; the kind round-trips; the Airbnb/Vrbo/Booking.com
+  packages, their warnings and the per-portal overrides; booking nights derived
+  on write; overlap rejected in the repository and freed by a cancellation;
+  `build_ical`/`parse_ical` round-trip including folded lines; sync imports by
+  `UID`, reports `unchanged`, and logs the attempt; the Stays tab and the
+  listing dialog apply what the form stores (`test_short_stay.py`)
 
 ## How to run a scenario
 
@@ -114,3 +127,6 @@ green:
   read-only bind mount.
 - Scenario 17 needs a 24-hour wait; the prune logic is covered by
   `test_prune`.
+- Scenario 30 needs a real portal calendar URL. The automated tests use a
+  local fixture (`tests/test_short_stay.py::CALENDAR`), so the live fetch and
+  the portals' real iCal dialect are unverified.

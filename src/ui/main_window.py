@@ -20,6 +20,7 @@ from .lease_tab import LeaseTab
 from .photo_panel import PhotoPanel
 from .property_drawer import PropertyDrawer
 from .property_form import PropertyForm
+from .stays_tab import StaysTab
 from . import worker
 from .settings_dialog import SettingsDialog
 from .theme import font
@@ -250,6 +251,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.crm_tab, "Applicants")
         self.lease_tab = LeaseTab(app)
         self.tabs.addTab(self.lease_tab, "Leases")
+        self.stays_tab = StaysTab(app)
+        self.tabs.addTab(self.stays_tab, "Stays")
 
         # The tab area is a card too, so the right-hand region is outlined
         # like the drawer and the chat pane. The card carries the padding;
@@ -386,6 +389,7 @@ class MainWindow(QMainWindow):
         self.drawer.reload()
         self.crm_tab.reload()
         self.lease_tab.reload()
+        self.stays_tab.reload()
         current = self.property_form.current_id
         if current is None:
             return
@@ -654,6 +658,7 @@ class MainWindow(QMainWindow):
         self.photo_panel.apply_theme(theme)
         self.crm_tab.apply_theme(theme)
         self.lease_tab.apply_theme(theme)
+        self.stays_tab.apply_theme(theme)
         self.chat_pane.apply_theme(theme)
         if getattr(self, "_tour", None) is not None:
             self._tour.apply_theme(theme)

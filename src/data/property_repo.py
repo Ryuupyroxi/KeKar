@@ -7,24 +7,31 @@ from .models import Property
 COLUMNS = [
     "id", "address", "city", "zip_code", "rent_price", "deposit_amount",
     "available_date", "bedrooms", "bathrooms", "sqft", "pet_policy", "status",
-    "amenity_wd", "amenity_ac", "amenity_yard", "amenity_dishwasher",
-    "amenity_parking", "notes",
+    "kind", "amenity_wd", "amenity_ac", "amenity_yard", "amenity_dishwasher",
+    "amenity_parking", "notes", "nightly_price", "cleaning_fee",
+    "extra_guest_fee", "min_stay_nights", "max_guests", "check_in_time",
+    "check_out_time", "instant_book", "cancellation_policy", "house_rules",
 ]
 
 _INSERT = """
 INSERT INTO properties
  (address, city, zip_code, rent_price, deposit_amount, available_date,
-  bedrooms, bathrooms, sqft, pet_policy, status,
-  amenity_wd, amenity_ac, amenity_yard, amenity_dishwasher, amenity_parking, notes)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  bedrooms, bathrooms, sqft, pet_policy, status, kind,
+  amenity_wd, amenity_ac, amenity_yard, amenity_dishwasher, amenity_parking, notes,
+  nightly_price, cleaning_fee, extra_guest_fee, min_stay_nights, max_guests,
+  check_in_time, check_out_time, instant_book, cancellation_policy, house_rules)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?)
 """
 
 _UPDATE = """
 UPDATE properties SET
   address=?, city=?, zip_code=?, rent_price=?, deposit_amount=?,
   available_date=?, bedrooms=?, bathrooms=?, sqft=?, pet_policy=?, status=?,
-  amenity_wd=?, amenity_ac=?, amenity_yard=?, amenity_dishwasher=?,
-  amenity_parking=?, notes=?,
+  kind=?, amenity_wd=?, amenity_ac=?, amenity_yard=?, amenity_dishwasher=?,
+  amenity_parking=?, notes=?, nightly_price=?, cleaning_fee=?,
+  extra_guest_fee=?, min_stay_nights=?, max_guests=?, check_in_time=?,
+  check_out_time=?, instant_book=?, cancellation_policy=?, house_rules=?,
   updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
 WHERE id=?
 """
@@ -38,10 +45,19 @@ def _row_to_property(row: sqlite3.Row) -> Property:
         available_date=row["available_date"], bedrooms=row["bedrooms"],
         bathrooms=row["bathrooms"], sqft=row["sqft"],
         pet_policy=row["pet_policy"], status=row["status"],
+        kind=row["kind"],
         amenity_wd=bool(row["amenity_wd"]), amenity_ac=bool(row["amenity_ac"]),
         amenity_yard=bool(row["amenity_yard"]),
         amenity_dishwasher=bool(row["amenity_dishwasher"]),
         amenity_parking=bool(row["amenity_parking"]), notes=row["notes"],
+        nightly_price=row["nightly_price"], cleaning_fee=row["cleaning_fee"],
+        extra_guest_fee=row["extra_guest_fee"],
+        min_stay_nights=row["min_stay_nights"], max_guests=row["max_guests"],
+        check_in_time=row["check_in_time"],
+        check_out_time=row["check_out_time"],
+        instant_book=bool(row["instant_book"]),
+        cancellation_policy=row["cancellation_policy"],
+        house_rules=row["house_rules"],
     )
 
 
@@ -76,12 +92,19 @@ class PropertyRepo:
             (property_id,)).fetchone()
         return _row_to_property(row) if row else None
 
-    def list(self, status: str | None = None) -> list[Property]:
+    def list(self, status: str | None = None,
+             kind: str | None = None) -> list[Property]:
         sql = f"SELECT {', '.join(COLUMNS)} FROM properties"
+        clauses: list[str] = []
         params: list = []
         if status:
-            sql += " WHERE status=?"
+            clauses.append("status=?")
             params.append(status)
+        if kind:
+            clauses.append("kind=?")
+            params.append(kind)
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
         sql += " ORDER BY status='Vacant' DESC, address COLLATE NOCASE"
         return [_row_to_property(r) for r in self.conn.execute(sql, params)]
 
@@ -101,6 +124,9 @@ def _values(p: Property) -> list:
     return [
         p.address, p.city, p.zip_code, p.rent_price, p.deposit_amount,
         p.available_date, p.bedrooms, p.bathrooms, p.sqft, p.pet_policy,
-        p.status, int(p.amenity_wd), int(p.amenity_ac), int(p.amenity_yard),
-        int(p.amenity_dishwasher), int(p.amenity_parking), p.notes,
+        p.status, p.kind, int(p.amenity_wd), int(p.amenity_ac),
+        int(p.amenity_yard), int(p.amenity_dishwasher), int(p.amenity_parking),
+        p.notes, p.nightly_price, p.cleaning_fee, p.extra_guest_fee,
+        p.min_stay_nights, p.max_guests, p.check_in_time, p.check_out_time,
+        int(p.instant_book), p.cancellation_policy, p.house_rules,
     ]

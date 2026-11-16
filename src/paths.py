@@ -100,6 +100,11 @@ def backups_dir() -> Path:
     return data_dir() / "backups"
 
 
+def calendar_dir() -> Path:
+    """Where exported iCal feeds are written, for upload to a portal."""
+    return data_dir() / "calendar"
+
+
 def logs_dir() -> Path:
     return data_dir() / "logs"
 

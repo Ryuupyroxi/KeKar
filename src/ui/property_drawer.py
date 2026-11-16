@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QLineEdit,
                              QListWidget, QListWidgetItem, QPushButton,
                              QVBoxLayout, QWidget)
 
-from ..data.models import Property
+from ..data.models import Property, SHORT_STAY_KIND
 from ..services import image_service
 from ..services.listing_compiler import AMENITY_LABELS
 from .palette import Theme
@@ -192,10 +192,12 @@ class PropertyItemWidget(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
 
-        # status stripe
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(_status_colour(self._prop.status)))
-        painter.drawRoundedRect(0, 6, 5, self.height() - 12, 2, 2)
+        # status stripe — a long-term let is Vacant/Rented. A short stay has
+        # no such status; its availability lives in the reservations calendar.
+        if self._prop.kind != SHORT_STAY_KIND:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(_status_colour(self._prop.status)))
+            painter.drawRoundedRect(0, 6, 5, self.height() - 12, 2, 2)
 
         # cover
         cover_x = 14
@@ -225,6 +227,8 @@ class PropertyItemWidget(QWidget):
         f2 = font(9)
         painter.setFont(f2)
         subtitle = f"{self._prop.city or ''}, {self._prop.zip_code or ''}".strip(", ")
+        if self._prop.kind == SHORT_STAY_KIND:
+            subtitle = ("Short stay · " + subtitle).strip(" ·")
         painter.drawText(QRect(text_x, 30, self.width() - text_x - 8, 16),
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                          subtitle)

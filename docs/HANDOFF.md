@@ -1,252 +1,118 @@
-# Handoff — panels, leases, listing channels
+# Handoff — Airbnb / short-stay support (Phases 1-3)
 
-Written 2026-11-14. State of the tree at the end of this working session.
-Nothing is committed yet, by request: the features were finished as a set so the
-tour could be updated to match, and the commits land afterwards.
+Written 2026-11-15. State of the tree at the end of this working session.
 
 ## Where it stands
 
-- `pytest -q` → **308 passed**, exit 0.
-- Source: 55 modules, 6,772 lines (`find src -name '*.py' | wc -l`,
-  `find src -name '*.py' -exec cat {} + | wc -l`).
-- Test modules: 36.
-- Every UI change below was launched on the real display (`DISPLAY=:0`) and
-  screenshotted, not just unit-tested.
+- `pytest -q` → **387 passed**, exit 0 (`.venv/bin/python -m pytest -o addopts='' -q`).
+- Source: 64 modules, 9,266 lines (`find src -name '*.py' -not -path '*__pycache__*'`
+  piped to `wc -l`, twice).
+- Test modules: 39. Test functions: 359. Collected: 387.
+- Nothing is committed. `git status` shows 16 modified and 6 new files.
+- **4 commits are unpushed** (`43b0118`, `77269f3`, `a5f8f7d`, `4ea986b`), and
+  `gh auth status` reports the token invalid, so the release step is blocked
+  until Master re-authenticates.
 
 ## What was built
 
-### 1. Collapsible sidebar and chat panels
+The approved design
+(`docs/superpowers/specs/2026-11-15-airbnb-short-stay-design.md`) is implemented
+end to end.
 
-- `CollapsibleSplitter` in `src/ui/main_window.py`; panes collapse to zero and
-  restore the *remembered* pre-collapse sizes.
-- The collapse control is a `QToolButton` pair in
-  `menuBar().setCornerWidget(...)`: `sidebar_toggle`, `chat_toggle`. Their
-  arrows show which way the panel will move (`◀ Properties` / `▶ Properties`,
-  `▼ Chat` / `▲ Chat`).
-- The same two actions exist in **View**.
-- `sidebar_collapsed` / `chat_collapsed` persist in Settings.
-- `tests/test_layout.py` (15 tests).
+### Phase 1 — a property kind
 
-**The handle is deliberately paint-only.** An earlier attempt made the splitter
-handle itself the click target by overriding `mousePressEvent` /
-`mouseMoveEvent` / `mouseReleaseEvent`. Qt's splitter owns those events and the
-base press synthesises a release, so a click collapsed the pane *and* a
-measured 80 px drag returned the panes to their exact original sizes —
-drag-to-resize silently died. The handle now only draws a grip, and
-`test_handle_leaves_mouse_events_to_qt` guards the regression.
+- `properties.kind` (`rental` | `short_stay`) plus ten nullable short-stay
+  columns. `Database._add_missing_columns()` runs an idempotent `ALTER TABLE`
+  pass against `PRAGMA table_info`, so a v0.1.0 database gains the columns in
+  place; `SCHEMA_VERSION` stays 1.
+- `PropertyForm` has a **Type** selector. Rental terms and Short-stay terms are
+  separate group boxes; Portals shows only for a short stay.
+- `listing_channels.py` gained `airbnb`, `vrbo` and `booking_com`, each with a
+  `kind` marker, a per-site title/body and a per-field list. `known_channels(kind)`
+  filters the dialog's dropdown by the property's kind.
+- `listing_compiler` has a short-stay generic template and a short-stay footer.
 
-### 2. Leases tab
+### Phase 2 — reservations
 
-- New tab on the main window: `src/ui/lease_tab.py`.
-- The client's example lease is the **template**. Load it by pasting or with
-  "Load example lease…" (`QFileDialog`, `.txt`/`.md`); "Save as template" writes
-  it to `settings.lease_template` (encrypted with the rest of Settings).
-  "Use built-in template" restores `lease_builder.DEFAULT_TEMPLATE`.
-- Markers are `{{address}}`, `{{city}}`, `{{zip}}`, `{{rent}}`, `{{deposit}}`,
-  `{{bedrooms}}`, `{{bathrooms}}`, `{{sqft}}`, `{{sqft_clause}}`,
-  `{{available_date}}`, `{{pet_policy}}`, `{{status}}`, `{{tenant}}`,
-  `{{landlord}}`, `{{date}}`, `{{term}}`.
-- Substitution is plain string replacement in `src/services/lease_builder.py` —
-  no `eval`, no `exec`. **Unknown markers are left in place** and listed in the
-  "KeKar does not fill" note, so a client's own markers are never mangled.
-- Generate → **Copy** (`clipboard.copy_text`), **Print…**
-  (`QPrintDialog` + `QTextDocument.print(QPrinter)`), **Email…**
-  (`QDesktopServices.openUrl("mailto:…")`), **Save lease** (`leases` table).
-- Email deliberately holds no SMTP credentials: it opens the user's own mail
-  app with subject and body pre-filled. Warns when the body passes
-  `MAILTO_SOFT_LIMIT` (1500 chars) because some clients truncate.
-- `src/data/lease_repo.py` + a `leases` table. `LeaseRepo` resolves its
-  connection lazily through `Database`, so it is worker-thread safe.
-- `tests/test_leases.py` (25 tests).
+- `bookings` table, `BookingRepo` (nights derived on write, overlap rejected in
+  the repository, a cancelled stay frees its dates, `booked_dates()` for the
+  calendar).
+- `StaysTab`: property picker, `QCalendarWidget` with booked days painted,
+  bookings table, add / edit / cancel / delete.
+- The drawer shows a "Short stay ·" subtitle and no status stripe for a short
+  stay (its availability lives in the calendar).
 
-### 3. Zillow and apartments.com listings
+### Phase 3 — two-way calendar sync
 
-- `src/services/listing_channels.py` builds a **per-channel package**: a title
-  (with the site's length limit), a body in that site's wording, every field the
-  site's form asks for separately, and warnings (title too long, rent or
-  square footage missing, site-specific notes).
-- `src/ui/listing_dialog.py` gained a **Channel** dropdown: Any site (generic),
-  Zillow, apartments.com. Switching re-renders the preview.
-- `tests/test_listing_channels.py` (14 tests).
+- `property_portals` and `portal_sync_log` tables, `PortalRepo`.
+- `ical_service.py` writes and parses RFC 5545 by hand (no new dependency):
+  `build_ical`, `parse_ical` (folds lines, handles `DATE` and `DATE-TIME`),
+  `fetch_ical`, `export_ical` → `KeKarData/calendar/<slug>.ics`.
+- `portal_sync.sync_portal()` fetches the portal's URL, upserts by `UID`
+  (`source='ical'`), stamps `last_sync_at`, logs the attempt and returns
+  counts. It never raises for a network or parse failure.
+- The **Portals** group on the short-stay form: per portal an enable checkbox,
+  price override, min-stay override, calendar URL, **Sync now** (on a worker
+  thread) and a last-sync label, plus **Export calendar (.ics)…**.
 
-**Direct posting is not offered, and that is a decision, not an omission.**
-Neither Zillow nor apartments.com exposes an API for creating a rental listing,
-and both sit behind a logged-in session with anti-automation. Copy-and-paste is
-what the user asked for as an acceptable option, so that is what was built and
-the dialog says so. Facebook Marketplace keeps its opt-in CDP autofill, which
-still stops before Publish.
+## Two gaps found against the design, and fixed
 
-## Bugs found and fixed while building
+- **The overrides were stored but never used.** The design says a short-stay
+  listing shows the portal's `price_override` / `min_stay_override` when set.
+  Nothing read them. `compile_channel()` now takes both, `_substitute()` and
+  `_common_fields()` use the effective values, and the warnings test the
+  effective values. `ListingDialog` reads them through `PortalRepo` and shows
+  "Using the Airbnb override: $140 per night and a 3-night minimum."
+- **The design gives a short stay a "Portal listing…" button; the code hid the
+  button.** `publish_btn` now keeps one slot and relabels itself —
+  "Publish to Marketplace..." for a rental, "Portal listing…" for a short stay —
+  and `_publish_or_list()` branches to the listing dialog or the Marketplace
+  dialog.
 
-- `TourOverlay` painted with `theme=None` when a caller constructed it directly
-  and skipped `apply_theme` → `AttributeError: 'NoneType' object has no
-  attribute 'accent'`. The overlay now reads the app's theme at construction.
-- Remembered expanded splitter sizes were stored as the *same list object* that
-  was then zeroed, so restoring brought back `[0, …]`. Now copied.
-- `LeaseTab` kept a stale `_editing_id` after the portfolio was cleared, so the
-  next save ran `UPDATE` on a deleted row and silently saved nothing.
-  `reload()` now resets it.
-- `leases` list ordering tied on `created_at` (same timestamp) and came back in
-  insertion order; now `ORDER BY created_at DESC, id DESC`.
-- Five lease header fields in one row squeezed the boxes so typed values read
-  as "n Doe" and "mith". Split into two rows.
-- `channel_fields` called `compile_channel`, which called `channel_fields` —
-  infinite recursion. Restructured so fields are built inside `compile_channel`.
+## Verification evidence
 
-## Schema note
+Real display, 1280x800, `DISPLAY=:0`, scratch copy of the data dir
+(`cache/scratch/kekar-stay-data`):
 
-`leases` was added to `src/data/_schema_embedded.py` (the authoritative copy)
-and `src/data/schema.sql` was regenerated from it with
-`embedded_schema()`. `tests/test_bundle_safety.py::test_on_disk_schema_matches_embedded_copy`
-proves the two are byte-identical. The change is additive and
-`embedded_schema()` is re-applied idempotently on every connection, so existing
-databases gain the table with no migration step. `SCHEMA_VERSION` stayed at 1.
+- `stay-rental.png` / `stay-terms.png` / `stay-portals.png` — the Type selector
+  swaps the term group, Portals shows three complete rows, no clipping.
+- `stay-stays.png` — the calendar marks 1-3 December and the table lists the
+  stay (Jordan Lee, Airbnb, 3 nights, 405, confirmed, manual).
+- `stay-listing.png` — the dialog offers generic, Airbnb, Booking.com and Vrbo;
+  with Airbnb selected the override line shows and the preview carries $140 and
+  a 3-night minimum.
+- `stay-theme-{light,dark,oled}[-stays].png` — all three themes render the new
+  widgets with no unreadable areas.
 
-## How to re-check
+Measured in code, not by eye: the short-stay form is 1232 px tall with a 375 px
+viewport (it scrolls; that is intended), `hscroll_max=0`, and the group boxes
+sit at Details 46, Short-stay terms 264, Portals 585, Amenities 922, Notes 1028.
+
+## Re-check
 
 ```bash
 cd "/home/Ryuu/Documents/kekar project"
-.venv/bin/pytest -q                      # 308 passed
-.venv/bin/pytest tests/test_layout.py tests/test_leases.py \
-                 tests/test_listing_channels.py -q
+.venv/bin/python -m pytest -o addopts='' -q          # 387 passed
+.venv/bin/python -m pytest -o addopts='' -q tests/test_short_stay.py
+bash build.sh                                        # rebuild + package + verify
 ```
 
-Real-display checks (X on `:0`):
+Real display:
 
 ```bash
-DISPLAY=:0 KEKAR_DATA_DIR=/tmp/kekar-check .venv/bin/python - <<'PY'
-import sys; sys.path.insert(0, ".")
-from src.app import Application
-app = Application([]); app.show_main_window()
-PY
+DISPLAY=:0 .venv/bin/python \
+  /home/Ryuu/.hermes/profiles/fenrys/cache/scratch/shot_stays.py
+DISPLAY=:0 .venv/bin/python \
+  /home/Ryuu/.hermes/profiles/fenrys/cache/scratch/shot_themes.py
 ```
-
-### 4. Supplied icon and logo
-
-- `src/resources/icons/kekar-mark.png` (228x269, alpha) is the mark;
-  `tools/build_icon_assets.py` centres it on a 256x256 transparent square and
-  writes `kekar.ico`; `tools/make_icons.py` regenerates the hicolor PNGs.
-- `src/resources/icons/kekar-logo.png` (1408x768, alpha) is the wordmark.
-- `paths.resource_path()` / `icon_path()` / `logo_path()` resolve either
-  location, frozen or dev.
-- `Application` and `MainWindow` set the window icon; `MainWindow` shows the
-  logo in a 44 px left-aligned strip at the top; `AboutDialog` shows it at 96 px.
-- `tests/test_branding.py` (11 tests), including a check that the `.ico` really
-  carries 7 frames — the first build silently produced a single 16x16 frame.
-- `tests/test_branding.py` also asserts the header strip is not taller than
-  64 px, after a centred 56 px logo in a full-width band read as dead space.
-
-### 5. Tour brought up to date, and accounts built
-
-- `build_tour_steps` is now 10 steps and describes the real app: the drawer, the
-  details form (naming the Zillow/apartments.com preview), photos, Applicants,
-  Leases (copy/print/email), the assistant, panels/themes/accounts, the brand,
-  and demo mode. Two tests guard it — one fails if a tab has no step, one fails
-  if the wording drifts from the feature set.
-- Accounts: `src/services/auth.py` (PBKDF2-HMAC-SHA256, 310k iterations, 7-day
-  session tokens) and `src/data/user_repo.py` (`users`, `sessions`), plus
-  `LoginDialog`, `UsersDialog`, `Application.login/logout/lock/unlock_with_dialog`
-  and `MainWindow.set_locked/is_locked`.
-- Opt-in: `require_login` defaults to false, Accounts refuses to enable it with
-  zero accounts, and the last account cannot be removed.
-
-**Bug found by the cross-file suite:** Qt hides a central widget when it is
-swapped out and does *not* unhide it when it is swapped back. `set_locked(False)`
-therefore left the whole portfolio invisible — no exception, no warning, just a
-blank window for every test that ran afterwards. `set_locked` now calls
-`show()` on the restored widget, and
-`test_unlocking_restores_a_visible_portfolio` guards it.
 
 ## Still outstanding
 
-- Nothing is committed. `git status` shows 22 modified and 12 new files.
-- The branding pass was **not** re-checked on a real display after the header
-  and About-dialog fixes: the screenshot command was blocked by an approval
-  timeout and was deliberately not retried. The icon and logo are verified by
-  `test_branding.py` (files exist, `.ico` frames, pixmap non-null) and by the
-  earlier screenshot of the un-fixed layout; the *fixed* layout still needs eyes.
-- `docs/TEST-MATRIX.md` scenarios 19-25 (leases, channels, panels, themes,
-  branding, accounts) need a human on real hardware.
-- The guided tour now has 10 steps; step 6 is the Leases tab. It was walked on
-  a real display and screenshotted at the Leases and Panels/accounts steps; the
-  tab switches and the captions match the shipped feature set.
-
-## Packaging pass, 2026-11-15
-
-The logo and icon were in the source but not in the packages. Closed that:
-
-- `packaging/linux/kekar.desktop` now says `Icon=kekar` (was the
-  `utilities-terminal` placeholder), and `packaging/linux/kekar.png` (the
-  square 256 px master) sits beside it for the AppImage builder.
-- `packaging/windows/KeKar_Installer.nsi` carries `MUI_ICON` / `MUI_UNICON`
-  (via `${__FILEDIR__}`) and both shortcuts point at the package-root
-  `kekar.ico`. `tools/make_usb_package.py` stages that `.ico` into
-  `KeKar_Windows/`, so the installer is independent of PyInstaller's internal
-  layout. CI stages it too, because the Windows job calls the same tool.
-- New tests: Windows `.ico` staging, AppImage `.desktop` icon, square AppImage
-  PNG, and drift guards between the packaging copies and the generated art
-  (`tests/test_usb_packaging.py`).
-- **Bug found by the real-display check:** the About dialog was a fixed
-  460x340, which clipped the last paragraph by 14 px. `AboutDialog` now sizes
-  itself from `layout.totalSizeHint()` (460x354 here) so a larger system font
-  grows the window instead of cutting text. Guarded by
-  `test_about_dialog_body_is_not_clipped`.
-
-Re-check:
-
-```bash
-cd "/home/Ryuu/Documents/kekar project"
-.venv/bin/python -m pytest -q          # 359 passed
-bash build.sh                          # rebuild + package + verify
-```
-
-Real-display evidence (X on `:0`, 1280x800): the built `dist/KeKar/KeKar` shows
-the wordmark in the header strip and the icon in the title bar; Help → About
-shows the logo with the body fully inside the dialog.
-
-Still open: the NSIS installer itself is not built by CI (it never was) — it is
-a manual `makensis packaging/windows/KeKar_Installer.nsi` step on Windows. The
-icon is staged for it, but no CI job compiles or attaches the installer.
-
-## Panel borders, 2026-11-15
-
-The three regions were separated only by 1 px `#ddd8d0` hairlines on a
-`#f5f4f1` window, so they read as one continuous surface. They are now cards.
-
-- New `Theme.panel_border` (light `#b5ad9f`, dark `#5f5952`, OLED `#484848`),
-  held to a 1.5:1 floor against the window in `required_pairs()`. `border` is
-  kept for inner hairlines.
-- `QWidget[panel="true"]` in `theme.py` draws a 2 px outline, 10 px radius and
-  the `panel` fill. The drawer, the tab area and the chat pane opt in; the tab
-  area is wrapped in a `tabs_card` so the card can carry the padding.
-- Content widgets inside a card (list, table, chat transcript, tab pane) have
-  their own borders switched off, so no region draws two nested outlines.
-- `MainWindow`'s outer layout now has an 8 px gutter, so the cards are inset
-  from the window edges instead of sitting flush against them.
-- The two menu-bar collapse buttons are 32 px tall (were ~14 px), bold, with
-  the arrow beside the label.
-
-**Two bugs the real-display check caught:**
-
-- A stylesheet background is not painted on a plain `QWidget` unless
-  `WA_StyledBackground` is set. The cards drew their border but kept the window
-  fill, so they still did not read as cards. Fixed on all three panels.
-- The card padding narrowed the detail pane below the form's minimum width.
-  Six action buttons in one row gave the form a 901 px minimum, so the pane
-  scrolled horizontally and the City field was clipped by the card edge. The
-  actions are now two rows of three, and the Amenities group wraps at three
-  columns; the form's minimum is 535 px and the horizontal scrollbar is gone.
-
-New tests: `test_stylesheet_draws_panel_cards`,
-`test_top_level_regions_are_cards`, `test_detail_form_needs_no_horizontal_scroll`.
-
-Re-check:
-
-```bash
-cd "/home/Ryuu/Documents/kekar project"
-.venv/bin/python -m pytest -o addopts='' -q   # 359 passed
-```
-
-Real-display evidence (X on `:0`, 1280x800): the three regions render as
-outlined cards in Light, Dark and OLED; the collapse buttons are 32 px tall;
-the detail form fits its card with no horizontal scrollbar.
+- Nothing is committed.
+- The release step of the design (version, tag, push, CI attach) is not done:
+  4 commits are unpushed and `gh` is unauthenticated.
+- `docs/TEST-MATRIX.md` scenarios 1-18 and the new 26-31 need a human on real
+  hardware.
+- Portal sync is verified against a local calendar fixture, not a live portal
+  URL.
+- The NSIS installer is still a manual `makensis` step on Windows.

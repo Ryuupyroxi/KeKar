@@ -11,6 +11,28 @@ from ._schema_embedded import embedded_schema
 SCHEMA_VERSION = 1
 _SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 
+#: Columns added to an existing table after the table was first created.
+#: ``CREATE TABLE IF NOT EXISTS`` cannot add a column to a database that
+#: already has the old shape, so a migrated install needs an explicit
+#: ``ALTER TABLE`` — run idempotently on every connection.
+_COLUMN_ADDITIONS: dict[str, dict[str, str]] = {
+    "properties": {
+        "kind": "TEXT NOT NULL DEFAULT 'rental' "
+                "CHECK (kind IN ('rental','short_stay'))",
+        "nightly_price": "REAL",
+        "cleaning_fee": "REAL",
+        "extra_guest_fee": "REAL",
+        "min_stay_nights": "INTEGER",
+        "max_guests": "INTEGER",
+        "check_in_time": "TEXT",
+        "check_out_time": "TEXT",
+        "instant_book": "INTEGER NOT NULL DEFAULT 0 "
+                        "CHECK (instant_book IN (0,1))",
+        "cancellation_policy": "TEXT",
+        "house_rules": "TEXT",
+    },
+}
+
 
 class Database:
     """A SQLite database that is safe to use from more than one thread.
@@ -58,11 +80,27 @@ class Database:
         # fail with "no transaction is active". The schema is idempotent
         # (CREATE ... IF NOT EXISTS), so re-running migration is safe.
         conn.executescript(embedded_schema())
+        self._add_missing_columns(conn)
         conn.execute(
             "INSERT INTO schema_meta(key, value) VALUES('schema_version', ?) "
             "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
             (str(SCHEMA_VERSION),),
         )
+
+    @staticmethod
+    def _add_missing_columns(conn: sqlite3.Connection) -> None:
+        """Add post-release columns to a database with the old shape.
+
+        ``ALTER TABLE ... ADD COLUMN`` is skipped when the column is already
+        there, so this is safe to run on every connection.
+        """
+        for table, columns in _COLUMN_ADDITIONS.items():
+            existing = {row["name"]
+                        for row in conn.execute(f"PRAGMA table_info({table})")}
+            for name, ddl in columns.items():
+                if name not in existing:
+                    conn.execute(
+                        f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
 
     def integrity_check(self) -> bool:
         row = self.conn.execute("PRAGMA integrity_check").fetchone()

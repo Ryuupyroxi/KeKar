@@ -14,8 +14,10 @@ KeKar [--version|-V|--help|-h]     <- handled before Qt is imported
        │    ├─ Settings.load()                         <- KeKarData/config/settings.enc
        │    ├─ open_with_recovery(None)                <- Database + integrity check
        │    │    └─ Database.__init__ -> _configure() -> _migrate()
-       │    │         └─ embedded_schema()             <- src/data/_schema_embedded.py
-       │    ├─ PropertyRepo / ApplicantRepo / ChatRepo
+       │    │         ├─ embedded_schema()             <- src/data/_schema_embedded.py
+       │    │         └─ _add_missing_columns()        <- idempotent ALTER TABLE
+       │    ├─ PropertyRepo / ApplicantRepo / LeaseRepo
+       │    │    BookingRepo / PortalRepo / ChatRepo
        │    ├─ MemoryStore()                           -> KeKarData/memory/MEMORY.md
        │    ├─ LLMClient(settings)
        │    ├─ ToolContext(db, repos, memory, settings)
@@ -40,6 +42,17 @@ Services (src/services/*)        Repositories (src/data/*_repo.py)
                                                      │
                                               WAL mode, integrity_check
 ```
+
+## Schema migrations
+
+`embedded_schema()` is the authoritative copy; `schema.sql` is regenerated
+from it and `tests/test_bundle_safety.py` proves the two are byte-identical.
+`CREATE TABLE IF NOT EXISTS` covers a fresh database and a brand-new table,
+but it cannot add a column to a table an existing install already has, so
+`Database._add_missing_columns()` runs an idempotent `ALTER TABLE` pass
+against `PRAGMA table_info` after the schema script. That is how the
+short-stay columns reached databases created by v0.1.0 without a reset.
+`SCHEMA_VERSION` stays at 1 — the change is additive.
 
 ## Thread safety
 
@@ -129,8 +142,11 @@ MainWindow (src/ui/main_window.py)
   │           (address, city, ZIP, pet policy, notes, enabled amenities)
   ├─ QTabWidget
   │     ├─ Properties tab = PropertyForm inside a QScrollArea + PhotoPanel
+  │     │     └─ kind_combo → _on_kind_changed() swaps Rental terms /
+  │     │        Short-stay terms, shows Portals, relabels publish_btn
   │     ├─ Applicants tab = CrmTab (stage combo box, colour per stage)
-  │     └─ Leases tab = LeaseTab (template editor, preview, saved list)
+  │     ├─ Leases tab = LeaseTab (template editor, preview, saved list)
+  │     └─ Stays tab = StaysTab (QCalendarWidget + bookings table)
   ├─ ChatPane (bottom) ──▶ AgentRunner
   ├─ OfflineBanner + StatusPill ◀── _PingThread every 30 s
   │     └─ connectivity.provider_reachable(api_base)  (plain TCP, no API key)
@@ -272,20 +288,60 @@ Settings, and it can never click Publish.
 ## Listing channels
 
 ```
-PropertyForm.preview_listing_btn
+PropertyForm.preview_listing_btn          ("Portal listing…" for a short stay)
   └─ ListingDialog(app, prop)
-       └─ QComboBox: generic | zillow | apartments_com
+       └─ QComboBox: generic | the channels for prop.kind
             ├─ generic      → listing_compiler.compile_listing(prop)
-            └─ a channel    → listing_channels.compile_channel(prop, channel)
-                                ├─ title  (per-site length limit)
-                                ├─ body   (per-site wording)
-                                ├─ fields (each field the site's form asks for)
-                                └─ warnings (title length, missing rent/sqft)
+            │                   (short_stay template for a short stay)
+            └─ a channel    → listing_channels.compile_channel(
+            │                    prop, channel,
+            │                    price_override, min_stay_override)
+            │                 └─ overrides come from PortalRepo.get(prop.id,
+            │                    channel); 0/None means "use the property's"
+            ├─ title  (per-site length limit)
+            ├─ body   (per-site wording)
+            ├─ fields (each field the site's form asks for)
+            └─ warnings (title length, missing price/sqft or occupancy)
 ```
 
-Zillow and apartments.com have no posting API, so the dialog produces a copy
+Zillow and apartments.com have no posting API, and Airbnb, Vrbo and
+Booking.com have none for an independent host, so the dialog produces a copy
 package rather than posting. Facebook Marketplace keeps its own opt-in
 autofill path above.
+
+## Short stays and portal calendars
+
+```
+PropertyForm.kind_combo ─▶ _on_kind_changed()
+  ├─ rental_terms  vs  short_stay_terms + portals_box
+  └─ publish_btn text: "Publish to Marketplace..." | "Portal listing…"
+       └─ _publish_or_list() branches on the same flag
+
+Portals group (per portal row)
+  ├─ enabled / price_override / min_stay_override / external_ical_url
+  │    └─ _save_portals() → PortalRepo.save()   (after the property is saved)
+  ├─ Sync now → _PortalSyncThread → portal_sync.sync_portal(db, prop, portal)
+  │    ├─ ical_service.fetch_ical(url)          (urllib, 20 s timeout)
+  │    ├─ ical_service.parse_ical(text)         (folds lines, DATE/DATE-TIME)
+  │    ├─ upsert by external_uid → BookingRepo.create/update(source='ical')
+  │    ├─ PortalRepo.mark_synced() + PortalRepo.log()
+  │    └─ done signal → GUI thread → status + reload_all()
+  └─ Export calendar (.ics)… → ical_service.export_ical(prop, bookings)
+       └─ KeKarData/calendar/<address-slug>.ics
+
+StaysTab
+  ├─ property_combo → _refresh() → BookingRepo.list(property_id)
+  ├─ QCalendarWidget days painted from BookingRepo.booked_dates()
+  └─ Add / Edit / Cancel / Delete → BookingRepo (nights derived on write,
+       overlap rejected in the repository, a cancelled stay frees its dates)
+```
+
+`ical_service` parses and writes RFC 5545 by hand — no third-party dependency
+in the frozen build. A cancelled booking is left out of the export; a blocked
+one is emitted as `STATUS:CONFIRMED` with the summary `Blocked`.
+
+The sync never raises for a network or parse problem: the failure is written
+to `portal_sync_log` and returned, so the UI can quote it.
 
 ## Leases
 

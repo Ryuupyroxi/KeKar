@@ -57,6 +57,10 @@ Decision references (D1-D10) are defined in Part 1 of
 | §6 | Guided tour covers the Leases tab | `src/ui/tour.py` | `test_tour.py`, `test_leases.py` |
 | §8.1 | Supplied icon and logo wired into the window, start menu, About and the packages | `src/paths.py::resource_path`, `src/ui/main_window.py::_set_logo`, `src/app.py`, `packaging/linux/kekar.desktop`, `packaging/linux/kekar.png`, `packaging/windows/kekar.ico`, `tools/make_usb_package.py` | `test_branding.py`, `test_usb_packaging.py` |
 | §8.1 | Accounts and login plumbing (the client-facing feature's foundation) | `src/services/auth.py`, `src/data/user_repo.py`, `src/ui/login_dialog.py`, `src/ui/users_dialog.py` | `test_auth.py` |
+| §7.2 | Short-stay property kind and its own terms (design: `2026-11-15-airbnb-short-stay-design.md`) | `properties.kind` + 10 columns, `Database._add_missing_columns`, `src/ui/property_form.py` (`kind_combo`, Rental/Short-stay terms) | `test_short_stay.py`, `test_property_repo.py` |
+| §3.2 | Short-stay listing packages (Airbnb, Vrbo, Booking.com) and per-portal overrides | `src/services/listing_channels.py`, `src/ui/listing_dialog.py` | `test_short_stay.py`, `test_listing_channels.py` |
+| §8.3 | Reservations: calendar, bookings table, overlap rejection | `src/data/booking_repo.py`, `src/ui/stays_tab.py` | `test_short_stay.py` |
+| §10.1 | Two-way portal calendar sync over iCal, with a sync log | `src/services/ical_service.py`, `src/services/portal_sync.py`, `src/data/portal_repo.py`, `property_portals` / `portal_sync_log` | `test_short_stay.py` |
 
 ## Deliberate deviations from the spec
 
@@ -67,3 +71,4 @@ Decision references (D1-D10) are defined in Part 1 of
 | `browser.use_real_profile` | Dedicated KeKar browser profile over CDP | Chrome/Edge refuse remote debugging on the default profile (D5) |
 | Windows only | Windows + Linux, one source tree | Every layer was already cross-platform (D1) |
 | — | Marketplace autofill stops before Publish | Human-in-the-loop requirement; never publishes (R3) |
+| "Full channel management" for Airbnb/Vrbo/Booking.com | KeKar owns bookings and per-portal pricing; calendars sync by iCal; listing copy is a per-portal package | None of the three exposes a posting API to an independent host — the design doc records the constraint |

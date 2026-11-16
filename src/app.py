@@ -17,10 +17,12 @@ from ._version import APP_NAME, APP_VERSION
 from .config.settings import Settings
 from .data.applicant_repo import ApplicantRepo
 from .data.backup import open_with_recovery, prune_backups
+from .data.booking_repo import BookingRepo
 from .data.chat_repo import ChatRepo
 from .data.db import Database
 from .data.demo_seed import seed_if_empty
 from .data.lease_repo import LeaseRepo
+from .data.portal_repo import PortalRepo
 from .data.property_repo import PropertyRepo
 from .data.user_repo import UserRepo
 from .paths import database_path, demo_database_path, icon_path
@@ -166,6 +168,8 @@ class Application(QApplication):
         self.property_repo = PropertyRepo(self.db)
         self.applicant_repo = ApplicantRepo(self.db)
         self.lease_repo = LeaseRepo(self.db)
+        self.booking_repo = BookingRepo(self.db)
+        self.portal_repo = PortalRepo(self.db)
         self.user_repo = UserRepo(self.db)
         self.chat_repo = ChatRepo(self.db)
         self.ctx = ToolContext(db=self.db, property_repo=self.property_repo,

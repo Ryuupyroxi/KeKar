@@ -13,7 +13,7 @@ One folder for everything KeKar. No stray files, no scattered repos, no
 | `docs/WIRING.md` | How the pieces connect at runtime — startup, data flow, agent loop, browser automation. |
 | `docs/SPEC-COVERAGE.md` | Every spec requirement traced to the code and the test that proves it. |
 | `src/` | Application source — Python 3.12, PyQt6, SQLite. |
-| `tests/` | pytest suite (38 test modules). |
+| `tests/` | pytest suite (39 test modules). |
 | `config/` | Listing templates, default config, Marketplace selectors. |
 | `tools/` | Build, packaging, and USB copy/verify tools. |
 | `packaging/` | NSIS installer (Windows) and AppImage builder (Linux). |
@@ -43,8 +43,8 @@ package can be copied to any PC or USB drive.
 
 ## Status
 
-Implementation complete through Phase 7. **359 tests passing** (`pytest -q`).
-Source: 59 modules, 7,564 lines.
+Implementation complete through Phase 7. **387 tests passing** (`pytest -q`).
+Source: 64 modules, 9,266 lines.
 
 | Phase | State |
 |---|---|
@@ -166,8 +166,9 @@ the three panels stay visually separate at any window size.
   "dishwasher" or "fenced yard" finds the right properties.
 - **Properties tab** — a two-column form (Details, Amenities, Notes) that
   scrolls when the window is short, so no field is ever squeezed to nothing.
-  Quick actions: Save, Copy listing, Preview listing, Publish to Marketplace,
-  Mark as rented / vacant, Delete.
+  **Type** switches the unit between a long-term rental and a short stay; the
+  term group below Details swaps to match. Quick actions: Save, Copy listing,
+  Preview listing, Publish to Marketplace, Mark as rented / vacant, Delete.
 - **Photos** — import, thumbnail, set cover, delete. The cover becomes the
   row's thumbnail in the list.
 - **Applicants tab** — a table of applicants with a colour-coded screening
@@ -180,6 +181,10 @@ the three panels stay visually separate at any window size.
   selected property and tenant. Generate, then **copy**, **print** or **email**
   the result, or save it to the lease list. KeKar never sends mail itself —
   the email button opens your own mail app with the lease pre-filled.
+- **Stays tab** — reservations for Airbnb-style units: a month calendar with
+  the booked days marked, a table (guest, portal, dates, nights, payout,
+  status, source), and add / edit / cancel / delete. A stay cannot overlap
+  another one on the same property; a cancelled stay frees its dates.
 - **Panels** — the property list and the assistant collapse to the edge. Two
   buttons at the right end of the menu bar toggle them (their arrows show
   which way the panel will move), and **View** lists the same two actions.
@@ -192,18 +197,45 @@ the three panels stay visually separate at any window size.
 
 ## Listing channels
 
-The Properties tab's **Preview listing** dialog picks a channel:
+The Properties tab's **Preview listing** dialog picks a channel. The list
+follows the property's **Type**: a rental sees the long-term sites, a short stay
+sees the portals.
 
-- **Any site (generic)** — the template from `config/listing_templates.json`.
+- **Any site (generic)** — the template from `config/listing_templates.json`;
+  a short stay gets its own generic template.
 - **Zillow** and **apartments.com** — a package shaped like that site's form:
   a title, a body, and every field the site asks for separately, plus the
   warnings that matter (title length, missing rent or square footage).
+- **Airbnb**, **Vrbo** and **Booking.com** — the short-stay equivalent: a
+  per-night title, a body carrying the cleaning fee, extra-guest fee, minimum
+  stay, occupancy and check-in/out times, and each of those as a separate field.
 
 Neither Zillow nor apartments.com offers an API for creating a rental listing,
-and both sit behind a logged-in session, so KeKar builds the listing and the
-user pastes it. Posting always stays with the person. Facebook Marketplace
-keeps its opt-in browser auto-fill, which fills a draft and stops before
-Publish.
+and the three portals offer none for an independent host; all of them sit behind
+a logged-in session, so KeKar builds the listing and the user pastes it. Posting
+always stays with the person. Facebook Marketplace keeps its opt-in browser
+auto-fill, which fills a draft and stops before Publish.
+
+## Short stays and portal calendars
+
+A property with **Type → Short stay (Airbnb)** carries its own terms (nightly
+rate, cleaning fee, extra-guest fee, minimum stay, occupancy, check-in/out
+times, Instant Book, cancellation policy, house rules) and a **Portals** group
+with one row per portal: enable it, override the price or the minimum stay for
+that portal only, paste the portal's own iCal URL, and **Sync now** to import
+its calendar. **Export calendar (.ics)…** writes the property's bookings as an
+iCal file to upload to a portal.
+
+KeKar owns the bookings and the per-portal pricing; the calendar is the only
+two-way channel the portals offer without a partner agreement. Every import
+upserts by the event's `UID` (so a re-sync updates rather than duplicates) and
+writes a `portal_sync_log` row; a network or parse failure is reported with its
+own message rather than raised. Blocked dates and bookings are the same thing —
+the calendar marks both, and the export emits both.
+
+Posting to a portal, two-way message sync and a paid channel manager are
+deliberately out of scope; `docs/superpowers/specs/2026-11-15-airbnb-short-stay-design.md`
+records the reasoning.
 
 ## Branding
 
@@ -292,6 +324,14 @@ greyed-out one.
   thread was still unwinding, which makes Qt abort the whole process. It was a
   race, so it survived casual testing: 2 of 15 launches died. After the fix
   (`src/ui/worker.py`), 25 of 25 launches survived.
+- The short-stay UI was run on a real display at 1280x800 in Light, Dark and
+  OLED: the **Type** selector swaps Rental terms for Short-stay terms and the
+  Portals group, the Stays tab marks the booked days on the calendar and lists
+  the stay, and the listing dialog offers generic, Airbnb, Booking.com and
+  Vrbo with the per-portal override applied and named.
+- A v1.1-shaped database (every rental column, none of the short-stay ones) was
+  opened by the current code and gained the columns in place; its existing row
+  still reads as a long-term rental (`tests/test_short_stay.py`).
 
 ### Security review
 
@@ -305,9 +345,14 @@ to the database.
 
 ### Known gaps before release
 
-- `docs/TEST-MATRIX.md` scenarios 1-18 need a human on real hardware.
+- `docs/TEST-MATRIX.md` scenarios 1-18 need a human on real hardware, and the
+  new short-stay scenarios 26-31 with them.
 - Windows artifact requires a GitHub Actions run (no Windows machine here).
 - Marketplace autofill is implemented but untested against the live Facebook DOM.
+- Portal sync is verified against a local calendar fixture, not against a live
+  Airbnb/Vrbo/Booking.com export URL.
+- The NSIS installer is still a manual `makensis` step on Windows; CI builds
+  and attaches the two zips but never compiles the installer.
 
 ## Source documents (kept outside this folder, referenced by the plan)
 

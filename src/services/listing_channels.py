@@ -43,6 +43,7 @@ class ChannelListing:
 CHANNELS = {
     "zillow": {
         "label": "Zillow",
+        "kind": "rental",
         "title_template": "{beds} bd {baths} ba in {city} | {address}",
         "max_title": 60,
         "body_template": (
@@ -59,6 +60,7 @@ CHANNELS = {
     },
     "apartments_com": {
         "label": "apartments.com",
+        "kind": "rental",
         "title_template": "{bedrooms} bd {bathrooms} ba rental in {city}",
         "max_title": 80,
         "body_template": (
@@ -73,6 +75,63 @@ CHANNELS = {
             "{notes}\n\n"
             "Message me to schedule a showing. Application required. "
             "Equal Housing Opportunity."
+        ),
+    },
+    "airbnb": {
+        "label": "Airbnb",
+        "kind": "short_stay",
+        "title_template": "${nightly}/night in {city} · {address}",
+        "max_title": 50,
+        "body_template": (
+            "{title}\n\n"
+            "{address}, {city}, {zip}\n\n"
+            "${nightly}/night | Cleaning fee ${cleaning_fee}\n"
+            "{min_stay} night minimum | Up to {guests} guests\n"
+            "Check-in {check_in} | Check-out {check_out}\n"
+            "Instant Book: {instant_book}\n"
+            "Cancellation: {cancellation}\n\n"
+            "{amenities}\n\n"
+            "{pet_line}\n\n"
+            "{house_rules}\n\n"
+            "{notes}"
+        ),
+    },
+    "vrbo": {
+        "label": "Vrbo",
+        "kind": "short_stay",
+        "title_template": "{address} - ${nightly}/night, sleeps {guests}",
+        "max_title": 75,
+        "body_template": (
+            "{title}\n\n"
+            "{address}, {city}, {zip}\n\n"
+            "Nightly rate: ${nightly}\n"
+            "Cleaning fee: ${cleaning_fee}\n"
+            "Extra guest fee: ${extra_guest_fee}\n"
+            "Minimum stay: {min_stay} nights\n"
+            "Sleeps: {guests}\n"
+            "Check-in: {check_in} | Check-out: {check_out}\n\n"
+            "{amenities}\n\n"
+            "{house_rules}\n\n"
+            "{notes}"
+        ),
+    },
+    "booking_com": {
+        "label": "Booking.com",
+        "kind": "short_stay",
+        "title_template": "{address} - ${nightly} per night in {city}",
+        "max_title": 60,
+        "body_template": (
+            "{title}\n\n"
+            "{address}, {city}, {zip}\n\n"
+            "Price per night: ${nightly}\n"
+            "Cleaning fee: ${cleaning_fee}\n"
+            "Minimum stay: {min_stay} nights\n"
+            "Max guests: {guests}\n"
+            "Check-in: {check_in} | Check-out: {check_out}\n"
+            "Cancellation policy: {cancellation}\n\n"
+            "{amenities}\n\n"
+            "{house_rules}\n\n"
+            "{notes}"
         ),
     },
 }
@@ -91,11 +150,38 @@ SITE_NOTES = {
         "apartments.com asks for the deposit and availability separately — "
         "they are in the field list below.",
     ],
+    "airbnb": [
+        "Airbnb has no posting API, so this is a copy-and-paste package; "
+        "posting stays with you.",
+        "Airbnb titles are short — the preview warns when this one runs long.",
+    ],
+    "vrbo": [
+        "Vrbo has no posting API; copy the package into the owner dashboard.",
+        "Vrbo shows the cleaning fee separately from the nightly rate — both "
+        "are in the field list below.",
+    ],
+    "booking_com": [
+        "Booking.com has no public posting API for an independent host; copy "
+        "the package into the extranet.",
+        "Booking.com asks for the minimum stay and occupancy per rate plan — "
+        "they are in the field list below.",
+    ],
 }
 
 
-def _substitute(template: str, prop: Property) -> str:
+def _substitute(template: str, prop: Property, *,
+                nightly: float | None = None,
+                min_stay_nights: int | None = None) -> str:
+    """Fill one template.
+
+    ``nightly`` / ``min_stay_nights`` are the *effective* values for this
+    package: a portal's override when it sets one, otherwise the property's
+    own. ``None`` means "use the property's value".
+    """
+    rate = prop.nightly_price if nightly is None else nightly
+    stay = prop.min_stay_nights if min_stay_nights is None else min_stay_nights
     pet_line = (f"Pet policy: {prop.pet_policy}" if prop.pet_policy else "")
+    house_rules = f"House rules: {prop.house_rules}" if prop.house_rules else ""
     return template.format(
         title=listing_title(prop),
         bedrooms=prop.bedrooms if prop.bedrooms is not None else "Studio",
@@ -113,10 +199,43 @@ def _substitute(template: str, prop: Property) -> str:
         amenities=amenities_line(prop),
         pet_line=pet_line,
         notes=prop.notes or "",
+        nightly=_money(rate),
+        cleaning_fee=_money(prop.cleaning_fee),
+        extra_guest_fee=_money(prop.extra_guest_fee),
+        min_stay=(str(stay) if stay is not None
+                  else "Contact for minimum stay"),
+        guests=(str(prop.max_guests)
+                if prop.max_guests is not None else "Contact for occupancy"),
+        check_in=prop.check_in_time or "Contact for check-in",
+        check_out=prop.check_out_time or "Contact for check-out",
+        instant_book="on" if prop.instant_book else "off",
+        cancellation=prop.cancellation_policy or "Contact for policy",
+        house_rules=house_rules,
     )
 
 
-def _common_fields(prop: Property) -> list[tuple[str, str]]:
+def _common_fields(prop: Property, kind: str, *,
+                   nightly: float | None = None,
+                   min_stay_nights: int | None = None) -> list[tuple[str, str]]:
+    """The individual fields a site's form asks for, one at a time."""
+    if kind == "short_stay":
+        rate = prop.nightly_price if nightly is None else nightly
+        stay = prop.min_stay_nights if min_stay_nights is None \
+            else min_stay_nights
+        return [
+            ("Street address", prop.address),
+            ("City", prop.city or ""),
+            ("ZIP", prop.zip_code or ""),
+            ("Nightly rate", _money(rate)),
+            ("Cleaning fee", _money(prop.cleaning_fee)),
+            ("Extra guest fee", _money(prop.extra_guest_fee)),
+            ("Minimum stay (nights)", str(stay) if stay else ""),
+            ("Max guests", str(prop.max_guests) if prop.max_guests else ""),
+            ("Check-in time", prop.check_in_time or ""),
+            ("Check-out time", prop.check_out_time or ""),
+            ("Cancellation policy", prop.cancellation_policy or ""),
+            ("House rules", prop.house_rules or ""),
+        ]
     beds = (str(prop.bedrooms) if prop.bedrooms is not None else "Studio")
     return [
         ("Street address", prop.address),
@@ -132,16 +251,28 @@ def _common_fields(prop: Property) -> list[tuple[str, str]]:
     ]
 
 
-def compile_channel(prop: Property, channel: str) -> ChannelListing:
-    """Build the package for one channel."""
+def compile_channel(prop: Property, channel: str, *,
+                    price_override: float | None = None,
+                    min_stay_override: int | None = None) -> ChannelListing:
+    """Build the package for one channel.
+
+    ``price_override`` / ``min_stay_override`` are the per-portal settings
+    from the Portals group: 0 or None means "no override", so the property's
+    own nightly rate and minimum stay are used.
+    """
     config = CHANNELS.get(channel)
     if config is None:
         raise ValueError(f"unknown channel: {channel}")
 
-    title = _substitute(config["title_template"], prop).strip()
-    body = _substitute(config["body_template"], prop).strip()
+    rate = price_override or prop.nightly_price
+    stay = min_stay_override or prop.min_stay_nights
+    title = _substitute(config["title_template"], prop, nightly=rate,
+                         min_stay_nights=stay).strip()
+    body = _substitute(config["body_template"], prop, nightly=rate,
+                       min_stay_nights=stay).strip()
 
-    fields = _common_fields(prop)
+    fields = _common_fields(prop, config["kind"], nightly=rate,
+                            min_stay_nights=stay)
     if channel == "apartments_com":
         fields = fields + [("Description", body)]
 
@@ -150,10 +281,18 @@ def compile_channel(prop: Property, channel: str) -> ChannelListing:
         warnings.append(
             f"Title is {len(title)} characters; {config['label']} shows about "
             f"{config['max_title']}.")
-    if not prop.rent_price:
-        warnings.append("No rent is set, so the price is missing.")
-    if not prop.sqft:
-        warnings.append("No square footage is set.")
+    if config["kind"] == "short_stay":
+        if not rate:
+            warnings.append("No nightly rate is set, so the price is missing.")
+        if not prop.max_guests:
+            warnings.append("No maximum occupancy is set.")
+        if not stay:
+            warnings.append("No minimum stay is set.")
+    else:
+        if not prop.rent_price:
+            warnings.append("No rent is set, so the price is missing.")
+        if not prop.sqft:
+            warnings.append("No square footage is set.")
     warnings.extend(SITE_NOTES.get(channel, []))
 
     return ChannelListing(
@@ -166,8 +305,15 @@ def channel_fields(prop: Property, channel: str) -> list[tuple[str, str]]:
     return compile_channel(prop, channel).fields
 
 
-def known_channels() -> list[str]:
-    return sorted(CHANNELS)
+def known_channels(kind: str | None = None) -> list[str]:
+    """Channel keys, optionally limited to one property kind."""
+    return sorted(key for key, config in CHANNELS.items()
+                  if kind is None or config.get("kind") == kind)
+
+
+def channel_kind(channel: str) -> str | None:
+    """The property kind a channel belongs to, or None for a generic package."""
+    return CHANNELS.get(channel, {}).get("kind")
 
 
 def channel_label(channel: str) -> str:

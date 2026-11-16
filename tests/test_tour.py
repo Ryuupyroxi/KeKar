@@ -10,7 +10,7 @@ def test_tour_steps_target_real_widgets(kekar_app):
     window = kekar_app.main_window
     steps = build_tour_steps(window)
 
-    assert len(steps) == 10
+    assert len(steps) == 11
     for step in steps:
         assert isinstance(step, TourStep)
         if step.target is not None:
@@ -39,7 +39,8 @@ def test_tour_describes_the_real_feature_set(kekar_app):
     steps = build_tour_steps(kekar_app.main_window)
     text = " ".join(f"{step.title} {step.body}" for step in steps)
     for phrase in ("collapse", "Light", "OLED", "Zillow", "apartments.com",
-                   "Leases", "template", "Accounts", "print"):
+                   "Leases", "template", "Accounts", "print", "Airbnb",
+                   "calendar"):
         assert phrase in text, f"the tour never mentions {phrase!r}"
 
 

@@ -1,6 +1,7 @@
 # Airbnb / short-stay support — design
 
-Date: 2026-11-15. Status: approved in outline by Master ("implement all phases").
+Date: 2026-11-15. Status: **implemented** (Phases 1-3 shipped in the tree; the
+v1.2 release step is still open).
 Covers Phases 1-3 below, and the v1.2 release that follows.
 
 ## Why

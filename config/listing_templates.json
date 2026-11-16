@@ -1,7 +1,8 @@
 {
-  "schema_version": "2026-11-11",
+  "schema_version": "2026-11-15",
   "templates": {
     "default": "{title}\n\n{bedrooms} bd | {bathrooms} ba | {sqft} sqft\n{address}, {city}, OK {zip_code}\n${rent}/month  |  Security deposit ${deposit}\nAvailable {available_date}\n\n{amenities}\n\n{pet_line}\n\n{notes}\n\n{footer}",
-    "short": "{title}\n${rent}/month | {bedrooms} bd {bathrooms} ba\n{address}, {city} {zip_code}\nAvailable {available_date}\n\n{amenities}\n\n{footer}"
+    "short": "{title}\n${rent}/month | {bedrooms} bd {bathrooms} ba\n{address}, {city} {zip_code}\nAvailable {available_date}\n\n{amenities}\n\n{footer}",
+    "short_stay": "{title}\n\n{bedrooms} bd | {bathrooms} ba | {sqft} sqft\n{address}, {city}, OK {zip_code}\n${nightly}/night  |  Cleaning fee ${cleaning_fee}\n{min_stay} night minimum  |  Up to {guests} guests\nCheck-in {check_in}  |  Check-out {check_out}\n\n{amenities}\n\n{pet_line}\n\n{house_rules}\n\n{notes}\n\n{footer}"
   }
 }

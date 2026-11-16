@@ -10,7 +10,8 @@ from PyQt6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout,
                              QLabel, QPlainTextEdit, QPushButton, QVBoxLayout,
                              QWidget)
 
-from ..data.models import Property
+from ..data.models import (PORTALS, PORTAL_LABELS, Property,
+                           SHORT_STAY_KIND)
 from ..services.clipboard import copy_text
 from ..services.listing_channels import (CHANNELS, channel_label,
                                          compile_channel, known_channels)
@@ -34,7 +35,7 @@ class ListingDialog(QDialog):
         picker.addWidget(QLabel("<b>Channel</b>"))
         self.channel = QComboBox()
         self.channel.addItem("Any site (generic)", "generic")
-        for key in known_channels():
+        for key in known_channels(prop.kind):
             self.channel.addItem(CHANNELS[key]["label"], key)
         self.channel.currentIndexChanged.connect(self._refresh)
         picker.addWidget(self.channel, 1)
@@ -44,9 +45,22 @@ class ListingDialog(QDialog):
             "Zillow and apartments.com have no posting API, so KeKar builds "
             "the listing for each site's form. Copy it and paste it in — "
             "posting stays with you.")
+        if prop.kind == SHORT_STAY_KIND:
+            self.note.setText(
+                "Airbnb, Vrbo and Booking.com have no posting API for an "
+                "independent host, so KeKar builds the listing for each "
+                "portal's form. Copy it and paste it in — posting stays "
+                "with you.")
         self.note.setWordWrap(True)
         self.note.setFont(font(9))
         layout.addWidget(self.note)
+
+        # Shown only when the selected portal has a price or min-stay
+        # override, so the preview never silently disagrees with the form.
+        self.override_note = QLabel("")
+        self.override_note.setWordWrap(True)
+        self.override_note.setFont(font(9))
+        layout.addWidget(self.override_note)
 
         self.text = QPlainTextEdit()
         self.text.setFont(font(11))
@@ -76,15 +90,44 @@ class ListingDialog(QDialog):
             self.text.setReadOnly(True)
             self.text.setPlainText(body)
             problems = validate_listing(body)
+            self.override_note.setText("")
         else:
-            package = compile_channel(self.prop, channel)
+            settings = self._portal_settings(channel)
+            package = compile_channel(
+                self.prop, channel,
+                price_override=settings.price_override if settings else None,
+                min_stay_override=(settings.min_stay_override
+                                   if settings else None))
             self.text.setReadOnly(True)
             self.text.setPlainText(package.as_text())
             problems = list(package.warnings)
+            self.override_note.setText(self._override_text(settings))
+        self.override_note.setStyleSheet(
+            f"color:{self.app.current_theme().accent};")
         self.problems.setStyleSheet(
             f"color:{self.app.current_theme().warn_text};")
         self.problems.setText("Before you post: " + "; ".join(problems)
                               if problems else "")
+
+    def _portal_settings(self, channel: str):
+        """The stored settings for this portal, or None."""
+        if self.prop.id is None or channel not in PORTALS:
+            return None
+        return self.app.portal_repo.get(self.prop.id, channel)
+
+    @staticmethod
+    def _override_text(settings) -> str:
+        if settings is None:
+            return ""
+        label = PORTAL_LABELS.get(settings.portal, settings.portal)
+        parts: list[str] = []
+        if settings.price_override:
+            parts.append(f"${settings.price_override:,.0f} per night")
+        if settings.min_stay_override:
+            parts.append(f"{settings.min_stay_override}-night minimum")
+        if not parts:
+            return ""
+        return f"Using the {label} override: " + " and ".join(parts) + "."
 
     def _copy(self) -> None:
         text = self.text.toPlainText()

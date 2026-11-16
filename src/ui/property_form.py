@@ -1,20 +1,51 @@
 """Editable property detail form with amenity toggles and quick actions."""
 from __future__ import annotations
 
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import (QCheckBox, QDoubleSpinBox, QGridLayout, QGroupBox,
-                             QHBoxLayout, QLabel, QLineEdit, QMessageBox,
-                             QPushButton, QSpinBox, QTextEdit, QVBoxLayout,
-                             QWidget)
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtWidgets import (QCheckBox, QComboBox, QDoubleSpinBox, QGridLayout,
+                             QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+                             QMessageBox, QPushButton, QSpinBox, QTextEdit,
+                             QVBoxLayout, QWidget)
 
-from ..data.models import Property
+from ..data.models import (PORTAL_LABELS, PORTALS, PROPERTY_KINDS,
+                           PortalSettings, Property, SHORT_STAY_KIND)
 from ..services import image_service
+from ..services import ical_service
+from ..services import portal_sync
 from ..services.listing_compiler import (AMENITY_LABELS as AMENITY_FIELDS,
                                          compile_listing, validate_listing)
+from . import worker
 from .listing_dialog import ListingDialog
 from .palette import Theme
 from .theme import font
 from .widgets import StatusPill
+
+#: The kind selector, in the order the UI offers it.
+KIND_LABELS = (
+    ("Long-term rental", "rental"),
+    ("Short stay (Airbnb)", SHORT_STAY_KIND),
+)
+
+
+class _PortalSyncThread(QThread):
+    """Imports a portal calendar off the UI thread (it fetches a URL)."""
+
+    done = pyqtSignal(str, dict)
+
+    def __init__(self, app, property_id: int, portal: str):
+        super().__init__()
+        self.app = app
+        self.property_id = property_id
+        self.portal = portal
+
+    def run(self) -> None:
+        prop = self.app.property_repo.get(self.property_id)
+        if prop is None:
+            self.done.emit(self.portal, {
+                "status": "failed", "detail": "Property not found."})
+            return
+        result = portal_sync.sync_portal(self.app.db, prop, self.portal)
+        self.done.emit(self.portal, result)
 
 
 class PropertyForm(QWidget):
@@ -32,8 +63,13 @@ class PropertyForm(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(10)
 
-        # --- header row: status + delete --------------------------------
+        # --- header row: kind + status + delete -------------------------
         header = QHBoxLayout()
+        header.addWidget(_form_label("Type"))
+        self.kind_combo = QComboBox()
+        for label, key in KIND_LABELS:
+            self.kind_combo.addItem(label, key)
+        header.addWidget(self.kind_combo)
         self.pill = StatusPill("No property selected", "#616161", self)
         header.addWidget(self.pill)
         header.addStretch(1)
@@ -52,16 +88,6 @@ class PropertyForm(QWidget):
         self.address_input = QLineEdit()
         self.city_input = QLineEdit()
         self.zip_input = QLineEdit()
-        self.rent_input = QDoubleSpinBox()
-        self.rent_input.setRange(0, 100000)
-        self.rent_input.setPrefix("$")
-        self.rent_input.setSingleStep(25)
-        self.deposit_input = QDoubleSpinBox()
-        self.deposit_input.setRange(0, 100000)
-        self.deposit_input.setPrefix("$")
-        self.deposit_input.setSingleStep(25)
-        self.available_input = QLineEdit()
-        self.available_input.setPlaceholderText("2026-12-01")
         self.bedrooms_input = QSpinBox()
         self.bedrooms_input.setRange(0, 20)
         self.bathrooms_input = QDoubleSpinBox()
@@ -77,9 +103,6 @@ class PropertyForm(QWidget):
             ("Street address", self.address_input),
             ("City", self.city_input),
             ("ZIP", self.zip_input),
-            ("Monthly rent", self.rent_input),
-            ("Security deposit", self.deposit_input),
-            ("Available date", self.available_input),
             ("Bedrooms", self.bedrooms_input),
             ("Bathrooms", self.bathrooms_input),
             ("Square feet", self.sqft_input),
@@ -92,6 +115,140 @@ class PropertyForm(QWidget):
         grid.setColumnStretch(1, 1)
         grid.setColumnStretch(3, 1)
         layout.addWidget(details)
+
+        # --- long-term terms --------------------------------------------
+        self.rental_terms = QGroupBox("Rental terms", self)
+        rental_grid = QGridLayout(self.rental_terms)
+        rental_grid.setVerticalSpacing(8)
+        rental_grid.setHorizontalSpacing(14)
+        self.rent_input = QDoubleSpinBox()
+        self.rent_input.setRange(0, 100000)
+        self.rent_input.setPrefix("$")
+        self.rent_input.setSingleStep(25)
+        self.deposit_input = QDoubleSpinBox()
+        self.deposit_input.setRange(0, 100000)
+        self.deposit_input.setPrefix("$")
+        self.deposit_input.setSingleStep(25)
+        self.available_input = QLineEdit()
+        self.available_input.setPlaceholderText("2026-12-01")
+        for index, (label, widget) in enumerate((
+                ("Monthly rent", self.rent_input),
+                ("Security deposit", self.deposit_input),
+                ("Available date", self.available_input))):
+            rental_grid.addWidget(_form_label(label), index, 0)
+            rental_grid.addWidget(widget, index, 1)
+        rental_grid.setColumnStretch(1, 1)
+        layout.addWidget(self.rental_terms)
+
+        # --- short-stay terms -------------------------------------------
+        self.short_stay_terms = QGroupBox("Short-stay terms", self)
+        stay_grid = QGridLayout(self.short_stay_terms)
+        stay_grid.setVerticalSpacing(8)
+        stay_grid.setHorizontalSpacing(14)
+        self.nightly_input = QDoubleSpinBox()
+        self.nightly_input.setRange(0, 100000)
+        self.nightly_input.setPrefix("$")
+        self.nightly_input.setSingleStep(10)
+        self.cleaning_input = QDoubleSpinBox()
+        self.cleaning_input.setRange(0, 100000)
+        self.cleaning_input.setPrefix("$")
+        self.cleaning_input.setSingleStep(10)
+        self.extra_guest_input = QDoubleSpinBox()
+        self.extra_guest_input.setRange(0, 100000)
+        self.extra_guest_input.setPrefix("$")
+        self.extra_guest_input.setSingleStep(5)
+        self.min_stay_input = QSpinBox()
+        self.min_stay_input.setRange(0, 365)
+        self.max_guests_input = QSpinBox()
+        self.max_guests_input.setRange(1, 30)
+        self.check_in_input = QLineEdit()
+        self.check_in_input.setPlaceholderText("15:00")
+        self.check_out_input = QLineEdit()
+        self.check_out_input.setPlaceholderText("11:00")
+        self.cancellation_input = QComboBox()
+        self.cancellation_input.addItems(
+            ["Flexible", "Moderate", "Firm", "Strict"])
+        self.cancellation_input.setEditable(True)
+        self.instant_book_box = QCheckBox("Instant Book")
+        self.house_rules_input = QTextEdit()
+        self.house_rules_input.setMaximumHeight(60)
+        self.house_rules_input.setPlaceholderText(
+            "House rules shown to guests, e.g. No parties, no smoking.")
+        stay_fields = [
+            ("Nightly rate", self.nightly_input),
+            ("Cleaning fee", self.cleaning_input),
+            ("Extra guest fee", self.extra_guest_input),
+            ("Minimum stay (nights)", self.min_stay_input),
+            ("Max guests", self.max_guests_input),
+            ("Check-in time", self.check_in_input),
+            ("Check-out time", self.check_out_input),
+            ("Cancellation policy", self.cancellation_input),
+        ]
+        for index, (label, widget) in enumerate(stay_fields):
+            row, column = divmod(index, 2)
+            stay_grid.addWidget(_form_label(label), row, column * 2)
+            stay_grid.addWidget(widget, row, column * 2 + 1)
+        stay_grid.addWidget(self.instant_book_box, 4, 0)
+        stay_grid.addWidget(_form_label("House rules"), 5, 0)
+        stay_grid.addWidget(self.house_rules_input, 5, 1, 1, 3)
+        stay_grid.setColumnStretch(1, 1)
+        stay_grid.setColumnStretch(3, 1)
+        layout.addWidget(self.short_stay_terms)
+
+        # --- portals -----------------------------------------------------
+        self.portals_box = QGroupBox("Portals", self)
+        self.portal_rows: dict[str, dict] = {}
+        portals_layout = QVBoxLayout(self.portals_box)
+        for key in PORTALS:
+            row = QHBoxLayout()
+            enabled = QCheckBox(PORTAL_LABELS[key])
+            enabled.setToolTip(f"List this unit on {PORTAL_LABELS[key]}")
+            price = QDoubleSpinBox()
+            price.setRange(0, 100000)
+            price.setPrefix("$")
+            price.setSpecialValueText("default")
+            price.setToolTip("Leave at 0 to use the property's nightly rate")
+            stay = QSpinBox()
+            stay.setRange(0, 365)
+            stay.setSuffix(" nights")
+            stay.setSpecialValueText("default")
+            stay.setToolTip("Leave at 0 to use the property's minimum stay")
+            sync = QPushButton("Sync now")
+            sync.setProperty("portal", key)
+            sync.clicked.connect(self._sync_portal)
+            sync.setToolTip(f"Import the {PORTAL_LABELS[key]} calendar")
+            last = QLabel("")
+            last.setProperty("portal_last", key)
+            last.setFont(font(9))
+            row.addWidget(enabled)
+            row.addWidget(QLabel("Price"))
+            row.addWidget(price)
+            row.addWidget(QLabel("Min stay"))
+            row.addWidget(stay)
+            row.addWidget(sync)
+            row.addWidget(last, 1)
+            portals_layout.addLayout(row)
+
+            url_row = QHBoxLayout()
+            url = QLineEdit()
+            url.setPlaceholderText(
+                f"{PORTAL_LABELS[key]} calendar URL (.ics)")
+            url.setToolTip("The portal's own iCal export URL")
+            url_row.addWidget(QLabel("Calendar"))
+            url_row.addWidget(url, 1)
+            portals_layout.addLayout(url_row)
+            self.portal_rows[key] = {
+                "enabled": enabled, "price": price, "stay": stay,
+                "url": url, "last": last, "sync": sync,
+            }
+
+        export_btn = QPushButton("Export calendar (.ics)…")
+        export_btn.setToolTip(
+            "Write an iCal file of this property's bookings, to upload to a "
+            "portal")
+        export_btn.clicked.connect(self.export_calendar)
+        portals_layout.addWidget(export_btn)
+        layout.addWidget(self.portals_box)
 
         # --- amenities ---------------------------------------------------
         amenities_box = QGroupBox("Amenities", self)
@@ -130,7 +287,9 @@ class PropertyForm(QWidget):
         self.vacant_btn = QPushButton("Mark as vacant")
         self.vacant_btn.clicked.connect(lambda: self._set_status("Vacant"))
         self.publish_btn = QPushButton("Publish to Marketplace...")
-        self.publish_btn.clicked.connect(self.publish_to_marketplace)
+        # The same button is the listing dialog for a short stay: the design
+        # gives a short stay "Portal listing…" instead of Marketplace autofill.
+        self.publish_btn.clicked.connect(self._publish_or_list)
         # Two rows of three: six buttons in one row gave the form a ~900 px
         # minimum width, so the detail pane scrolled horizontally on a 1280 px
         # window and the last field was clipped by the panel edge.
@@ -147,6 +306,11 @@ class PropertyForm(QWidget):
         layout.addLayout(actions_two)
         layout.addStretch(1)
 
+        # Kind visibility is wired last: its handler reads both term groups
+        # and the publish button, which do not exist while the form is built.
+        self.kind_combo.currentIndexChanged.connect(self._on_kind_changed)
+        self._on_kind_changed()
+
     # -- loading and saving ------------------------------------------------
 
     def _status_colour(self, status: str) -> str:
@@ -157,6 +321,111 @@ class PropertyForm(QWidget):
 
     def _neutral_colour(self) -> str:
         return self._theme.neutral if self._theme is not None else "#616161"
+
+    # -- portals ---------------------------------------------------------
+
+    @staticmethod
+    def _last_sync_label(stamp: str | None) -> str:
+        return f"Last sync: {stamp}" if stamp else "Not synced yet"
+
+    def _load_portals(self, prop: Property) -> None:
+        """Fill the portal rows from the stored settings."""
+        if prop.id is None:
+            return
+        for key, row in self.portal_rows.items():
+            settings = self.app.portal_repo.get(prop.id, key)
+            row["enabled"].setChecked(bool(settings and settings.enabled))
+            row["price"].setValue(
+                settings.price_override if settings
+                and settings.price_override else 0)
+            row["stay"].setValue(
+                settings.min_stay_override if settings
+                and settings.min_stay_override else 0)
+            row["url"].setText(settings.external_ical_url or ""
+                               if settings else "")
+            row["last"].setText(
+                self._last_sync_label(settings.last_sync_at)
+                if settings else "Not synced yet")
+
+    def _save_portals(self, prop: Property) -> None:
+        """Store the portal rows. Called after the property itself is saved.
+
+        Only a short stay has portals, so saving a rental writes nothing —
+        otherwise every long-term let would accumulate three inert rows.
+        """
+        if prop.id is None or not self._is_short_stay():
+            return
+        for key, row in self.portal_rows.items():
+            existing = self.app.portal_repo.get(prop.id, key)
+            self.app.portal_repo.save(PortalSettings(
+                property_id=prop.id, portal=key,
+                enabled=row["enabled"].isChecked(),
+                price_override=row["price"].value() or None,
+                min_stay_override=row["stay"].value() or None,
+                external_ical_url=row["url"].text().strip() or None,
+                last_sync_at=(existing.last_sync_at if existing else None)))
+
+    def _sync_portal(self) -> None:
+        if self.current_id is None:
+            QMessageBox.information(self, "KeKar", "Save the property first.")
+            return
+        portal = self.sender().property("portal")
+        row = self.portal_rows[portal]
+        # A URL typed moments ago must be stored before it is fetched.
+        self._save_portals(self._collect())
+        row["sync"].setEnabled(False)
+        row["last"].setText("Syncing…")
+        thread = _PortalSyncThread(self.app, self.current_id, portal)
+        thread.done.connect(
+            lambda result, p=portal: self._on_sync_done(p, result))
+        worker.register(thread)
+        thread.start()
+
+    def _on_sync_done(self, portal: str, result: dict) -> None:
+        thread = self.sender()
+        worker.reap(thread if isinstance(thread, QThread) else None)
+        row = self.portal_rows[portal]
+        row["sync"].setEnabled(True)
+        settings = (self.app.portal_repo.get(self.current_id, portal)
+                    if self.current_id is not None else None)
+        row["last"].setText(self._last_sync_label(
+            settings.last_sync_at if settings else None))
+        detail = result.get("detail", "Nothing happened.")
+        if result.get("status") == "failed":
+            QMessageBox.warning(self, "KeKar", detail)
+        else:
+            self.app.main_window.status(f"{PORTAL_LABELS[portal]}: {detail}")
+        self.app.main_window.reload_all()
+
+    def export_calendar(self) -> None:
+        """Write this property's bookings as an iCal file for a portal."""
+        if self.current_id is None:
+            QMessageBox.information(self, "KeKar", "Save the property first.")
+            return
+        prop = self.app.property_repo.get(self.current_id)
+        if prop is None:
+            return
+        bookings = self.app.booking_repo.list(property_id=self.current_id)
+        path = ical_service.export_ical(prop, bookings)
+        self.app.main_window.status(f"Calendar written to {path}")
+        QMessageBox.information(
+            self, "KeKar",
+            f"Calendar written to:\n{path}\n\n"
+            f"Upload that file to the portal, or keep it for your records.")
+
+    def _is_short_stay(self) -> bool:
+        return self.kind_combo.currentData() == SHORT_STAY_KIND
+
+    def _on_kind_changed(self) -> None:
+        """Show the term group that matches the selected kind."""
+        short = self._is_short_stay()
+        self.rental_terms.setVisible(not short)
+        self.short_stay_terms.setVisible(short)
+        self.portals_box.setVisible(short)
+        # Marketplace auto-fill is a long-term listing flow; a short stay gets
+        # the per-portal listing packages instead.
+        self.publish_btn.setText("Portal listing…" if short
+                                 else "Publish to Marketplace...")
 
     def apply_theme(self, theme: Theme) -> None:
         self._theme = theme
@@ -191,15 +460,22 @@ class PropertyForm(QWidget):
 
     def _clear_fields(self) -> None:
         for widget in (self.address_input, self.city_input, self.zip_input,
-                       self.available_input, self.pet_input):
+                       self.available_input, self.pet_input,
+                       self.check_in_input, self.check_out_input):
             widget.clear()
         self.notes_input.clear()
+        self.house_rules_input.clear()
         for widget in (self.rent_input, self.deposit_input,
                        self.bedrooms_input, self.bathrooms_input,
-                       self.sqft_input):
+                       self.sqft_input, self.nightly_input, self.cleaning_input,
+                       self.extra_guest_input, self.min_stay_input):
             widget.setValue(0)
+        self.max_guests_input.setValue(1)
+        self.instant_book_box.setChecked(False)
+        self.cancellation_input.setCurrentText("Flexible")
         for box in self.amenity_boxes.values():
             box.setChecked(False)
+        self._on_kind_changed()
 
     def _fill_fields(self, p: Property) -> None:
         self.address_input.setText(p.address or "")
@@ -208,6 +484,17 @@ class PropertyForm(QWidget):
         self.rent_input.setValue(p.rent_price or 0)
         self.deposit_input.setValue(p.deposit_amount or 0)
         self.available_input.setText(p.available_date or "")
+        self.nightly_input.setValue(p.nightly_price or 0)
+        self.cleaning_input.setValue(p.cleaning_fee or 0)
+        self.extra_guest_input.setValue(p.extra_guest_fee or 0)
+        self.min_stay_input.setValue(p.min_stay_nights or 0)
+        self.max_guests_input.setValue(p.max_guests or 1)
+        self.check_in_input.setText(p.check_in_time or "")
+        self.check_out_input.setText(p.check_out_time or "")
+        self.cancellation_input.setCurrentText(p.cancellation_policy
+                                               or "Flexible")
+        self.instant_book_box.setChecked(bool(p.instant_book))
+        self.house_rules_input.setPlainText(p.house_rules or "")
         self.bedrooms_input.setValue(p.bedrooms or 0)
         self.bathrooms_input.setValue(p.bathrooms or 0)
         self.sqft_input.setValue(p.sqft or 0)
@@ -215,6 +502,12 @@ class PropertyForm(QWidget):
         self.notes_input.setPlainText(p.notes or "")
         for attr, box in self.amenity_boxes.items():
             box.setChecked(bool(getattr(p, attr)))
+        index = self.kind_combo.findData(
+            p.kind if p.kind in PROPERTY_KINDS else "rental")
+        if index >= 0:
+            self.kind_combo.setCurrentIndex(index)
+        self._on_kind_changed()
+        self._load_portals(p)
 
     def _collect(self) -> Property:
         return Property(
@@ -232,6 +525,18 @@ class PropertyForm(QWidget):
             notes=self.notes_input.toPlainText().strip() or None,
             status=self.pill.text() if self.pill.text() in ("Vacant", "Rented")
             else "Vacant",
+            kind=self.kind_combo.currentData() or "rental",
+            nightly_price=self.nightly_input.value() or None,
+            cleaning_fee=self.cleaning_input.value() or None,
+            extra_guest_fee=self.extra_guest_input.value() or None,
+            min_stay_nights=self.min_stay_input.value() or None,
+            max_guests=self.max_guests_input.value() or None,
+            check_in_time=self.check_in_input.text().strip() or None,
+            check_out_time=self.check_out_input.text().strip() or None,
+            instant_book=self.instant_book_box.isChecked(),
+            cancellation_policy=(self.cancellation_input.currentText().strip()
+                                 or None),
+            house_rules=self.house_rules_input.toPlainText().strip() or None,
             **{attr: box.isChecked() for attr, box in self.amenity_boxes.items()},
         )
 
@@ -245,6 +550,8 @@ class PropertyForm(QWidget):
             self.current_id = self.app.property_repo.create(prop)
         else:
             self.app.property_repo.update(prop)
+        prop.id = self.current_id
+        self._save_portals(prop)
         self.pill.setText(prop.status)
         self.pill.set_color(self._status_colour(prop.status))
         self.property_saved.emit(self.current_id)
@@ -308,6 +615,13 @@ class PropertyForm(QWidget):
             return
         from .marketplace_dialog import MarketplaceDialog
         MarketplaceDialog(self.app, prop, self).exec()
+
+    def _publish_or_list(self) -> None:
+        """The one action button: Marketplace for a rental, portals for a stay."""
+        if self._is_short_stay():
+            self.preview_listing()
+        else:
+            self.publish_to_marketplace()
 
     def _set_status(self, status: str) -> None:
         if self.current_id is None:
