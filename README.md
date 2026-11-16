@@ -29,7 +29,9 @@ drive. All data stays local; only the AI chat needs the network.
 
 ## Download
 
-Pre-built packages are attached to every
+The current release is
+[v1.2.0](https://github.com/Ryuupyroxi/KeKar/releases/tag/v1.2.0) — Airbnb-style
+short stays. Pre-built packages are attached to every
 [GitHub release](https://github.com/Ryuupyroxi/KeKar/releases):
 
 - **Windows** — `KeKar_Windows.zip`: unzip, then double-click `KeKar.bat`.

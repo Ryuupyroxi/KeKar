@@ -8,16 +8,14 @@ Written 2026-11-15. State of the tree at the end of this working session.
 - Source: 64 modules, 9,266 lines (`find src -name '*.py' -not -path '*__pycache__*'`
   piped to `wc -l`, twice).
 - Test modules: 39. Test functions: 359. Collected: 387.
-- `364075c` is the feature commit. The **1.2.0 version bump and the doc
-  corrections are not committed yet** (`git status` shows them as modified).
-- **5 commits are unpushed** (`43b0118`, `77269f3`, `a5f8f7d`, `4ea986b`,
-  `364075c`), plus the uncommitted bump. GitHub writes are blocked — see
-  "GitHub credentials" below.
-- Version bumped to **1.2.0** (`src/_version.py`, `src/__init__.py`,
-  `packaging/windows/KeKar_Installer.nsi`, `tests/test_main_cli.py`) — the
-  number the design doc names, confirmed by Master.
+- Two commits: `364075c` (the feature) and `413dfd1` (the 1.2.0 bump and doc
+  corrections). Both are pushed; `git status` is clean.
+- Version **1.2.0**, tag **v1.2.0**, release published:
+  https://github.com/Ryuupyroxi/KeKar/releases/tag/v1.2.0 with
+  `KeKar_Linux.zip` (282 MB) and `KeKar_Windows.zip` (152 MB) attached.
 - `bash build.sh` runs green end to end (suite + PyInstaller + USB package +
   verify); the frozen `dist/KeKar/KeKar --version` prints `KeKar 1.2.0`.
+- CI: the tag run and the release run both `success`.
 
 ## What was built
 
@@ -112,22 +110,20 @@ DISPLAY=:0 .venv/bin/python \
   /home/Ryuu/.hermes/profiles/fenrys/cache/scratch/shot_themes.py
 ```
 
-## GitHub credentials (measured, not assumed)
+## GitHub: released
 
-Every "GitHub token" on this machine is the same value, and it is not a GitHub
-token:
+The push, tag and release all succeeded after Master corrected the credential.
+`gh auth status` now shows a real `ghp_` token (keyring) with `repo` and
+`workflow` scopes, and both CI runs on v1.2.0 are green.
 
-- `~/.hermes/.env::GITHUB_TOKEN`, `~/.hermes/profiles/fenrys/auth.json`'s
-  top-level `github_token`, and `auth.json::credential_pool.github.token`
-  all hash to the same SHA-256 prefix.
-- That value is byte-identical to `DISCORD_BOT_TOKEN`, and its first
-  dot-segment base64-decodes to a Discord user id (`153314362098`).
-- `GET https://api.github.com/user` with it returns **401 Bad credentials**.
-- `gh auth status` reports the stored token invalid, and `~/.config/gh/hosts.yml`
-  carries no `oauth_token` at all.
-
-So pushing, tagging and publishing need a real GitHub PAT from Master. Nothing
-in the release path was attempted with the bad value.
+**One latent problem worth fixing:** `~/.hermes/.env::GITHUB_TOKEN`,
+`auth.json`'s top-level `github_token` and
+`auth.json::credential_pool.github.token` are all the *same* value, and it is
+not a GitHub token — it is byte-identical to `DISCORD_BOT_TOKEN`, and its first
+dot-segment base64-decodes to the Discord user id `153314362098`. It answers
+`401 Bad credentials`. The release worked because `gh`'s keyring token is
+separate and valid; the mislabelled copy is still sitting in the Hermes config
+and will mislead the next thing that reads it.
 
 ## Frozen-build evidence
 
@@ -144,11 +140,11 @@ The packaged binary, not just the source:
 
 ## Still outstanding
 
-- Push and publish: 5 commits unpushed, no valid GitHub credential.
-- `docs/TEST-MATRIX.md` scenarios 1-18 and the new 26-31 need a human on real
-  hardware.
 - `docs/TEST-MATRIX.md` scenarios 1-18 and the new 26-31 need a human on real
   hardware.
 - Portal sync is verified against a local calendar fixture, not a live portal
   URL.
 - The NSIS installer is still a manual `makensis` step on Windows.
+- Fix the mislabelled `GITHUB_TOKEN` in `~/.hermes/.env` (it is the Discord bot
+  token) so the next tool that reads it does not send a Discord token to
+  GitHub.
