@@ -6,6 +6,14 @@
 !define COMPANY "KeKar Rental Properties"
 !define VERSION "1.2.0"
 
+; The folder to package. A manual run from the directory that contains
+; KeKar_Windows needs nothing. CI passes an absolute path, because NSIS
+; anchors a relative File path to the script rather than the working
+; directory.
+!ifndef KEKAR_PACKAGE_DIR
+  !define KEKAR_PACKAGE_DIR "KeKar_Windows"
+!endif
+
 ; Installer, uninstaller and shortcut icons. The same .ico is staged into the
 ; Windows package root by tools/make_usb_package.py and the shortcuts read it
 ; from there.
@@ -31,7 +39,7 @@ SetCompressor /SOLID lzma
 
 Section "Install"
   SetOutPath "$INSTDIR"
-  File /r "KeKar_Windows\*.*"
+  File /r "${KEKAR_PACKAGE_DIR}\*.*"
   CreateShortcut "$DESKTOP\KeKar.lnk" "$INSTDIR\KeKar.exe" "" "$INSTDIR\kekar.ico"
   CreateShortcut "$SMPROGRAMS\KeKar.lnk" "$INSTDIR\KeKar.exe" "" "$INSTDIR\kekar.ico"
   WriteUninstaller "$INSTDIR\uninstall.exe"

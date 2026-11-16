@@ -255,3 +255,6 @@ def test_installer_attach_step_is_not_pinned_to_one_version():
         encoding="utf-8")
     assert "KeKar_Setup_*.exe" in workflow, (
         "attach the produced installer by glob, not a hard-coded version")
+    assert "KEKAR_PACKAGE_DIR" in workflow and "KEKAR_PACKAGE_DIR" in nsi, (
+        "the source folder must be a define: NSIS anchors a relative File "
+        "path to the script, not the working directory")
