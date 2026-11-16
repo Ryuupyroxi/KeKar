@@ -4,7 +4,7 @@
 ; primary, install-free path; this installer is optional.
 !define APPNAME "KeKar"
 !define COMPANY "KeKar Rental Properties"
-!define VERSION "0.1.0"
+!define VERSION "1.2.0"
 
 ; Installer, uninstaller and shortcut icons. ${__FILEDIR__} is this script's
 ; own directory, so the path holds wherever makensis is invoked from. The

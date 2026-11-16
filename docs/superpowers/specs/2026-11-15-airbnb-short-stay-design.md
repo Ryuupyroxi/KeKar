@@ -1,8 +1,8 @@
 # Airbnb / short-stay support — design
 
 Date: 2026-11-15. Status: **implemented** (Phases 1-3 shipped in the tree; the
-v1.2 release step is still open).
-Covers Phases 1-3 below, and the v1.2 release that follows.
+release step is still open).
+Covers Phases 1-3 below, and the release that follows.
 
 ## Why
 
@@ -197,10 +197,13 @@ A **Portals** group on the short-stay property form:
 
 ## Release
 
-Version `1.2.0`, tag `v1.2.0`, pushed to `Ryuupyroxi/KeKar`. CI builds the
-Linux and Windows packages and attaches them to the GitHub release. The
-release notes name the Airbnb feature and the testers' re-check commands
-(`pytest -o addopts='' -q`, `bash build.sh`, `python tools/verify_usb.py`).
+Version `1.2.0`, tag `v1.2.0`, pushed to `Ryuupyroxi/KeKar`. (An earlier
+draft of this section was briefly corrected to 0.2.0 because v0.1.0 is the only
+published release; Master confirmed 1.2.0 is the intended number, so the
+original stands.) CI builds the Linux and Windows packages and attaches them
+to the GitHub release. The release notes name the Airbnb feature and the
+testers' re-check commands (`pytest -o addopts='' -q`, `bash build.sh`,
+`python tools/verify_usb.py`).
 
 ## Explicitly out of scope
 

@@ -289,7 +289,7 @@ greyed-out one.
 ## Verified by real execution
 
 - `bash build.sh` produces a working Linux one-folder build (`dist/KeKar`).
-- `dist/KeKar/KeKar --version` prints `KeKar 0.1.0` on a headless machine.
+- `dist/KeKar/KeKar --version` prints `KeKar 1.2.0` on a headless machine.
 - The built binary starts, creates `KeKarData/`, runs the schema migration, and
   reports `PRAGMA integrity_check = ok`. Confirmed by running the binary.
 - `tools/make_usb_package.py` + `tools/verify_usb.py` pass on the real build.
@@ -332,6 +332,11 @@ greyed-out one.
 - A v1.1-shaped database (every rental column, none of the short-stay ones) was
   opened by the current code and gained the columns in place; its existing row
   still reads as a long-term rental (`tests/test_short_stay.py`).
+- The **frozen** build was launched on a real display with a short-stay property
+  and a booking: the drawer row reads "Short stay ·", the Type selector shows
+  "Short stay (Airbnb)", and the Stays tab renders the calendar with the
+  booked days and the booking row — proving the new modules are inside the
+  bundle rather than only importable from source.
 
 ### Security review
 

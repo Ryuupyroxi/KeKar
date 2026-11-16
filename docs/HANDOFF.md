@@ -8,10 +8,16 @@ Written 2026-11-15. State of the tree at the end of this working session.
 - Source: 64 modules, 9,266 lines (`find src -name '*.py' -not -path '*__pycache__*'`
   piped to `wc -l`, twice).
 - Test modules: 39. Test functions: 359. Collected: 387.
-- Nothing is committed. `git status` shows 16 modified and 6 new files.
-- **4 commits are unpushed** (`43b0118`, `77269f3`, `a5f8f7d`, `4ea986b`), and
-  `gh auth status` reports the token invalid, so the release step is blocked
-  until Master re-authenticates.
+- `364075c` is the feature commit. The **1.2.0 version bump and the doc
+  corrections are not committed yet** (`git status` shows them as modified).
+- **5 commits are unpushed** (`43b0118`, `77269f3`, `a5f8f7d`, `4ea986b`,
+  `364075c`), plus the uncommitted bump. GitHub writes are blocked — see
+  "GitHub credentials" below.
+- Version bumped to **1.2.0** (`src/_version.py`, `src/__init__.py`,
+  `packaging/windows/KeKar_Installer.nsi`, `tests/test_main_cli.py`) — the
+  number the design doc names, confirmed by Master.
+- `bash build.sh` runs green end to end (suite + PyInstaller + USB package +
+  verify); the frozen `dist/KeKar/KeKar --version` prints `KeKar 1.2.0`.
 
 ## What was built
 
@@ -106,11 +112,41 @@ DISPLAY=:0 .venv/bin/python \
   /home/Ryuu/.hermes/profiles/fenrys/cache/scratch/shot_themes.py
 ```
 
+## GitHub credentials (measured, not assumed)
+
+Every "GitHub token" on this machine is the same value, and it is not a GitHub
+token:
+
+- `~/.hermes/.env::GITHUB_TOKEN`, `~/.hermes/profiles/fenrys/auth.json`'s
+  top-level `github_token`, and `auth.json::credential_pool.github.token`
+  all hash to the same SHA-256 prefix.
+- That value is byte-identical to `DISCORD_BOT_TOKEN`, and its first
+  dot-segment base64-decodes to a Discord user id (`153314362098`).
+- `GET https://api.github.com/user` with it returns **401 Bad credentials**.
+- `gh auth status` reports the stored token invalid, and `~/.config/gh/hosts.yml`
+  carries no `oauth_token` at all.
+
+So pushing, tagging and publishing need a real GitHub PAT from Master. Nothing
+in the release path was attempted with the bad value.
+
+## Frozen-build evidence
+
+The packaged binary, not just the source:
+
+- `dist/KeKar/KeKar --version` → `KeKar 1.2.0`.
+- Launched on the real display (`DISPLAY=:0`, throwaway data dir with one short
+  stay and one booking). The drawer row reads "Short stay · Pawhuska" (new
+  code), the Properties tab shows **Type = Short stay (Airbnb)**, and the
+  **Stays** tab renders the calendar with the booked days marked and the
+  Jordan Lee / Airbnb / 3 nights / 405 row in the table — so `stays_tab`,
+  `booking_repo`, `ical_service` and `portal_sync` are all inside the bundle
+  and working. Screenshots: `frozen-form-crop.png`, `frozen-stays-crop.png`.
+
 ## Still outstanding
 
-- Nothing is committed.
-- The release step of the design (version, tag, push, CI attach) is not done:
-  4 commits are unpushed and `gh` is unauthenticated.
+- Push and publish: 5 commits unpushed, no valid GitHub credential.
+- `docs/TEST-MATRIX.md` scenarios 1-18 and the new 26-31 need a human on real
+  hardware.
 - `docs/TEST-MATRIX.md` scenarios 1-18 and the new 26-31 need a human on real
   hardware.
 - Portal sync is verified against a local calendar fixture, not a live portal
