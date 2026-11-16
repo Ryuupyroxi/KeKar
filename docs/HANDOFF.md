@@ -1,21 +1,36 @@
 # Handoff — Airbnb / short-stay support (Phases 1-3)
 
-Written 2026-11-15. State of the tree at the end of this working session.
+Written 2026-11-15, extended 2026-11-16 for the gap-closure pass.
 
 ## Where it stands
 
-- `pytest -q` → **387 passed**, exit 0 (`.venv/bin/python -m pytest -o addopts='' -q`).
-- Source: 64 modules, 9,266 lines (`find src -name '*.py' -not -path '*__pycache__*'`
-  piped to `wc -l`, twice).
-- Test modules: 39. Test functions: 359. Collected: 387.
-- Two commits: `364075c` (the feature) and `413dfd1` (the 1.2.0 bump and doc
-  corrections). Both are pushed; `git status` is clean.
+- `pytest -q` → **392 passed**, exit 0 (`.venv/bin/python -m pytest -o addopts='' -q`).
+- Test modules: 40. Collected: 392.
 - Version **1.2.0**, tag **v1.2.0**, release published:
   https://github.com/Ryuupyroxi/KeKar/releases/tag/v1.2.0 with
   `KeKar_Linux.zip` (282 MB) and `KeKar_Windows.zip` (152 MB) attached.
 - `bash build.sh` runs green end to end (suite + PyInstaller + USB package +
   verify); the frozen `dist/KeKar/KeKar --version` prints `KeKar 1.2.0`.
-- CI: the tag run and the release run both `success`.
+- All work is pushed; `git status` is clean.
+
+## Gap closure (2026-11-16)
+
+Plan: `docs/superpowers/plans/2026-11-16-gap-closure-plan.md`, including an
+"As built" section with the three NSIS defects the plan did not anticipate.
+
+- **G1 closed and proven.** CI now compiles the NSIS installer and attaches it.
+  A throwaway v1.2.1 release carried all three assets
+  (`KeKar_Setup_1.2.0.exe`, 100,411,978 bytes); the release and tag were then
+  deleted, so **v1.2.0 itself still has only the two zips**. Moved on to the
+  next release, or move the v1.2.0 tag if Master wants the installer there.
+- **G2 closed.** `tools/live_sync_check.py` + 3 tests; verified against the
+  fixture over `file://`.
+- **G3-G5 closed as procedures.** Scenario 12, Scenario 30 and a Windows
+  hardware pass are written; every matrix row now says demo or real.
+- **G6 closed for `~/.hermes/.env`.** `GITHUB_TOKEN` removed (it was the
+  Discord bot token); `gh auth status` and `git push --dry-run` still work.
+  Backup: `~/.hermes/.env.bak-20261116`. `auth.json::credential_pool.github`
+  still holds the same wrong value — no reader, live store, left alone.
 
 ## What was built
 

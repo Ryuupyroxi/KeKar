@@ -36,7 +36,10 @@ short stays. Pre-built packages are attached to every
 
 - **Windows** — `KeKar_Windows.zip`: unzip, then double-click `KeKar.bat`.
   SmartScreen may warn on first run because the build is not code-signed;
-  click **More info → Run anyway**.
+  click **More info → Run anyway**. From the release after v1.2.0 the job also
+  attaches `KeKar_Setup_<version>.exe`, which copies the package to
+  `%LOCALAPPDATA%\KeKar` and adds Desktop and Start-menu shortcuts; the zip
+  stays the no-install path.
 - **Linux** — `KeKar_Linux.zip`: unzip, then double-click `KeKar.sh`, or run
   `./install_linux.py --desktop` for a menu entry and a Desktop shortcut.
 
@@ -358,8 +361,11 @@ to the database.
 - Marketplace autofill is implemented but untested against the live Facebook DOM.
 - Portal sync is verified against a local calendar fixture, not against a live
   Airbnb/Vrbo/Booking.com export URL.
-- The NSIS installer is still a manual `makensis` step on Windows; CI builds
-  and attaches the two zips but never compiles the installer.
+- Releases up to and including v1.2.0 carry the two zips only; the NSIS
+  installer is built and attached by CI from the next release onward.
+- Nothing has been run on real Windows hardware by us — CI builds and packages
+  the Windows artifacts, and the human pass in `docs/TEST-MATRIX.md` is written
+  but unrun.
 
 ## Source documents (kept outside this folder, referenced by the plan)
 

@@ -614,6 +614,46 @@ change in `docs/HANDOFF.md` instead.
 - **Phase 6 edits files outside the repo.** Do it by hand, not from a script that
   could rewrite `auth.json` wholesale.
 
+## As built (2026-11-16)
+
+**Phase 1 — done and proven.** Three defects the plan did not anticipate, each
+caught by the throwaway v1.2.1 release rather than by reading the code:
+
+1. `makensis` is **not** on the `windows-latest` image, and
+   `choco install nsis` deploys to `C:\Program Files (x86)\NSIS` **without**
+   adding it to PATH — refreshing the registry PATH in-step does not help.
+   The step calls `makensis.exe` by full path.
+2. NSIS resolves `${__FILEDIR__}` against the CWD when the script is named
+   relatively, so it looked for `packaging\packaging\windows\kekar.ico`.
+   CI passes an absolute script path.
+3. NSIS anchors **both** `File` and `OutFile` relative paths to the script, not
+   the working directory. `KEKAR_PACKAGE_DIR` and `KEKAR_OUT_FILE` are now
+   defines with portable defaults, and CI passes absolute values.
+
+   Result: a release with `KeKar_Linux.zip`, `KeKar_Windows.zip` **and**
+   `KeKar_Setup_1.2.0.exe` (100,411,978 bytes). The throwaway release and tag
+   were deleted; v1.2.0 keeps its original two assets.
+
+**Phase 2 — done.** `tools/live_sync_check.py` + 3 tests. Verified against the
+fixture over `file://` (no server needed): `status: ok`, `added: 1`,
+`dry_run: True`.
+
+**Phases 3-5 — done.** Procedures written; the matrix now routes every row to
+demo or real.
+
+**Phase 6 — done, with one deviation.** Step 1 predicted "only the definitions,
+no readers". That was wrong: `hermes_cli/git_credentials.py` reads `GITHUB_TOKEN`
+as a git credential source. It already guards against a stale value (it yields
+`GITHUB_TOKEN` first and `gh auth token` second and lets the remote decide), so
+the bad token was only a wasted first attempt. `GITHUB_TOKEN` is removed from
+`~/.hermes/.env`; `gh auth status` and `git push --dry-run` still work. A
+backup is at `~/.hermes/.env.bak-20261116`.
+
+`auth.json`'s `credential_pool.github` was **left alone**: no reader exists, and
+it is Hermes's live credential store, so editing it risks the profile for no
+gain. The mislabelled value there is still the Discord token and is still worth
+clearing by hand.
+
 ## Definition of done
 
 - `bash build.sh` green; suite above 387.
