@@ -282,6 +282,13 @@ def test_lite_usb_package_layout(tool, tmp_path):
     assert "./KeKarLite.sh" in launcher
 
 
+def test_readme_documents_both_variants():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    for phrase in ("KeKar Lite", "copy-and-paste", "KEKAR_VARIANT",
+                   "out/KeKarLite_Linux"):
+        assert phrase in readme, f"README never mentions {phrase!r}"
+
+
 def test_full_usb_package_layout_is_unchanged(tool, tmp_path):
     source = tmp_path / "build" / "KeKar"
     (source / "_internal").mkdir(parents=True)

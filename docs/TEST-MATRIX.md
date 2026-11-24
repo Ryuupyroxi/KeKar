@@ -172,6 +172,17 @@ calendar. Vrbo and Booking.com expose one in the owner/extranet dashboard.
 5. If a portal's calendar uses a dialect the parser rejects, the tool says so
    with the provider's own message — paste it verbatim rather than paraphrasing.
 
+## KeKar Lite scenarios (L1–L6)
+
+| Scenario | Command | Expected observation | Result |
+|---|---|---|---|
+| L1 | `out/KeKarLite_Linux/KeKarLite_Linux/KeKarLite` on a real display | Window title "KeKar Lite Property Manager"; property list and tab card only, no chat pane or network pill | PASS — `scratch/lite-main.png`, `scratch/lite-view-menu.png`; title and no chat pane confirmed, View menu has "Collapse property list" but no "Collapse chat". The grey "No property selected" pill belongs to the form and exists in both builds. |
+| L2 | Open a short-stay property | Type shows "Short stay"; no Portals group, no "Publish to Marketplace…" button | PASS in-process — `test_lite_ui.py` asserts `publish_btn is None`, `portals_box is None`, and the Type label is "Short stay"; no Portals group visible in `scratch/lite-main.png`. |
+| L3 | Properties → Preview listing | Rental offers generic + Zillow; short stay offers generic + Booking.com; Copy works | PASS in-process — `test_lite_ui.py` asserts those channel lists; `Save`, `Preview listing` and `Copy listing` widgets are visible at y=668 in the Lite form geometry probe; they sit below the folded viewport in `scratch/lite-main.png`. |
+| L4 | Open the same `KeKarData/` with full KeKar | Properties, applicants, leases, stays and chat history all still present | PARTIAL — no data-layer change; both binaries opened against `out/KeKarLite_Linux/KeKarData` and `verify_usb.py` passed. Populated-data GUI round-trip not yet driven. |
+| L5 | Block outbound traffic | Every Lite feature works; no error dialogs | PASS by construction/tests — agent, provider ping, portal sync, Marketplace browser and Maps are not composed in Lite; `test_lite_ui.py::test_lite_form_never_starts_a_maps_request` proves no request with a stored key. Physical network unplug not performed. |
+| L6 | `out/KeKarLite_Linux/KeKarLite_Linux/KeKarLite --version` | Prints `KeKar Lite <version>` on a headless machine | PASS — printed `KeKar Lite 1.6.0`; full build printed `KeKar 1.6.0`. |
+
 ## How to run a scenario
 
 1. Copy the package to the drive with `tools/copy_to_usb.sh <mount> <package>`.

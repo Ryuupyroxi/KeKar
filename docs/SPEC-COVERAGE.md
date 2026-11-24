@@ -62,6 +62,8 @@ Decision references (D1-D10) are defined in Part 1 of
 | §3.2 | Short-stay listing packages (Airbnb, Vrbo, Booking.com) and per-portal overrides | `src/services/listing_channels.py`, `src/ui/listing_dialog.py` | `test_short_stay.py`, `test_listing_channels.py` |
 | §8.3 | Reservations: calendar, bookings table, overlap rejection | `src/data/booking_repo.py`, `src/ui/stays_tab.py` | `test_short_stay.py` |
 | §10.1 | Two-way portal calendar sync over iCal, with a sync log | `src/services/ical_service.py`, `src/services/portal_sync.py`, `src/data/portal_repo.py`, `property_portals` / `portal_sync_log` | `test_short_stay.py` |
+| Lite | KeKar Lite variant | `src/features.py`, `tools/set_variant.py` | `test_features.py`, `test_set_variant.py`, `test_kekar_lite.py` |
+| Lite | KeKar Lite keeps copy-and-paste listings | `src/ui/listing_dialog.py`, `src/services/listing_compiler.py`, `src/services/clipboard.py` | `test_lite_ui.py`, `test_listing_channels.py` |
 
 ## Deliberate deviations from the spec
 
@@ -69,6 +71,7 @@ Decision references (D1-D10) are defined in Part 1 of
 |---|---|---|
 | `%APPDATA%\KeKar` data location | Portable `KeKarData/` next to the executable | Spec §7.1 breaks portability and cannot work on Linux (D3) |
 | "Embedded Hermes Agent Skeleton" | Lightweight in-app agent loop | Real Hermes is ~1.9 GB and its venv is full of symlinks, which FAT32/exFAT cannot store (D4) |
+| Portal calendar sync in Lite | Removed for all three portals, including Booking.com | One unverified network subsystem is incompatible with an offline-only product (K4) |
 | `browser.use_real_profile` | Dedicated KeKar browser profile over CDP | Chrome/Edge refuse remote debugging on the default profile (D5) |
 | Windows only | Windows + Linux, one source tree | Every layer was already cross-platform (D1) |
 | — | Marketplace autofill stops before Publish | Human-in-the-loop requirement; never publishes (R3) |

@@ -30,8 +30,8 @@ drive. All data stays local; only the AI chat needs the network.
 ## Download
 
 The current release is
-[v1.2.0](https://github.com/Ryuupyroxi/KeKar/releases/tag/v1.2.0) — Airbnb-style
-short stays. Pre-built packages are attached to every
+[v1.6.0](https://github.com/Ryuupyroxi/KeKar/releases/tag/v1.6.0) — a marked
+experimental build with Google Maps address suggestions. Pre-built packages are attached to every
 [GitHub release](https://github.com/Ryuupyroxi/KeKar/releases):
 
 - **Windows** — `KeKar_Windows.zip`: unzip, then double-click `KeKar.bat`.
@@ -45,6 +45,27 @@ short stays. Pre-built packages are attached to every
 
 Your data lives in the `KeKarData` folder next to the program, so the whole
 package can be copied to any PC or USB drive.
+
+## KeKar Lite
+
+KeKar Lite is the same program with the unfinished external connections removed:
+Facebook Marketplace auto-fill, the AI chat assistant, short-stay portal calendar
+sync, and Google Maps address lookup. The `apartments.com`, Airbnb and Vrbo
+channel packages are hidden from the picker; generic, Zillow and Booking.com
+copy-and-paste listings stay.
+
+Both builds use the same `KeKarData/` folder and the same SQLite schema; either
+can open a portfolio created by the other. No data is deleted or migrated.
+
+Build both Linux packages with `bash build.sh` (outputs under
+`out/KeKar_Linux/` and `out/KeKarLite_Linux/`) and both Windows packages with
+`./build.ps1`. Releases attach `KeKarLite_Linux.zip` and
+`KeKarLite_Windows.zip` beside the full builds. The Lite launchers are
+`KeKarLite.sh` and `KeKarLite.bat`.
+
+`KEKAR_VARIANT=lite` selects the variant when running from source; an unset
+value always means full KeKar. `src/features.py` is the single switch, and a
+frozen build gets its value from a generated, gitignored `src/_variant.py`.
 
 ## Status
 
