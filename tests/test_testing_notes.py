@@ -114,6 +114,41 @@ def test_default_lease_mentions_pet_deposit():
     assert "Pet policy: Dogs OK" in text
 
 
+def test_stays_are_inside_the_calendar_tab(kekar_app):
+    """Note 7: Stays is a panel inside Calendar, not a separate tab."""
+    from src.ui.calendar_tab import SHORT_STAY_COLOUR
+
+    window = kekar_app.main_window
+    labels = [window.tabs.tabText(i) for i in range(window.tabs.count())]
+    assert "Stays" not in labels
+    assert "Calendar" in labels
+    assert window.calendar_tab.isAncestorOf(window.stays_tab)
+
+
+def test_calendar_marks_short_stays_in_their_own_colour(kekar_app):
+    from PyQt6.QtGui import QColor
+    from src.data.models import Booking
+    from src.ui.calendar_tab import SHORT_STAY_COLOUR
+
+    prop_id = kekar_app.property_repo.create(Property(address="44 Stay Lane"))
+    kekar_app.booking_repo.create(Booking(
+        property_id=prop_id, guest_name="Ann", check_in="2026-12-10",
+        check_out="2026-12-12"))
+    window = kekar_app.main_window
+    window.calendar_tab.reload()
+    day = __import__("PyQt6.QtCore", fromlist=["QDate"]).QDate(2026, 12, 10)
+    fmt = window.calendar_tab.calendar.dateTextFormat(day)
+    assert QColor(SHORT_STAY_COLOUR) == fmt.background().color()
+    assert any("Ann" in window.calendar_tab.events.item(i).text()
+               for i in range(window.calendar_tab.events.count()))
+
+
+def test_help_has_a_calendar_legend(kekar_app):
+    legend = next((a for a in kekar_app.main_window.help_menu.actions()
+                   if a.text() and "legend" in a.text().lower()), None)
+    assert legend is not None, "Help needs a calendar legend"
+
+
 def test_lite_sidebar_toggle_is_labelled(kekar_app):
     """Note 6: the property panel toggle must be marked in the Lite build."""
     window = kekar_app.main_window

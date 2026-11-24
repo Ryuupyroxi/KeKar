@@ -23,7 +23,6 @@ from .lease_tab import LeaseTab
 from .photo_panel import PhotoPanel
 from .property_drawer import PropertyDrawer
 from .property_form import PropertyForm
-from .stays_tab import StaysTab
 from . import worker
 from .settings_dialog import SettingsDialog
 from .theme import font
@@ -314,10 +313,11 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.crm_tab, "Applicants")
         self.lease_tab = LeaseTab(app)
         self.tabs.addTab(self.lease_tab, "Leases")
-        self.stays_tab = StaysTab(app)
-        self.tabs.addTab(self.stays_tab, "Stays")
         self.calendar_tab = CalendarTab(app)
         self.tabs.addTab(self.calendar_tab, "Calendar")
+        # Kept as an alias: client code and the tour still refer to stays_tab,
+        # but the stays UI now lives inside the Calendar tab.
+        self.stays_tab = self.calendar_tab.stays
 
         # The tab area is a card too, so the right-hand region is outlined
         # like the drawer and the chat pane. The card carries the padding;
@@ -426,9 +426,20 @@ class MainWindow(QMainWindow):
         self.exit_demo_action = help_menu.addAction("Exit demo mode")
         self.exit_demo_action.triggered.connect(self._exit_demo_mode)
         self.exit_demo_action.setVisible(False)
+        help_menu.addAction("Calendar legend...").triggered.connect(
+            self._show_calendar_legend)
         help_menu.addSeparator()
         about_action = help_menu.addAction("About...")
         about_action.triggered.connect(lambda: AboutDialog(self.app, self).exec())
+
+    def _show_calendar_legend(self) -> None:
+        from PyQt6.QtWidgets import QMessageBox
+        QMessageBox.information(
+            self, "Calendar legend",
+            "Green: property move-in date\n"
+            "Red: property move-out date\n"
+            "Purple: a short-stay reservation\n\n"
+            "Short stays are managed in the 'Short stays' panel of this tab.")
 
     def _open_help_menu(self) -> None:
         """Pop the Help menu under the wordmark when it is clicked."""

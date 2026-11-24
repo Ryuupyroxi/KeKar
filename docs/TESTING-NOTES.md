@@ -48,7 +48,7 @@ plan → implement → test → next.
 | 4 | Pet policy + pet deposit in lease | Depends on #1 and #3 | DONE — pets-allowed leases include a $300 refundable pet-deposit clause |
 | 5 | Dark/OLED text contrast | Independent, highly visible | DONE — placeholder + muted labels follow dark/OLED palettes |
 | 6 | Collapse button is unmarked | Independent, tiny UI fix | DONE — Lite sidebar toggle keeps its label and tooltip |
-| 7 | Merge Stays into Calendar + legend | Structural change; must precede calendar tweaks | Pending |
+| 7 | Merge Stays into Calendar + legend | Structural change; must precede calendar tweaks | DONE — Stays is a panel in Calendar; short stays are purple; Help has a legend |
 | 8 | Selected property highlights calendar | Applies to merged calendar | Pending |
 | 9 | Same-line move-in/move-out rows | Applies to merged calendar | Pending |
 | 10 | Date click shows owning property | Applies to merged calendar | Pending |

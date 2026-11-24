@@ -269,22 +269,15 @@ def build_tour_steps(window) -> list[TourStep]:
             "property and tenant, and copy, print, email or save the result.",
             on_enter=lambda overlay: _show_tab(window, overlay, 2)),
         TourStep(
-            window.stays_tab, "Stays",
-            "For short-stay units: every reservation on a calendar, with the "
-            "guest, dates and payout. Add a stay by hand; everything stays on "
-            "this device."
-            if features.is_lite() else
-            "For Airbnb-style units: every reservation on a calendar, with "
-            "the guest, portal, dates and payout. Add a stay by hand, or "
-            "import a portal's own calendar from the Portals section of the "
-            "property form.",
-            on_enter=lambda overlay: _show_tab(window, overlay, 3)),
-        TourStep(
-            window.calendar_tab, "Calendar",
+            window.calendar_tab, "Calendar and short stays",
             "Move-in and move-out dates you enter on a property appear here "
-            "automatically: green for move-in, red for move-out. Short-stay "
-            "reservations are still on the Stays tab.",
-            on_enter=lambda overlay: _show_tab(window, overlay, 4)),
+            "automatically: green for move-in, red for move-out, purple for "
+            "a short-stay reservation. The calendar and the Short stays panel "
+            "below manage every booking — guest, dates and payout"
+            + ("" if features.is_lite() else
+               ", with the portal and import from the property form")
+            + ". Everything stays on this device.",
+            on_enter=lambda overlay: _show_tab(window, overlay, 3)),
         TourStep(
             window.chat_pane, "The assistant",
             "Ask questions in plain language, or give an instruction like "
