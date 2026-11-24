@@ -15,12 +15,17 @@ from ..data.models import Property
 
 TOKEN_RE = re.compile(r"\{\{\s*([a-z0-9_]+)\s*\}\}")
 
+#: Refundable pet deposit used when a property allows pets. A client can edit
+#: the marker text in their own template; this is the fill value.
+PET_DEPOSIT_AMOUNT = 300.0
+_NO_PETS = {"no", "none", "no pet", "no pets"}
+
 #: Markers this module knows how to fill. Anything else in a template is left
 #: alone on purpose.
 TOKEN_NAMES = (
     "address", "city", "zip", "rent", "deposit", "bedrooms", "bathrooms",
-    "sqft", "sqft_clause", "available_date", "pet_policy", "status",
-    "tenant", "landlord", "date", "term",
+    "sqft", "sqft_clause", "available_date", "pet_policy", "pet_deposit",
+    "pet_clause", "status", "tenant", "landlord", "date", "term",
 )
 
 DEFAULT_TEMPLATE = """RESIDENTIAL LEASE AGREEMENT
@@ -41,7 +46,7 @@ This lease is made on {{date}} between {{landlord}} ("Landlord") and
 5. OCCUPANCY. The premises have {{bedrooms}} bedroom(s) and {{bathrooms}}
    bathroom(s){{sqft_clause}}.
 
-6. PETS. Pet policy: {{pet_policy}}.
+6. PETS. Pet policy: {{pet_policy}}{{pet_clause}}.
 
 7. CONDITION. The premises are rented as at {{available_date}}, in good
    repair, and Tenant will keep them clean and return them in the same
@@ -57,6 +62,18 @@ def money(value: float | None) -> str:
     if value is None:
         return ""
     return f"{value:,.2f}"
+
+
+def _pets_allowed(prop: Property) -> bool:
+    policy = (prop.pet_policy or "").strip().lower()
+    return bool(policy) and policy not in _NO_PETS
+
+
+def _pet_clause(prop: Property) -> str:
+    if not _pets_allowed(prop):
+        return ""
+    return (f" Tenant shall pay a refundable pet deposit of "
+            f"${money(PET_DEPOSIT_AMOUNT)} before move-in.")
 
 
 def _sqft_clause(prop: Property) -> str:
@@ -83,6 +100,9 @@ def tokens_for(prop: Property | None, tenant: str = "",
         "sqft_clause": _sqft_clause(prop) if prop else "",
         "available_date": prop.available_date if prop else "",
         "pet_policy": prop.pet_policy or "No pets" if prop else "",
+        "pet_deposit": (money(PET_DEPOSIT_AMOUNT)
+                        if prop and _pets_allowed(prop) else "0.00"),
+        "pet_clause": _pet_clause(prop) if prop else "",
         "status": prop.status if prop else "",
         "tenant": tenant,
         "landlord": landlord,

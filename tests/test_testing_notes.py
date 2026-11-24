@@ -85,6 +85,35 @@ def test_listing_mentions_garage_and_parking():
     assert "Parking: Driveway" in text
 
 
+def test_lease_tokens_include_pet_deposit_when_pets_allowed():
+    """Note 4: a yes-to-pets lease has a pet-deposit place and amount."""
+    from src.services import lease_builder
+
+    fields = lease_builder.tokens_for(
+        Property(address="31 Pet Lane", pet_policy="Cats OK"))
+    assert fields["pet_deposit"] == "300.00"
+    assert "refundable pet deposit" in fields["pet_clause"]
+
+
+def test_lease_tokens_omit_pet_deposit_when_no_pets():
+    from src.services import lease_builder
+
+    fields = lease_builder.tokens_for(
+        Property(address="32 No Pets Lane", pet_policy="No pets"))
+    assert fields["pet_deposit"] == "0.00"
+    assert fields["pet_clause"] == ""
+
+
+def test_default_lease_mentions_pet_deposit():
+    from src.services import lease_builder
+
+    fields = lease_builder.tokens_for(
+        Property(address="33 Pet Lane", pet_policy="Dogs OK"))
+    text = lease_builder.render(lease_builder.DEFAULT_TEMPLATE, fields)
+    assert "$300.00" in text
+    assert "Pet policy: Dogs OK" in text
+
+
 def test_lease_property_selector_refreshes_after_save(kekar_app):
     window = MainWindow(kekar_app)
     try:
