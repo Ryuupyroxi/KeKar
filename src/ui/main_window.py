@@ -31,6 +31,10 @@ PING_INTERVAL_MS = 30_000
 
 #: Height of the logo in the window header and the About dialog.
 LOGO_HEIGHT = 44
+#: The window header gives the logo more room than the dialogs: a full-width
+#: strip with a small mark in one corner reads as empty, so the wordmark is
+#: centred and enlarged to be the header's focal point.
+HEADER_LOGO_HEIGHT = 96
 
 
 def _set_logo(label: QLabel, height: int = LOGO_HEIGHT) -> None:
@@ -215,12 +219,11 @@ class MainWindow(QMainWindow):
         # against the window edge and the regions stop reading as cards.
         outer.setContentsMargins(8, 4, 8, 8)
         self.logo_label = QLabel()
-        # Left-aligned and exactly the logo's height: a centred logo in a
-        # full-width band left most of the strip empty.
-        self.logo_label.setAlignment(Qt.AlignmentFlag.AlignLeft
-                                     | Qt.AlignmentFlag.AlignVCenter)
-        self.logo_label.setContentsMargins(16, 0, 0, 0)
-        _set_logo(self.logo_label)
+        # Centred, with no side margin: the wordmark is a wide strip of its
+        # own (1408x768), so it reads as a header band rather than a corner
+        # mark. The label keeps exactly the logo's height.
+        self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        _set_logo(self.logo_label, height=HEADER_LOGO_HEIGHT)
         outer.addWidget(self.logo_label)
         outer.addWidget(self.offline_banner)
         outer.addWidget(self.demo_banner)

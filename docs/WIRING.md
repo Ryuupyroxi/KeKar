@@ -387,8 +387,9 @@ paths.icon_path() / paths.logo_path()  →  resource_path("icons", …)
 
 Application.__init__   → self.setWindowIcon(QIcon(icon_path()))
 MainWindow.__init__    → self.setWindowIcon(QIcon(icon_path()))
-MainWindow             → logo_label at the top of the window, 44 px tall,
-                         left-aligned, _set_logo()
+MainWindow             → logo_label centred in the header at HEADER_LOGO_HEIGHT
+                         (96 px), _set_logo(); the strip is exactly the logo's
+                         own height, so there is no empty band above or below
 AboutDialog             → logo_label centred at 96 px, word-wrapped body
 ```
 

@@ -66,8 +66,40 @@ def test_window_header_shows_the_logo(kekar_app):
 
 def test_logo_label_is_not_a_wasteful_band(kekar_app):
     """The strip should be exactly the logo's height, not a tall empty band."""
+    from src.ui.main_window import HEADER_LOGO_HEIGHT
+
     label = kekar_app.main_window.logo_label
-    assert label.height() <= 64
+    assert label.height() <= HEADER_LOGO_HEIGHT
+    assert abs(label.height() - label.pixmap().height()) <= 1
+
+
+def test_header_logo_is_enlarged_and_centred(kekar_app):
+    """The header logo is the focal point: readable size, dead centre.
+
+    A small wordmark tucked into the left corner left the full-width header
+    reading as dead space.
+    """
+    from src.ui.main_window import HEADER_LOGO_HEIGHT
+
+    window = kekar_app.main_window
+    label = window.logo_label
+    pix = label.pixmap()
+    assert pix.isNull() is False
+    assert pix.height() >= 64, "the wordmark must be more than a corner mark"
+    assert pix.height() == HEADER_LOGO_HEIGHT
+    assert pix.width() > pix.height(), "the logo is a wide lockup"
+
+    window.show()
+    kekar_app.processEvents()
+    try:
+        content = window.centralWidget()
+        # Compare on-screen positions so the outer layout's margins count.
+        logo_centre = label.mapToGlobal(label.rect().center()).x()
+        content_centre = content.mapToGlobal(content.rect().center()).x()
+        offset = abs(logo_centre - content_centre)
+        assert offset <= 2, f"header logo is {offset}px off centre"
+    finally:
+        window.hide()
 
 
 def test_about_dialog_shows_the_logo(kekar_app):
