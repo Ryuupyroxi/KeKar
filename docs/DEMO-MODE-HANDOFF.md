@@ -59,8 +59,8 @@ Run with `pytest` or `python -m pytest` from the project root
   the window with a dim colour clipped to everything *except* a hole around the
   target, then draws an amber ring. **No composition modes** — robust everywhere.
 - Modal: captures clicks. `Esc` exits, arrow keys navigate.
-- 8 steps. Step 5 (Applicants) switches to that tab and restores the previous
-  tab on exit.
+- 11 steps in the current app (this handoff originally shipped 8). Step 5
+  (Applicants) switches to that tab and restores the previous tab on exit.
 - Offered once after first-run setup via `Application.maybe_offer_tour()`;
   the answer is recorded in `Settings.tour_completed` either way.
 

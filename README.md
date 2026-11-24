@@ -127,7 +127,9 @@ See `docs/WIRING.md` for how detection and model discovery are wired.
 ## Demo mode and guided tour
 
 A new install offers a tour right after setup, and **Help → Guided tour...**
-runs it any time.
+runs it any time. The walkthrough calls out the visible feedback after
+**+ Add New Property**, the collapsible Photos section, and the centred header
+logo.
 
 The tour runs in **demo mode**: KeKar opens a separate demo database
 (`KeKarData/demo/database.db`) seeded with four sample properties and four

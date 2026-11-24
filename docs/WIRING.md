@@ -268,6 +268,12 @@ instead of calling into a deleted object later.
 Starting a tour finishes any tour that is already running, so two overlays can
 never stack.
 
+The 11 steps are part of each feature, not a separate sales pitch: the wording
+names what the app actually does — the visible feedback after '+ Add New
+Property', the collapsible Photos section and the compact centred header logo.
+`test_tour_describes_the_real_feature_set` fails when a shipped feature falls
+out of the tour.
+
 Both starting and leaving demo mode wait for a running assistant: swapping the
 database underneath an in-flight agent would make its answer describe
 whichever database it lands on.

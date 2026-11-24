@@ -233,8 +233,9 @@ def build_tour_steps(window) -> list[TourStep]:
             window.drawer, "Your properties",
             "This is your property list. The search box filters as you type — "
             "it matches the address, city, ZIP, pet policy, notes and every "
-            "enabled amenity. Use '+ Add New Property' to add your first "
-            "listing."),
+            "enabled amenity. '+ Add New Property' brings these details to the "
+            "front, focuses the address field and leaves a hint in the status "
+            "bar, so you can always see that it worked."),
         TourStep(
             window.property_form, "The details form",
             "Address, rent, deposit and the rest. Use Type to switch a unit to "
@@ -246,8 +247,9 @@ def build_tour_steps(window) -> list[TourStep]:
             "rental, or 'Portal listing…' for a short stay."),
         TourStep(
             window.photo_panel, "Photos",
-            "Add photos for a property and choose one as the cover. The cover "
-            "is what appears in the property list."),
+            "Add photos for a property and choose one as the cover — that is "
+            "the image shown in the property list. Click the Photos heading to "
+            "collapse this section; it remembers your choice next time."),
         TourStep(
             window.crm_tab, "Applicants",
             "Track every applicant through the pipeline, from first enquiry to "
@@ -277,8 +279,9 @@ def build_tour_steps(window) -> list[TourStep]:
             "KeKar asks for one when it starts."),
         TourStep(
             window.logo_label, "The brand",
-            "The KeKar logo sits here and in the About dialog; the same mark is "
-            "the window, taskbar and start-menu icon. Find it in Help → About."),
+            "The centred wordmark in this compact header is the same mark used "
+            "in the About dialog, and as the window, taskbar and start-menu "
+            "icon. Find it in Help → About."),
         TourStep(
             None, "You're in demo mode",
             "Everything you see is sample data. Your own records are safe and "

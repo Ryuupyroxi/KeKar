@@ -91,8 +91,8 @@ green:
   expected properties and applicant stages (`test_demo_mode.py`)
 - Guided tour: step targets resolve to real widgets, the overlay paints without
   raising, navigation clamps at both ends, Esc closes, the Applicants tab is
-  restored, and the caption stays inside the window at two sizes
-  (`test_tour.py`)
+  restored, the caption stays inside the window at two sizes, and the wording
+  names the features just shipped (`test_tour.py`)
 - Themes: every palette clears the WCAG contrast ratios, resolution falls back
   safely, switching recolours the painted rows, and the View menu reflects the
   stored preference (`test_themes.py`)
