@@ -10,6 +10,7 @@ import logging
 import sys
 import time
 
+from src import features
 from src._version import APP_NAME, APP_VERSION
 
 # Set at import time so the startup measurement covers everything the app does
@@ -77,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     # `start` is a local copy: reassigning the module-level _START here would
     # make it a local for the whole function and break the reads below.
     start = _START
-    if not app.settings.is_configured():
+    if features.chat_enabled() and not app.settings.is_configured():
         from src.ui.wizard import FirstRunWizard
         wizard = FirstRunWizard(app)
         # The wizard is the first window the user sees, so it is where the

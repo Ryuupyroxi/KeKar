@@ -9,10 +9,16 @@ from PyQt6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox,
                              QListWidgetItem, QMessageBox, QPushButton,
                              QSpinBox, QTextEdit, QVBoxLayout)
 
+from .. import features
 from .._version import APP_NAME, APP_VERSION
-from ..agent import providers
 from ..data.backup import create_backup, list_backups, restore_backup
 from . import worker
+
+
+def _providers():
+    """Imported only in the full build; Lite never loads the AI stack."""
+    from ..agent import providers
+    return providers
 
 
 class _ProviderThread(QThread):
@@ -39,22 +45,22 @@ class _ProviderThread(QThread):
         if self.task == "verify":
             return await self.app.client.verify_key()
         if self.task == "models":
-            return True, await providers.fetch_models(self.api_base,
+            return True, await _providers().fetch_models(self.api_base,
                                                       self.api_key)
         if self.task == "probe":
-            return await providers.probe(self.api_base, self.api_key,
+            return await _providers().probe(self.api_base, self.api_key,
                                          self.model)
         if self.task == "detect":
             for prov in self.candidates:
                 model = prov.default_models[0] if prov.default_models else ""
-                ok, message = await providers.probe(prov.api_base,
+                ok, message = await _providers().probe(prov.api_base,
                                                     self.api_key, model)
                 if ok:
                     return True, (prov, message)
             # Nothing worked; report the last provider's own words.
             prov = self.candidates[-1]
             model = prov.default_models[0] if prov.default_models else ""
-            _, message = await providers.probe(prov.api_base, self.api_key,
+            _, message = await _providers().probe(prov.api_base, self.api_key,
                                                model)
             return False, (prov, message)
         raise ValueError(f"unknown task {self.task!r}")
@@ -125,11 +131,6 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout(self)
         form = QFormLayout()
 
-        self.key_input = QLineEdit()
-        self.key_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.key_input.setText(app.settings.api_key)
-        form.addRow("API key", self.key_input)
-
         self.theme = QComboBox()
         for key, label in (("system", "Follow system"),
                            ("light", "Light"),
@@ -141,59 +142,68 @@ class SettingsDialog(QDialog):
         self.theme.currentIndexChanged.connect(self._on_theme_changed)
         form.addRow("Theme", self.theme)
 
-        self.provider = QComboBox()
-        for prov in providers.PROVIDERS:
-            self.provider.addItem(prov.name, prov.id)
-        index = self.provider.findData(app.settings.provider)
-        if index >= 0:
-            self.provider.setCurrentIndex(index)
-        self.provider.currentIndexChanged.connect(self._on_provider_changed)
-        form.addRow("Provider", self.provider)
+        if features.chat_enabled():
+            self.key_input = QLineEdit()
+            self.key_input.setEchoMode(QLineEdit.EchoMode.Password)
+            self.key_input.setText(app.settings.api_key)
+            form.addRow("API key", self.key_input)
 
-        detect_btn = QPushButton("Detect from key")
-        detect_btn.setToolTip("Identify the provider from the key's format, "
-                              "then confirm it actually works.")
-        detect_btn.clicked.connect(self._detect_provider)
-        form.addRow("", detect_btn)
+            self.provider = QComboBox()
+            for prov in _providers().PROVIDERS:
+                self.provider.addItem(prov.name, prov.id)
+            index = self.provider.findData(app.settings.provider)
+            if index >= 0:
+                self.provider.setCurrentIndex(index)
+            self.provider.currentIndexChanged.connect(self._on_provider_changed)
+            form.addRow("Provider", self.provider)
 
-        self.api_base = QLineEdit()
-        self.api_base.setText(app.settings.api_base)
-        self.api_base.setPlaceholderText("https://…/api/v1")
-        form.addRow("API endpoint", self.api_base)
+            detect_btn = QPushButton("Detect from key")
+            detect_btn.setToolTip("Identify the provider from the key's "
+                                  "format, then confirm it actually works.")
+            detect_btn.clicked.connect(self._detect_provider)
+            form.addRow("", detect_btn)
 
-        self.models_input = QTextEdit()
-        self.models_input.setPlainText("\n".join(app.settings.model_chain))
-        self.models_input.setMaximumHeight(90)
-        self.models_input.setToolTip("Tried in order until one succeeds.")
-        form.addRow("Models (one per line, tried in order)", self.models_input)
+            self.api_base = QLineEdit()
+            self.api_base.setText(app.settings.api_base)
+            self.api_base.setPlaceholderText("https://…/api/v1")
+            form.addRow("API endpoint", self.api_base)
 
-        fetch_btn = QPushButton("Fetch the provider's model list")
-        fetch_btn.clicked.connect(self._fetch_models)
-        form.addRow("", fetch_btn)
+            self.models_input = QTextEdit()
+            self.models_input.setPlainText("\n".join(app.settings.model_chain))
+            self.models_input.setMaximumHeight(90)
+            self.models_input.setToolTip("Tried in order until one succeeds.")
+            form.addRow("Models (one per line, tried in order)",
+                        self.models_input)
 
-        self.autofill = QCheckBox("Auto-fill Marketplace listings (experimental)")
-        self.autofill.setChecked(app.settings.autofill_enabled)
-        form.addRow(self.autofill)
+            fetch_btn = QPushButton("Fetch the provider's model list")
+            fetch_btn.clicked.connect(self._fetch_models)
+            form.addRow("", fetch_btn)
 
-        # A separate key for Google Places: empty means no address popup and
-        # no network call at all. Stored in the same encrypted Settings file.
-        self.maps_key = QLineEdit()
-        self.maps_key.setEchoMode(QLineEdit.EchoMode.Password)
-        self.maps_key.setText(app.settings.maps_key)
-        self.maps_key.setPlaceholderText("Optional — address suggestions")
-        form.addRow("Google Maps key", self.maps_key)
+            self.autofill = QCheckBox(
+                "Auto-fill Marketplace listings (experimental)")
+            self.autofill.setChecked(app.settings.autofill_enabled)
+            form.addRow(self.autofill)
 
-        self.maps_autofill = QCheckBox(
-            "Auto-fill empty City and ZIP from Google Maps")
-        self.maps_autofill.setToolTip(
-            "Only blank fields are filled — anything you typed is kept.")
-        self.maps_autofill.setChecked(app.settings.maps_autofill)
-        form.addRow(self.maps_autofill)
+            if features.maps_enabled():
+                self.maps_key = QLineEdit()
+                self.maps_key.setEchoMode(QLineEdit.EchoMode.Password)
+                self.maps_key.setText(app.settings.maps_key)
+                self.maps_key.setPlaceholderText(
+                    "Optional — address suggestions")
+                form.addRow("Google Maps key", self.maps_key)
 
-        self.browser = QComboBox()
-        self.browser.addItems(["auto", "chrome", "edge"])
-        self.browser.setCurrentText(app.settings.browser_kind)
-        form.addRow("Browser", self.browser)
+                self.maps_autofill = QCheckBox(
+                    "Auto-fill empty City and ZIP from Google Maps")
+                self.maps_autofill.setToolTip(
+                    "Only blank fields are filled — anything you typed "
+                    "is kept.")
+                self.maps_autofill.setChecked(app.settings.maps_autofill)
+                form.addRow(self.maps_autofill)
+
+            self.browser = QComboBox()
+            self.browser.addItems(["auto", "chrome", "edge"])
+            self.browser.setCurrentText(app.settings.browser_kind)
+            form.addRow("Browser", self.browser)
 
         self.keep_days = QSpinBox()
         self.keep_days.setRange(1, 365)
@@ -205,13 +215,14 @@ class SettingsDialog(QDialog):
         layout.addLayout(form)
 
         actions = QFormLayout()
-        self.test_btn = QPushButton("Test connection")
-        self.test_btn.clicked.connect(self._test_connection)
-        actions.addRow(self.test_btn)
+        if features.chat_enabled():
+            self.test_btn = QPushButton("Test connection")
+            self.test_btn.clicked.connect(self._test_connection)
+            actions.addRow(self.test_btn)
 
-        remove_btn = QPushButton("Remove stored key")
-        remove_btn.clicked.connect(self._remove_key)
-        actions.addRow(remove_btn)
+            self.remove_btn = QPushButton("Remove stored key")
+            self.remove_btn.clicked.connect(self._remove_key)
+            actions.addRow(self.remove_btn)
 
         backup_btn = QPushButton("Back up now")
         backup_btn.clicked.connect(self._backup_now)
@@ -230,16 +241,18 @@ class SettingsDialog(QDialog):
 
     def _save(self) -> None:
         settings = self.app.settings
-        settings.api_key = self.key_input.text().strip()
-        settings.provider = self.provider.currentData() or "custom"
-        settings.api_base = self.api_base.text().strip()
-        settings.model_chain = [m.strip() for m in
-                                self.models_input.toPlainText().splitlines()
-                                if m.strip()]
-        settings.autofill_enabled = self.autofill.isChecked()
-        settings.maps_key = self.maps_key.text().strip()
-        settings.maps_autofill = self.maps_autofill.isChecked()
-        settings.browser_kind = self.browser.currentText()
+        if features.chat_enabled():
+            settings.api_key = self.key_input.text().strip()
+            settings.provider = self.provider.currentData() or "custom"
+            settings.api_base = self.api_base.text().strip()
+            settings.model_chain = [m.strip() for m in
+                                    self.models_input.toPlainText().splitlines()
+                                    if m.strip()]
+            settings.autofill_enabled = self.autofill.isChecked()
+            settings.browser_kind = self.browser.currentText()
+        if features.maps_enabled():
+            settings.maps_key = self.maps_key.text().strip()
+            settings.maps_autofill = self.maps_autofill.isChecked()
         settings.backup_keep_days = self.keep_days.value()
         try:
             settings.save()
@@ -258,7 +271,7 @@ class SettingsDialog(QDialog):
 
     def _on_provider_changed(self, index: int) -> None:
         """Fill the endpoint and default models when a provider is picked."""
-        prov = providers.by_id(self.provider.itemData(index))
+        prov = _providers().by_id(self.provider.itemData(index))
         if prov is None:
             return
         if prov.api_base:
@@ -272,7 +285,7 @@ class SettingsDialog(QDialog):
         """True when the box still holds a preset's untouched model list."""
         lines = [line.strip() for line in text.splitlines() if line.strip()]
         return any(tuple(lines) == prov.default_models
-                   for prov in providers.PROVIDERS)
+                   for prov in _providers().PROVIDERS)
 
     def _start_task(self, task: str, **kwargs) -> None:
         self._set_busy(True)
@@ -282,17 +295,21 @@ class SettingsDialog(QDialog):
         self._thread.start()
 
     def _set_busy(self, busy: bool) -> None:
+        if getattr(self, "test_btn", None) is None:
+            return
         for widget in (self.test_btn, self.key_input, self.provider,
                        self.api_base, self.models_input):
             widget.setEnabled(not busy)
 
     def _on_task_done(self, ok: bool, payload) -> None:
+        if getattr(self, "test_btn", None) is None:
+            return
         worker.reap(self._thread)
         self._thread = None
         self._set_busy(False)
 
         if isinstance(payload, tuple) and payload and isinstance(payload[0],
-                                                                 providers.Provider):
+                                                                 _providers().Provider):
             prov, message = payload
             self._apply_provider(prov)
             QMessageBox.information(self, APP_NAME, message)
@@ -310,7 +327,7 @@ class SettingsDialog(QDialog):
 
         QMessageBox.information(self, APP_NAME, str(payload))
 
-    def _apply_provider(self, prov: providers.Provider) -> None:
+    def _apply_provider(self, prov: _providers().Provider) -> None:
         index = self.provider.findData(prov.id)
         if index >= 0:
             self.provider.setCurrentIndex(index)
@@ -324,10 +341,10 @@ class SettingsDialog(QDialog):
         if not key:
             QMessageBox.warning(self, APP_NAME, "Paste an API key first.")
             return
-        matches = providers.detect(key)
+        matches = _providers().detect(key)
         if not matches:
             QMessageBox.information(self, APP_NAME,
-                                    providers.unrecognized_hint(key))
+                                    _providers().unrecognized_hint(key))
             return
         self._start_task("detect", api_key=key, candidates=tuple(matches))
 

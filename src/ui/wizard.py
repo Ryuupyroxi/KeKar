@@ -6,7 +6,7 @@ import os
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QLabel, QLineEdit,
                              QMessageBox, QStackedWidget, QVBoxLayout, QWidget)
 
-from ..agent import providers
+from .. import features
 from ..paths import data_dir
 
 
@@ -27,7 +27,8 @@ class FirstRunWizard(QDialog):
         self.pages = QStackedWidget()
         layout.addWidget(self.pages)
         self.pages.addWidget(self._welcome_page())
-        self.pages.addWidget(self._api_page())
+        if features.chat_enabled():
+            self.pages.addWidget(self._api_page())
 
         self.button_box = QDialogButtonBox()
         self.back_button = self.button_box.addButton(
@@ -79,6 +80,10 @@ class FirstRunWizard(QDialog):
 
     def _go_next(self) -> None:
         if self.pages.currentIndex() == self.pages.count() - 1:
+            if not features.chat_enabled():
+                data_dir()   # ensure the data tree exists on a fresh install
+                self.accept()
+                return
             ok, message = self.save_key()
             if not ok:
                 QMessageBox.warning(self, "KeKar", message)
@@ -102,6 +107,7 @@ class FirstRunWizard(QDialog):
 
     def save_key(self) -> tuple[bool, str]:
         """Store the pasted key and pick the matching provider. No network."""
+        from ..agent import providers
         key = self.key_input.text().strip()
         if not key:
             return False, "Please paste an API key, or press Cancel to close KeKar."

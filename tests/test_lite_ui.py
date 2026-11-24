@@ -4,6 +4,8 @@ from src.data.models import SHORT_STAY_KIND, Property
 from src.ui.listing_dialog import ListingDialog
 from src.ui.main_window import MainWindow
 from src.ui.property_form import PropertyForm
+from src.ui.settings_dialog import SettingsDialog
+from src.ui.wizard import FirstRunWizard
 
 
 def _lite_window(kekar_app, monkeypatch):
@@ -111,3 +113,36 @@ def test_lite_compile_channel_still_accepts_a_hidden_key():
     prop = Property(address="12 Copy Court", rent_price=700, sqft=700)
     package = compile_channel(prop, "apartments_com")
     assert "Description" in [name for name, _ in package.fields]
+
+
+def test_lite_wizard_needs_no_api_key(kekar_app, monkeypatch):
+    monkeypatch.setenv("KEKAR_VARIANT", "lite")
+    wizard = FirstRunWizard(kekar_app)
+    assert wizard.pages.count() == 1
+    assert not hasattr(wizard, "key_input")
+    wizard._go_next()
+    assert wizard.result() == FirstRunWizard.DialogCode.Accepted
+
+
+def test_lite_settings_hide_every_provider_control(kekar_app, monkeypatch):
+    monkeypatch.setenv("KEKAR_VARIANT", "lite")
+    dialog = SettingsDialog(kekar_app)
+    for attr in ("key_input", "provider", "api_base", "models_input",
+                 "autofill", "browser", "test_btn", "remove_btn",
+                 "maps_key", "maps_autofill"):
+        assert not hasattr(dialog, attr), attr
+    assert dialog.theme is not None
+    assert dialog.keep_days is not None
+    dialog.close()
+
+
+def test_lite_settings_save_preserves_existing_key(kekar_app, monkeypatch):
+    monkeypatch.setenv("KEKAR_VARIANT", "lite")
+    kekar_app.settings.api_key = "an-old-key"
+    kekar_app.settings.maps_key = "maps-existing"
+    dialog = SettingsDialog(kekar_app)
+    dialog.keep_days.setValue(14)
+    dialog._save()
+    assert kekar_app.settings.backup_keep_days == 14
+    assert kekar_app.settings.api_key == "an-old-key"
+    assert kekar_app.settings.maps_key == "maps-existing"
