@@ -3,9 +3,11 @@ from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor
-from PyQt6.QtWidgets import (QComboBox, QHBoxLayout, QHeaderView, QLabel,
-                             QMessageBox, QPushButton, QTableWidget,
-                             QTableWidgetItem, QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (QComboBox, QGridLayout, QGroupBox, QHBoxLayout,
+                             QHeaderView, QLabel, QLineEdit, QMessageBox,
+                             QPlainTextEdit,
+                             QPushButton, QTableWidget, QTableWidgetItem,
+                             QVBoxLayout, QWidget)
 
 from ..data.applicant_repo import STAGES
 from ..services.clipboard import copy_text
@@ -61,7 +63,76 @@ class CrmTab(QWidget):
         self.table.cellChanged.connect(self._on_cell_changed)
         self.table.setSelectionBehavior(
             QTableWidget.SelectionBehavior.SelectRows)
-        layout.addWidget(self.table)
+        self.table.cellClicked.connect(self._on_cell_clicked)
+        layout.addWidget(self.table, 1)
+        self._build_profile()
+        layout.addWidget(self.profile)
+
+    def _build_profile(self) -> None:
+        """A single click on a row opens every field for editing."""
+        self.profile = QGroupBox("Applicant profile — click a row to edit")
+        grid = QGridLayout(self.profile)
+        self.profile_name = QLineEdit()
+        self.profile_property = QComboBox()
+        self.profile_contact = QLineEdit()
+        self.profile_stage = QComboBox()
+        self.profile_stage.addItems(STAGES)
+        self.profile_notes = QPlainTextEdit()
+        self.profile_notes.setMaximumHeight(90)
+        self.profile_save = QPushButton("Save profile")
+        self.profile_save.clicked.connect(self._save_profile)
+        fields = [
+            ("Name", self.profile_name, 0),
+            ("Property", self.profile_property, 1),
+            ("Contact", self.profile_contact, 2),
+            ("Stage", self.profile_stage, 3),
+        ]
+        for label, widget, row in fields:
+            grid.addWidget(QLabel(label), row, 0)
+            grid.addWidget(widget, row, 1, 1, 2)
+        grid.addWidget(QLabel("Notes"), 4, 0)
+        grid.addWidget(self.profile_notes, 4, 1, 1, 2)
+        grid.addWidget(self.profile_save, 5, 2)
+        self.profile.setVisible(False)
+
+    def _on_cell_clicked(self, row: int, column: int) -> None:
+        item = self.table.item(row, 0)
+        if item is None:
+            return
+        applicant_id = item.data(Qt.ItemDataRole.UserRole)
+        applicant = self.app.applicant_repo.get(applicant_id)
+        if applicant is None:
+            return
+        self._profile_id = applicant_id
+        self.profile_name.setText(applicant.applicant_name)
+        self.profile_contact.setText(applicant.contact_info or "")
+        self.profile_notes.setPlainText(applicant.notes or "")
+        self.profile_stage.setCurrentText(applicant.screening_stage)
+        properties = self.app.property_repo.list()
+        self.profile_property.clear()
+        self.profile_property.addItem("(no property)", None)
+        for prop in properties:
+            label = prop.address
+            if prop.city:
+                label += f", {prop.city}"
+            self.profile_property.addItem(label, prop.id)
+        index = self.profile_property.findData(applicant.property_id)
+        self.profile_property.setCurrentIndex(index if index >= 0 else 0)
+        self.profile.setVisible(True)
+
+    def _save_profile(self) -> None:
+        applicant = self.app.applicant_repo.get(getattr(self, "_profile_id", None))
+        if applicant is None:
+            return
+        applicant.applicant_name = self.profile_name.text().strip()
+        applicant.contact_info = self.profile_contact.text().strip() or None
+        applicant.notes = self.profile_notes.toPlainText().strip() or None
+        applicant.screening_stage = self.profile_stage.currentText()
+        value = self.profile_property.currentData()
+        applicant.property_id = int(value) if value is not None else None
+        self.app.applicant_repo.update(applicant)
+        self.reload()
+        self.app.main_window.status(f"Saved {applicant.applicant_name}.")
 
     def reload(self) -> None:
         self.table.blockSignals(True)

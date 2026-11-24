@@ -114,6 +114,27 @@ def test_default_lease_mentions_pet_deposit():
     assert "Pet policy: Dogs OK" in text
 
 
+def test_single_click_opens_an_editable_applicant_profile(kekar_app):
+    """Note 11: one click shows the full applicant record for editing."""
+    from src.data.models import Applicant
+
+    aid = kekar_app.applicant_repo.create(Applicant(
+        applicant_name="Hope Winters", contact_info="hope@example.com",
+        notes="Called on Tuesday"))
+    tab = kekar_app.main_window.crm_tab
+    tab.reload()
+    tab.table.cellClicked.emit(0, 0)
+    assert tab.profile.isHidden() is False
+    assert tab.profile_name.text() == "Hope Winters"
+    assert tab.profile_contact.text() == "hope@example.com"
+    tab.profile_name.setText("Hope W.")
+    tab.profile_notes.setPlainText("Follow up Friday")
+    tab.profile_save.click()
+    saved = kekar_app.applicant_repo.get(aid)
+    assert saved.applicant_name == "Hope W."
+    assert saved.notes == "Follow up Friday"
+
+
 def test_clicking_a_calendar_date_names_its_property(kekar_app):
     """Note 10: a highlighted date tells the user which property it means."""
     from PyQt6.QtCore import QDate
