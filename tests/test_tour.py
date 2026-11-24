@@ -3,6 +3,7 @@ from PyQt6.QtCore import QEvent, Qt
 from PyQt6.QtGui import QKeyEvent
 from PyQt6.QtWidgets import QPushButton
 
+from src import features
 from src.ui.tour import TourOverlay, TourStep, build_tour_steps
 
 
@@ -10,7 +11,7 @@ def test_tour_steps_target_real_widgets(kekar_app):
     window = kekar_app.main_window
     steps = build_tour_steps(window)
 
-    assert len(steps) == 11
+    assert len(steps) == (11 if features.chat_enabled() else 10)
     for step in steps:
         assert isinstance(step, TourStep)
         if step.target is not None:
@@ -38,11 +39,18 @@ def test_tour_describes_the_real_feature_set(kekar_app):
     """The wording must match what the app can actually do."""
     steps = build_tour_steps(kekar_app.main_window)
     text = " ".join(f"{step.title} {step.body}" for step in steps)
-    for phrase in ("collapse", "Light", "OLED", "Zillow", "apartments.com",
-                   "Leases", "template", "Accounts", "print", "Airbnb",
-                   "calendar", "status bar", "Photos heading",
-                   "Help menu"):
+    for phrase in ("collapse", "Light", "OLED", "Leases", "template",
+                   "Accounts", "print", "calendar", "status bar",
+                   "Photos heading", "Help menu"):
         assert phrase in text, f"the tour never mentions {phrase!r}"
+    if features.chat_enabled():
+        for phrase in ("Zillow", "apartments.com", "Airbnb",
+                       "Publish to Marketplace"):
+            assert phrase in text, f"the tour never mentions {phrase!r}"
+    else:
+        for phrase in ("Facebook", "autofill", "Airbnb", "Vrbo",
+                       "apartments.com", "Marketplace"):
+            assert phrase not in text, f"Lite tour still mentions {phrase!r}"
 
 
 def test_overlay_paints_without_raising(kekar_app):

@@ -18,6 +18,7 @@ from PyQt6.QtGui import (QColor, QKeyEvent, QKeySequence, QPainter, QPen,
 from PyQt6.QtWidgets import (QDialogButtonBox, QFrame, QLabel,
                              QVBoxLayout, QWidget)
 
+from .. import features
 from .theme import font
 
 DIM = QColor(20, 16, 12, 170)
@@ -223,7 +224,7 @@ def build_tour_steps(window) -> list[TourStep]:
     the tour is part of the change — a tour that describes an older app is
     worse than none.
     """
-    return [
+    steps = [
         TourStep(
             None, "Welcome to KeKar",
             "KeKar keeps your properties, listings, photos, applicant notes "
@@ -238,13 +239,19 @@ def build_tour_steps(window) -> list[TourStep]:
             "bar, so you can always see that it worked."),
         TourStep(
             window.property_form, "The details form",
-            "Address, rent, deposit and the rest. Use Type to switch a unit to "
-            "a short stay, which brings its own nightly rate, fees, minimum "
-            "stay and portal calendars. 'Preview listing' builds a copy "
-            "package — Zillow and apartments.com for a rental, Airbnb, Vrbo "
-            "and Booking.com for a short stay — and the action button reads "
-            "'Publish to Marketplace' (the opt-in Facebook auto-fill) for a "
-            "rental, or 'Portal listing…' for a short stay."),
+            "Address, rent, deposit and the rest. Use Type to switch a unit "
+            "to a short stay, which brings its own nightly rate, fees and "
+            "minimum stay. 'Preview listing' builds a copy package you can "
+            "paste into Zillow for a rental, or Booking.com for a short "
+            "stay. 'Copy listing' copies the generic version for any site."
+            if features.is_lite() else
+            "Address, rent, deposit and the rest. Use Type to switch a unit "
+            "to a short stay, which brings its own nightly rate, fees, "
+            "minimum stay and portal calendars. 'Preview listing' builds a "
+            "copy package — Zillow and apartments.com for a rental, Airbnb, "
+            "Vrbo and Booking.com for a short stay — and the action button "
+            "reads 'Publish to Marketplace' (the opt-in Facebook auto-fill) "
+            "for a rental, or 'Portal listing…' for a short stay."),
         TourStep(
             window.photo_panel, "Photos",
             "Add photos for a property and choose one as the cover — that is "
@@ -263,20 +270,30 @@ def build_tour_steps(window) -> list[TourStep]:
             on_enter=lambda overlay: _show_tab(window, overlay, 2)),
         TourStep(
             window.stays_tab, "Stays",
-            "For Airbnb-style units: every reservation on a calendar, with the "
-            "guest, portal, dates and payout. Add a stay by hand, or import a "
-            "portal's own calendar from the Portals section of the property "
-            "form.", on_enter=lambda overlay: _show_tab(window, overlay, 3)),
+            "For short-stay units: every reservation on a calendar, with the "
+            "guest, dates and payout. Add a stay by hand; everything stays on "
+            "this device."
+            if features.is_lite() else
+            "For Airbnb-style units: every reservation on a calendar, with "
+            "the guest, portal, dates and payout. Add a stay by hand, or "
+            "import a portal's own calendar from the Portals section of the "
+            "property form.",
+            on_enter=lambda overlay: _show_tab(window, overlay, 3)),
         TourStep(
             window.chat_pane, "The assistant",
             "Ask questions in plain language, or give an instruction like "
             "'draft a message to John'. It can read and update your records."),
         TourStep(
             window.menuBar(), "Panels, themes and accounts",
-            "The two buttons at the right end of this bar collapse the "
-            "property list and the chat, and View switches between Light, Dark "
-            "and OLED. File → Accounts sets up a login and decides whether "
-            "KeKar asks for one when it starts."),
+            ("The button at the right end of this bar collapses the property "
+             "list, and View switches between Light, Dark and OLED. File → "
+             "Accounts sets up a login and decides whether KeKar asks for "
+             "one when it starts.")
+            if features.is_lite() else
+            ("The two buttons at the right end of this bar collapse the "
+             "property list and the chat, and View switches between Light, "
+             "Dark and OLED. File → Accounts sets up a login and decides "
+             "whether KeKar asks for one when it starts.")),
         TourStep(
             window.logo_label, "The brand",
             "Click the wordmark to open the Help menu — the guided tour, "
@@ -288,6 +305,10 @@ def build_tour_steps(window) -> list[TourStep]:
             "unchanged. Use 'Exit demo mode' in the Help menu when you're "
             "ready to work with your real data."),
     ]
+    if features.is_lite():
+        # The assistant needs a provider key; Lite has neither.
+        steps = [step for step in steps if step.title != "The assistant"]
+    return steps
 
 
 def _show_tab(window, overlay: "TourOverlay", index: int) -> None:

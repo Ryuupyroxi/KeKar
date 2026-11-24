@@ -41,7 +41,8 @@ def _empty_portfolio(kekar_app):
         kekar_app.lease_repo.delete(lease.id)
     for user in kekar_app.user_repo.list():
         kekar_app.user_repo.delete(user["id"])
-    kekar_app.chat_repo.clear()
+    if kekar_app.chat_repo is not None:
+        kekar_app.chat_repo.clear()
     shutil.rmtree(root / "photos", ignore_errors=True)
     kekar_app.main_window.reload_all()
     yield
