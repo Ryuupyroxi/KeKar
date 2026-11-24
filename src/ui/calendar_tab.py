@@ -128,7 +128,7 @@ class CalendarTab(QWidget):
                         fmt.setFontWeight(700)
                     self.calendar.setDateTextFormat(marked, fmt)
                     self._marked.append(marked)
-                    self._details.setdefault(stay.check_in, []).append(
+                    self._details.setdefault(day.isoformat(), []).append(
                         f"Short stay — {stay.guest_name} — {prop.address}")
                     day = date.fromordinal(day.toordinal() + 1)
                 rows.append((start, f"Short stay — {stay.guest_name} — "
