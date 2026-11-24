@@ -9,7 +9,7 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
 
 from . import features
-from ._version import APP_NAME, APP_VERSION
+from ._version import APP_NAME, APP_VERSION, display_name
 from .config.settings import Settings
 from .data.applicant_repo import ApplicantRepo
 from .data.backup import open_with_recovery, prune_backups
@@ -38,7 +38,7 @@ class Application(QApplication):
         super().__init__(argv)
         self.setApplicationName(APP_NAME)
         self.setApplicationVersion(APP_VERSION)
-        self.setApplicationDisplayName(f"{APP_NAME} Property Manager")
+        self.setApplicationDisplayName(f"{display_name()} Property Manager")
         self.setFont(app_font())
 
         self.settings = Settings.load()

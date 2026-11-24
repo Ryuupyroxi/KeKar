@@ -66,3 +66,20 @@ def test_app_version_matches_nsi_installer():
         pytest.skip("NSIS script not present")
     text = nsi.read_text(encoding="utf-8")
     assert main_module.APP_VERSION in text
+
+
+def test_lite_version_flag_prints_lite_name(monkeypatch, capsys):
+    monkeypatch.setenv("KEKAR_VARIANT", "lite")
+    from src.main import main
+    from src._version import APP_VERSION
+    assert main(["KeKarLite", "--version"]) == 0
+    assert capsys.readouterr().out.strip() == f"KeKar Lite {APP_VERSION}"
+
+
+def test_lite_help_still_works_headless(monkeypatch, capsys):
+    monkeypatch.setenv("KEKAR_VARIANT", "lite")
+    from src.main import main
+    assert main(["KeKarLite", "--help"]) == 0
+    out = capsys.readouterr().out
+    assert "KeKar Lite" in out
+    assert "--version" in out

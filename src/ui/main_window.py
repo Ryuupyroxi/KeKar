@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QHBoxLayout, QLabel,
                              QVBoxLayout, QWidget)
 
 from .. import features
-from .._version import APP_NAME, APP_VERSION
+from .._version import APP_NAME, APP_VERSION, display_name
 from ..paths import icon_path, logo_path
 from ..services import connectivity
 from .crm_tab import CrmTab
@@ -212,7 +212,7 @@ class AboutDialog(QDialog):
     def __init__(self, app=None, parent=None):
         super().__init__(parent)
         self.app = app
-        self.setWindowTitle(f"About {APP_NAME}")
+        self.setWindowTitle(f"About {display_name()}")
         self.setWindowIcon(QIcon(str(icon_path())))
         self.resize(460, 340)
         layout = QVBoxLayout(self)
@@ -223,7 +223,7 @@ class AboutDialog(QDialog):
         layout.addWidget(self.logo_label)
 
         body = QLabel(
-            f"<h2>{APP_NAME} {APP_VERSION}</h2>"
+            f"<h2>{display_name()} {APP_VERSION}</h2>"
             f"<p>A portable rental property manager.</p>"
             f"<p>Your properties, photos and applicant notes live in the "
             f"KeKarData folder next to the program. "
@@ -253,7 +253,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.app = app
         self.demo_mode = False
-        self.setWindowTitle(f"{APP_NAME} Property Manager")
+        self.setWindowTitle(f"{display_name()} Property Manager")
         # The taskbar, the start menu and the title bar all read this.
         self.setWindowIcon(QIcon(str(icon_path())))
         self.resize(1280, 800)

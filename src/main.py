@@ -11,7 +11,7 @@ import sys
 import time
 
 from src import features
-from src._version import APP_NAME, APP_VERSION
+from src._version import APP_VERSION, display_name
 
 # Set at import time so the startup measurement covers everything the app does
 # between process launch and a visible window.
@@ -27,18 +27,19 @@ _HELP_FLAGS = {"--help", "-h"}
 
 
 def _print_version() -> int:
-    print(f"{APP_NAME} {APP_VERSION}")
+    print(f"{display_name()} {APP_VERSION}")
     return 0
 
 
 def _print_help() -> int:
-    print(f"{APP_NAME} {APP_VERSION} - portable rental property manager")
+    print(f"{display_name()} {APP_VERSION} - portable rental property manager")
     print()
-    print("Usage: KeKar [option]")
+    print(f"Usage: {display_name()} [option]")
     print("  --version, -V   show the version and exit")
     print("  --help,   -h    show this help and exit")
     print()
-    print("KeKar is a GUI app; with no options it opens the main window.")
+    print(f"{display_name()} is a GUI app; with no options it opens the "
+          "main window.")
     return 0
 
 
