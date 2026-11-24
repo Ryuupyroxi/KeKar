@@ -61,3 +61,26 @@ source, use the configured package data directory and `DISPLAY=:0` with
 `KEKAR_TESTING=1`; do not point at a stale frozen binary. Bundle freshness is
 covered by `tests/test_bundle_safety.py` and
 `~/.hermes/profiles/fenrys/skills/software-development/kekar/scripts/bundle_source_diff.py`.
+
+
+## Real-world scenarios tried
+
+A visible eight-step journey was played on `:0` against a throwaway copy of
+the seeded data while Master watched the screen:
+
+1. Open Properties.
+2. Landlord saves a pet-friendly rental with a 2-car garage and driveway.
+3. Calendar shows both move dates on one line.
+4. Lease generates with the pet-deposit clause and tenant name.
+5. Applicant profile opens on one click, is edited and saved.
+6. Short stay is booked; a mid-stay date identifies the property and guest.
+7. OLED theme applies.
+8. Help → Calendar legend opens and dismisses.
+
+These are also durable regressions in `tests/test_real_world_scenarios.py`.
+The journey exposed one real defect: `CalendarTab` only mapped a short stay's
+check-in date to its property label, so clicking a middle booked day said "no
+stay recorded" even though the day was purple. It now records every booked day.
+
+Final counts after the fix: full suite 477 passed; Lite/production targeted
+suite 107 passed. Commit `9e56040` adds the scenarios and the fix.
