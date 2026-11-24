@@ -118,3 +118,27 @@ identical to source with `bundle_source_diff.py`, and installed at:
 The seeded `KeKarData` folder was preserved across the swap. A launch check
 showed the active window title "KeKar — KeKar Lite Property Manager"; the
 throwaway instance was closed. No release tag or remote was touched.
+
+
+## Test data and assistant check
+
+Added QA records to the installed Lite/production database through its
+repositories: 7 properties (including pet-friendly rentals, garage/parking
+combinations and a short-stay house), 4 applicants and 2 short-stay bookings.
+The frozen Lite app was launched and OCR of the real window confirmed the
+property list shows all seven addresses. It was closed afterward.
+
+Lite has no assistant by design — `features.chat_enabled()` is false — so the
+assistant was checked in the full/experimental build that is in the menu:
+
+- Direct agent run against the configured OpenRouter key: model
+  `openrouter/free`, 1 tool call, correct property answer.
+- Source UI path: typed a question into ChatPane and got "$500/month".
+- Frozen `dist/KeKar/KeKar` launched on the real display: typed "What is the
+  rent on my first property?" into the chat input and read the answer
+  "The rent on your property at 1023 East Tenth is $500/month" from the
+  screen. The frozen app was closed afterward.
+
+No API key was printed or written anywhere. The two short test conversations
+remain in the experimental build's chat history as evidence. The assistant
+took about 30-40 seconds on the frozen build, so "Thinking..." is not a hang.
