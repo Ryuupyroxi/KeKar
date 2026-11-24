@@ -8,11 +8,7 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
 
-from .agent import providers
-from .agent.client import LLMClient
-from .agent.memory import MemoryStore
-from .agent.runner import AgentRunner
-from .agent.tools import ToolContext
+from . import features
 from ._version import APP_NAME, APP_VERSION
 from .config.settings import Settings
 from .data.applicant_repo import ApplicantRepo
@@ -48,9 +44,13 @@ class Application(QApplication):
         self.settings = Settings.load()
         # The taskbar, the start menu and the title bar all read this.
         self.setWindowIcon(QIcon(str(icon_path())))
-        # A key saved before provider detection existed may point at the
-        # wrong host. Repair it once, then leave the user's choice alone.
-        self.provider_note = providers.migrate_default_provider(self.settings)
+        # Lite never talks to a provider, so it never repairs (or needs) the
+        # saved provider choice. Full KeKar behaves exactly as before.
+        self.provider_note = ""
+        if features.chat_enabled():
+            from .agent import providers
+            self.provider_note = providers.migrate_default_provider(
+                self.settings)
         self.demo_mode = False
         self.db = None
         # Resolve the two database locations once. Re-resolving on every switch
@@ -58,8 +58,11 @@ class Application(QApplication):
         # silently losing the real database.
         self._real_db_path = database_path()
         self._demo_db_path = demo_database_path()
-        self.memory = MemoryStore()
-        self.client = LLMClient(self.settings)
+        if features.chat_enabled():
+            from .agent.client import LLMClient
+            from .agent.memory import MemoryStore
+            self.memory = MemoryStore()
+            self.client = LLMClient(self.settings)
         self._open_database(self._real_db_path)
 
         self.main_window = MainWindow(self)
@@ -160,10 +163,12 @@ class Application(QApplication):
         self._rebuild_repos()
 
     def _rebuild_repos(self) -> None:
-        """Re-point the repositories and the agent at the current database.
+        """Re-point the repositories at the current database.
 
         Repositories resolve their connection lazily through the Database, so
-        rebuilding them is enough — no view has to be reconstructed.
+        rebuilding them is enough — no view has to be reconstructed. The agent
+        and its chat history exist only in the full build; Lite composes none
+        of them even though the tables are still present on disk.
         """
         self.property_repo = PropertyRepo(self.db)
         self.applicant_repo = ApplicantRepo(self.db)
@@ -171,12 +176,16 @@ class Application(QApplication):
         self.booking_repo = BookingRepo(self.db)
         self.portal_repo = PortalRepo(self.db)
         self.user_repo = UserRepo(self.db)
-        self.chat_repo = ChatRepo(self.db)
-        self.ctx = ToolContext(db=self.db, property_repo=self.property_repo,
-                               applicant_repo=self.applicant_repo,
-                               memory=self.memory, settings=self.settings,
-                               on_change=self.data_changed.emit)
-        self.agent_runner = AgentRunner(self.client, self.settings, self.ctx)
+        self.chat_repo = ChatRepo(self.db) if features.chat_enabled() else None
+        if features.chat_enabled():
+            from .agent.runner import AgentRunner
+            from .agent.tools import ToolContext
+            self.ctx = ToolContext(db=self.db, property_repo=self.property_repo,
+                                   applicant_repo=self.applicant_repo,
+                                   memory=self.memory, settings=self.settings,
+                                   on_change=self.data_changed.emit)
+            self.agent_runner = AgentRunner(self.client, self.settings,
+                                            self.ctx)
 
     def enter_demo_mode(self) -> None:
         """Switch to the demo database. The real one is closed untouched."""

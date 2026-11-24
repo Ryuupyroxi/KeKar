@@ -13,10 +13,10 @@ from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QHBoxLayout, QLabel,
                              QSplitterHandle, QTabWidget, QToolButton,
                              QVBoxLayout, QWidget)
 
+from .. import features
 from .._version import APP_NAME, APP_VERSION
 from ..paths import icon_path, logo_path
 from ..services import connectivity
-from .chat_pane import ChatPane
 from .crm_tab import CrmTab
 from .lease_tab import LeaseTab
 from .photo_panel import PhotoPanel
@@ -226,10 +226,12 @@ class AboutDialog(QDialog):
             f"<h2>{APP_NAME} {APP_VERSION}</h2>"
             f"<p>A portable rental property manager.</p>"
             f"<p>Your properties, photos and applicant notes live in the "
-            f"KeKarData folder next to the program. Nothing leaves this "
-            f"drive except the questions you choose to send to the "
-            f"assistant.</p>"
-            f"<p>Data is stored locally in SQLite and backed up automatically."
+            f"KeKarData folder next to the program. "
+            + ("Nothing ever leaves this drive.</p>"
+               if not features.chat_enabled() else
+               "Nothing leaves this drive except the questions you choose "
+               "to send to the assistant.</p>")
+            + f"<p>Data is stored locally in SQLite and backed up automatically."
             f"</p>")
         # Rich-text labels do not wrap unless told to, and the paragraph was
         # running off the right edge of the dialog.
@@ -330,10 +332,14 @@ class MainWindow(QMainWindow):
         self.top_splitter.addWidget(self.tabs_card)
         self.top_splitter.setSizes([340, 900])
         self.main_splitter.addWidget(self.top_splitter)
-        self.chat_pane = ChatPane(app)
-        self.chat_pane.setProperty("panel", True)
-        self.main_splitter.addWidget(self.chat_pane)
-        self.main_splitter.setSizes([560, 200])
+        if features.chat_enabled():
+            from .chat_pane import ChatPane
+            self.chat_pane = ChatPane(app)
+            self.chat_pane.setProperty("panel", True)
+            self.main_splitter.addWidget(self.chat_pane)
+            self.main_splitter.setSizes([560, 200])
+        else:
+            self.chat_pane = None
 
         outer.addWidget(self.main_splitter, 1)
         self.setCentralWidget(central)
@@ -346,17 +352,21 @@ class MainWindow(QMainWindow):
         self.property_form.property_deleted.connect(self._on_property_deleted)
         self.drawer.reload()
         self.crm_tab.reload()
-        self.chat_pane.load_history()
+        if self.chat_pane is not None:
+            self.chat_pane.load_history()
 
-        # offline detection
+        # Offline detection exists only in the full build: Lite has no remote
+        # service to reach, so it starts no timer and shows no network pill.
         self._ping: _PingThread | None = None
         self._ping_timer = QTimer(self)
         self._ping_timer.setInterval(PING_INTERVAL_MS)
         self._ping_timer.timeout.connect(self.check_online)
-        # Tests must not reach the network; conftest sets KEKAR_TESTING.
-        if not os.environ.get("KEKAR_TESTING"):
+        if features.chat_enabled() and not os.environ.get("KEKAR_TESTING"):
             self._ping_timer.start()
             self.check_online()
+        else:
+            self.offline_banner.hide()
+            self.status_pill.hide()
 
         # Menu first: its panel toggles read the splitter state, and the
         # layout restore below updates their labels.
@@ -400,6 +410,7 @@ class MainWindow(QMainWindow):
         self.sidebar_action.triggered.connect(self._toggle_sidebar)
         self.chat_action = view_menu.addAction("Collapse chat")
         self.chat_action.triggered.connect(self._toggle_chat)
+        self.chat_action.setVisible(self.chat_pane is not None)
 
         self._build_panel_toggles(menubar)
 
@@ -555,7 +566,7 @@ class MainWindow(QMainWindow):
         self.exit_demo_action.setVisible(active)
 
     def _agent_busy(self) -> bool:
-        return self.chat_pane._thread is not None
+        return self.chat_pane is not None and self.chat_pane._thread is not None
 
     def _start_tour(self) -> None:
         # Never stack two overlays: finish any tour that is already running.
@@ -647,12 +658,16 @@ class MainWindow(QMainWindow):
         self._remember_layout()
 
     def _toggle_chat(self) -> None:
+        if self.chat_pane is None:
+            return
         self.main_splitter.toggle_pane(1)
         self._remember_layout()
 
     def _remember_layout(self) -> None:
         self.app.settings.sidebar_collapsed = self.top_splitter.is_collapsed(0)
-        self.app.settings.chat_collapsed = self.main_splitter.is_collapsed(1)
+        self.app.settings.chat_collapsed = (self.main_splitter.is_collapsed(1)
+                                            if self.chat_pane is not None
+                                            else False)
         try:
             self.app.settings.save()
         except Exception:
@@ -677,6 +692,7 @@ class MainWindow(QMainWindow):
 
         self.chat_toggle = QToolButton(holder)
         self.chat_toggle.clicked.connect(self._toggle_chat)
+        self.chat_toggle.setVisible(self.chat_pane is not None)
 
         # These are the only always-reachable collapse controls, so they are
         # sized as real targets rather than menu-bar crumbs.
@@ -694,13 +710,16 @@ class MainWindow(QMainWindow):
 
     def _refresh_panel_actions(self) -> None:
         sidebar_collapsed = self.top_splitter.is_collapsed(0)
-        chat_collapsed = self.main_splitter.is_collapsed(1)
+        chat_collapsed = (self.main_splitter.is_collapsed(1)
+                          if self.chat_pane is not None else False)
 
         self.sidebar_action.setText(
             "Expand property list" if sidebar_collapsed
             else "Collapse property list")
         self.chat_action.setText(
             "Expand chat" if chat_collapsed else "Collapse chat")
+        if self.chat_pane is None:
+            return
 
         # The arrows point the way the panel will move.
         if hasattr(self, "sidebar_toggle"):
@@ -718,7 +737,7 @@ class MainWindow(QMainWindow):
         """Put back the panel layout the user left behind."""
         if self.app.settings.sidebar_collapsed:
             self.top_splitter.collapse(0, True)
-        if self.app.settings.chat_collapsed:
+        if self.chat_pane is not None and self.app.settings.chat_collapsed:
             self.main_splitter.collapse(1, True)
         self._refresh_panel_actions()
 
@@ -737,7 +756,8 @@ class MainWindow(QMainWindow):
         self.crm_tab.apply_theme(theme)
         self.lease_tab.apply_theme(theme)
         self.stays_tab.apply_theme(theme)
-        self.chat_pane.apply_theme(theme)
+        if self.chat_pane is not None:
+            self.chat_pane.apply_theme(theme)
         if getattr(self, "_tour", None) is not None:
             self._tour.apply_theme(theme)
         for splitter in (self.top_splitter, self.main_splitter):
