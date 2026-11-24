@@ -327,8 +327,7 @@ def build_tour_steps(window) -> list[TourStep]:
             "unchanged. Use 'Exit demo mode' in the Help menu when you're "
             "ready to work with your real data."),
     ]
-    if features.is_lite():
-        # The assistant needs a provider key; Lite has neither.
+    if not features.chat_enabled():
         steps = [step for step in steps if step.title != "The assistant"]
     return steps
 

@@ -43,8 +43,12 @@ def is_lite() -> bool:
 
 
 def chat_enabled() -> bool:
-    """The AI assistant is the only feature that needs an API key."""
-    return not is_lite()
+    """The AI assistant is available in both builds when a key is configured.
+
+    Lite still hides the direct portal, Marketplace and Maps connections; the
+    assistant is an opt-in by virtue of needing a key, not a build difference.
+    """
+    return True
 
 
 def marketplace_enabled() -> bool:

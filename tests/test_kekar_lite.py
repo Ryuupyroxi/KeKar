@@ -1,4 +1,4 @@
-"""End-to-end checks that a Lite Application really is built without AI/CDP."""
+"""End-to-end checks for the Lite composition: assistant yes, direct portals no."""
 import os
 import subprocess
 import sys
@@ -13,15 +13,18 @@ def _run_lite(code: str, tmp_path) -> subprocess.CompletedProcess:
                           capture_output=True, text=True, timeout=60)
 
 
-def test_lite_application_has_no_agent_or_chat(tmp_path):
+def test_lite_application_keeps_the_assistant(tmp_path):
     proc = _run_lite(
+        "from src import features\n"
         "from src.app import Application\n"
         "a = Application([])\n"
-        "assert not hasattr(a, 'agent_runner')\n"
-        "assert not hasattr(a, 'client')\n"
-        "assert not hasattr(a, 'memory')\n"
-        "assert a.chat_repo is None\n"
-        "assert a.main_window.chat_pane is None\n"
+        "assert features.chat_enabled()\n"
+        "assert not features.marketplace_enabled()\n"
+        "assert not features.portal_sync_enabled()\n"
+        "assert not features.maps_enabled()\n"
+        "assert hasattr(a, 'agent_runner')\n"
+        "assert a.chat_repo is not None\n"
+        "assert a.main_window.chat_pane is not None\n"
         "a.main_window.close()\n"
         "print('OK')\n", tmp_path)
     assert proc.returncode == 0, proc.stderr

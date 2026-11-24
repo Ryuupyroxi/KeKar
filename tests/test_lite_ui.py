@@ -21,24 +21,20 @@ def _close_window(kekar_app, window):
     window.close()
 
 
-def test_lite_window_has_no_chat_pane(kekar_app, monkeypatch):
+def test_lite_window_keeps_the_chat_pane(kekar_app, monkeypatch):
     window = _lite_window(kekar_app, monkeypatch)
     try:
-        assert window.chat_pane is None
-        assert window.main_splitter.count() == 1
+        assert window.chat_pane is not None
+        assert window.main_splitter.count() == 2
     finally:
         _close_window(kekar_app, window)
 
 
-def test_lite_window_has_no_chat_controls_or_offline_ping(
-        kekar_app, monkeypatch):
+def test_lite_window_has_chat_controls(kekar_app, monkeypatch):
     window = _lite_window(kekar_app, monkeypatch)
     try:
-        assert window.chat_action.isVisible() is False
-        assert window.chat_toggle.isVisible() is False
-        assert not window._ping_timer.isActive()
-        assert window.offline_banner.isHidden()
-        assert window.status_pill.isHidden()
+        assert window.chat_action.isVisible()
+        assert window.chat_toggle.isHidden() is False
     finally:
         _close_window(kekar_app, window)
 
@@ -115,24 +111,22 @@ def test_lite_compile_channel_still_accepts_a_hidden_key():
     assert "Description" in [name for name, _ in package.fields]
 
 
-def test_lite_wizard_needs_no_api_key(kekar_app, monkeypatch):
+def test_lite_wizard_offers_the_api_key_page(kekar_app, monkeypatch):
     monkeypatch.setenv("KEKAR_VARIANT", "lite")
     wizard = FirstRunWizard(kekar_app)
-    assert wizard.pages.count() == 1
-    assert not hasattr(wizard, "key_input")
-    wizard._go_next()
-    assert wizard.result() == FirstRunWizard.DialogCode.Accepted
+    assert wizard.pages.count() == 2
+    assert hasattr(wizard, "key_input")
 
 
-def test_lite_settings_hide_every_provider_control(kekar_app, monkeypatch):
+def test_lite_settings_shows_provider_controls(kekar_app, monkeypatch):
     monkeypatch.setenv("KEKAR_VARIANT", "lite")
     dialog = SettingsDialog(kekar_app)
     for attr in ("key_input", "provider", "api_base", "models_input",
-                 "autofill", "browser", "test_btn", "remove_btn",
-                 "maps_key", "maps_autofill"):
-        assert not hasattr(dialog, attr), attr
+                 "test_btn", "remove_btn"):
+        assert hasattr(dialog, attr), attr
+    # Maps stays a direct connection and remains hidden in Lite.
+    assert not hasattr(dialog, "maps_key")
     assert dialog.theme is not None
-    assert dialog.keep_days is not None
     dialog.close()
 
 

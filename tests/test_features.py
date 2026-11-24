@@ -20,7 +20,7 @@ def test_lite_disables_only_the_three_direct_connections(monkeypatch):
     monkeypatch.setenv("KEKAR_VARIANT", "lite")
     assert features.variant() == "lite"
     assert features.is_lite() is True
-    assert features.chat_enabled() is False
+    assert features.chat_enabled() is True
     assert features.marketplace_enabled() is False
     assert features.portal_sync_enabled() is False
 

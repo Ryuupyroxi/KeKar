@@ -49,10 +49,11 @@ package can be copied to any PC or USB drive.
 ## KeKar Lite
 
 KeKar Lite is the same program with the unfinished external connections removed:
-Facebook Marketplace auto-fill, the AI chat assistant, short-stay portal calendar
-sync, and Google Maps address lookup. The `apartments.com`, Airbnb and Vrbo
-channel packages are hidden from the picker; generic, Zillow and Booking.com
-copy-and-paste listings stay.
+Facebook Marketplace auto-fill, short-stay portal calendar sync, and Google Maps
+address lookup. The AI chat assistant stays available in Lite when a provider
+key is configured — it is the only network feature Lite uses. The
+`apartments.com`, Airbnb and Vrbo channel packages are hidden from the picker;
+generic, Zillow and Booking.com copy-and-paste listings stay.
 
 Both builds use the same `KeKarData/` folder and the same SQLite schema; either
 can open a portfolio created by the other. No data is deleted or migrated.

@@ -128,8 +128,8 @@ combinations and a short-stay house), 4 applicants and 2 short-stay bookings.
 The frozen Lite app was launched and OCR of the real window confirmed the
 property list shows all seven addresses. It was closed afterward.
 
-Lite has no assistant by design — `features.chat_enabled()` is false — so the
-assistant was checked in the full/experimental build that is in the menu:
+At this point Lite had no assistant, so the assistant was first checked in the
+full/experimental build that is in the menu:
 
 - Direct agent run against the configured OpenRouter key: model
   `openrouter/free`, 1 tool call, correct property answer.
@@ -142,3 +142,19 @@ assistant was checked in the full/experimental build that is in the menu:
 No API key was printed or written anywhere. The two short test conversations
 remain in the experimental build's chat history as evidence. The assistant
 took about 30-40 seconds on the frozen build, so "Thinking..." is not a hang.
+
+
+## Assistant enabled in Lite with the experimental key
+
+Per instruction, `features.chat_enabled()` now returns True in both builds.
+Lite keeps its other restrictions: no Marketplace autofill, no portal sync, no
+Maps lookup and no hidden listing channels. The OpenRouter key, provider,
+base URL and model chain were copied from the experimental build's settings
+into Lite's encrypted settings without printing the key.
+
+The Lite bundle was rebuilt, verified identical to source, and relaunched on
+the real display. Typing "How many properties are in my portfolio?" into its
+chat input produced: "You have 7 properties in your portfolio, and all 7 are
+currently listed as vacant." The app was closed afterward. Full suite 478
+passed; Lite/production targeted suite 145 passed. No release tag or remote
+was touched.

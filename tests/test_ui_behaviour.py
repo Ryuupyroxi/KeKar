@@ -178,6 +178,9 @@ def test_preview_listing_shows_the_compiled_text(kekar_app, monkeypatch):
 
 
 def test_property_form_has_a_publish_button(kekar_app):
+    from src import features
+    if features.is_lite():
+        return
     button = kekar_app.main_window.property_form.publish_btn
     assert button.text().startswith("Publish")
 

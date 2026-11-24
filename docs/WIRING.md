@@ -540,10 +540,10 @@ both builds — only composition and packaging differ.
 ```
 KEKAR_VARIANT=lite python -m src.main
   -> features.is_lite() == True
-  -> Application: no client / agent_runner / chat_repo
-  -> MainWindow: no chat pane, no ping timer, title "KeKar Lite Property Manager"
+  -> Application: client / agent_runner / chat_repo present (assistant kept)
+  -> MainWindow: chat pane, chat toggle and ping timer; title "KeKar Lite Property Manager"
   -> PropertyForm: no publish button, no Portals group, copy/paste intact
-  -> SettingsDialog: theme + backups only
+  -> SettingsDialog: theme, backups and provider controls (Maps stays hidden)
   -> ListingDialog: generic / Zillow (rental), generic / Booking.com (stay)
 ```
 
