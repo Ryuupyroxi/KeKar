@@ -728,16 +728,16 @@ class MainWindow(QMainWindow):
             else "Collapse property list")
         self.chat_action.setText(
             "Expand chat" if chat_collapsed else "Collapse chat")
-        if self.chat_pane is None:
-            return
-
-        # The arrows point the way the panel will move.
+        # The arrows point the way the panel will move. The Lite build has no
+        # chat pane, but its property toggle still needs a visible label.
         if hasattr(self, "sidebar_toggle"):
             self.sidebar_toggle.setText("▶ Properties" if sidebar_collapsed
                                         else "◀ Properties")
             self.sidebar_toggle.setToolTip(
                 "Expand the property list" if sidebar_collapsed
                 else "Collapse the property list")
+        if self.chat_pane is None:
+            return
         if hasattr(self, "chat_toggle"):
             self.chat_toggle.setText("▲ Chat" if chat_collapsed else "▼ Chat")
             self.chat_toggle.setToolTip(

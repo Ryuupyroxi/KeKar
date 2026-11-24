@@ -114,6 +114,14 @@ def test_default_lease_mentions_pet_deposit():
     assert "Pet policy: Dogs OK" in text
 
 
+def test_lite_sidebar_toggle_is_labelled(kekar_app):
+    """Note 6: the property panel toggle must be marked in the Lite build."""
+    window = kekar_app.main_window
+    assert window.sidebar_toggle.text()
+    assert window.sidebar_toggle.toolTip()
+    assert window.sidebar_toggle.isHidden() is False
+
+
 def test_dark_themes_have_no_dark_form_labels(kekar_app):
     """Note 5: muted labels must follow the dark/OLED palette."""
     from PyQt6.QtWidgets import QLabel
