@@ -123,6 +123,19 @@ def test_header_logo_trims_transparent_padding(kekar_app):
     assert label.height() <= 48, "the strip must hug the visible logo"
 
 
+def test_header_logo_opens_the_help_menu(kekar_app, monkeypatch):
+    """Clicking the wordmark is a real shortcut, not decoration."""
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtTest import QTest
+
+    window = kekar_app.main_window
+    opened = []
+    monkeypatch.setattr(window, "_open_help_menu",
+                        lambda: opened.append(True))
+    QTest.mouseClick(window.logo_label, Qt.MouseButton.LeftButton)
+    assert opened, "the header logo must open Help when clicked"
+
+
 def test_about_dialog_shows_the_logo(kekar_app):
     from src.ui.main_window import AboutDialog
 

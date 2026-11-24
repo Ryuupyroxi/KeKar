@@ -25,6 +25,8 @@ DEFAULTS = {
     "max_agent_steps": 8,
     "browser_kind": "auto",
     "autofill_enabled": False,
+    "maps_key": "",
+    "maps_autofill": True,
     "backup_keep_days": 30,
     "photo_max_dimension": 1600,
     "photo_jpeg_quality": 82,

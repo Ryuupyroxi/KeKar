@@ -1,14 +1,16 @@
 """Editable property detail form with amenity toggles and quick actions."""
 from __future__ import annotations
 
-from PyQt6.QtCore import QThread, pyqtSignal
-from PyQt6.QtWidgets import (QCheckBox, QComboBox, QDoubleSpinBox, QGridLayout,
-                             QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                             QMessageBox, QPushButton, QSpinBox, QTextEdit,
-                             QVBoxLayout, QWidget)
+from PyQt6.QtCore import QThread, QTimer, QStringListModel, pyqtSignal
+from PyQt6.QtWidgets import (QCheckBox, QComboBox, QCompleter,
+                             QDoubleSpinBox, QGridLayout, QGroupBox,
+                             QHBoxLayout, QLabel, QLineEdit, QMessageBox,
+                             QPushButton, QSpinBox, QTextEdit, QVBoxLayout,
+                             QWidget)
 
 from ..data.models import (PORTAL_LABELS, PORTALS, PROPERTY_KINDS,
                            PortalSettings, Property, SHORT_STAY_KIND)
+from ..services import maps_service
 from ..services import image_service
 from ..services import ical_service
 from ..services import portal_sync
@@ -25,6 +27,48 @@ KIND_LABELS = (
     ("Long-term rental", "rental"),
     ("Short stay (Airbnb)", SHORT_STAY_KIND),
 )
+
+#: Google Maps suggestions wait for a pause in typing and need a real start.
+MAPS_DEBOUNCE_MS = 350
+MAPS_MIN_CHARS = 4
+
+
+class _MapsAutocompleteThread(QThread):
+    """Fetches place predictions off the UI thread."""
+
+    done = pyqtSignal(object, str)  # suggestions, error
+
+    def __init__(self, key: str, text: str):
+        super().__init__()
+        self.key = key
+        self.text = text
+
+    def run(self) -> None:
+        try:
+            suggestions = maps_service.autocomplete(self.key, self.text)
+        except Exception as exc:
+            self.done.emit(None, str(exc))
+            return
+        self.done.emit(suggestions, "")
+
+
+class _MapsDetailsThread(QThread):
+    """Fetches one place's address components off the UI thread."""
+
+    done = pyqtSignal(object, str)  # PlaceDetails, error
+
+    def __init__(self, key: str, place_id: str):
+        super().__init__()
+        self.key = key
+        self.place_id = place_id
+
+    def run(self) -> None:
+        try:
+            details = maps_service.place_details(self.key, self.place_id)
+        except Exception as exc:
+            self.done.emit(None, str(exc))
+            return
+        self.done.emit(details, "")
 
 
 class _PortalSyncThread(QThread):
@@ -98,6 +142,20 @@ class PropertyForm(QWidget):
         self.sqft_input.setSingleStep(50)
         self.pet_input = QLineEdit()
         self.pet_input.setPlaceholderText("Cats OK")
+
+        # --- Google Maps address suggestions ---------------------------
+        # With no key the model stays empty, so Qt shows no popup and no
+        # request is ever made. The model is filled only from real replies.
+        self.last_maps_error = ""
+        self._map_suggestions: dict[str, str] = {}
+        self._maps_model = QStringListModel(self)
+        self._maps_completer = QCompleter(self._maps_model, self)
+        self.address_input.setCompleter(self._maps_completer)
+        self._maps_completer.activated.connect(self._on_address_selected)
+        self._maps_timer = QTimer(self)
+        self._maps_timer.setSingleShot(True)
+        self._maps_timer.timeout.connect(self._start_address_search)
+        self.address_input.textEdited.connect(self._on_address_edited)
 
         fields = [
             ("Street address", self.address_input),
@@ -322,6 +380,77 @@ class PropertyForm(QWidget):
     def _neutral_colour(self) -> str:
         return self._theme.neutral if self._theme is not None else "#616161"
 
+    # -- Google Maps address suggestions -----------------------------------
+
+    def _on_address_edited(self, text: str) -> None:
+        """Debounce user typing; an unset key keeps this entirely offline."""
+        key = self.app.settings.maps_key.strip()
+        if not key or len(text.strip()) < MAPS_MIN_CHARS:
+            self._maps_timer.stop()
+            self._maps_model.setStringList([])
+            self._map_suggestions.clear()
+            return
+        self._maps_timer.start(MAPS_DEBOUNCE_MS)
+
+    def _start_address_search(self) -> None:
+        key = self.app.settings.maps_key.strip()
+        text = self.address_input.text().strip()
+        if not key or len(text) < MAPS_MIN_CHARS:
+            self._maps_model.setStringList([])
+            return
+        thread = _MapsAutocompleteThread(key, text)
+        thread.done.connect(
+            lambda suggestions, error, q=text, t=thread:
+                self._on_suggestions(suggestions, error, q, t))
+        worker.register(thread)
+        thread.start()
+
+    def _on_suggestions(self, suggestions, error: str, query: str,
+                        thread: QThread) -> None:
+        worker.reap(thread)
+        if error:
+            self.last_maps_error = error
+            self._maps_model.setStringList([])
+            self.app.main_window.status(f"Address lookup: {error}")
+            return
+        if self.address_input.text().strip() != query:
+            return  # A newer edit superseded this reply.
+        self._map_suggestions = {
+            item.description: item.place_id for item in (suggestions or [])}
+        self._maps_model.setStringList(list(self._map_suggestions))
+
+    def _on_address_selected(self, description: str) -> None:
+        """A pick fills the address and optionally the *empty* city/ZIP."""
+        self.address_input.setText(description)
+        place_id = self._map_suggestions.get(description, "")
+        self._maps_model.setStringList([])
+        self._map_suggestions.clear()
+        key = self.app.settings.maps_key.strip()
+        if not place_id or not key or not self.app.settings.maps_autofill:
+            return
+        thread = _MapsDetailsThread(key, place_id)
+        thread.done.connect(
+            lambda details, error, t=thread:
+                self._on_place_details(details, error, t))
+        worker.register(thread)
+        thread.start()
+
+    def _on_place_details(self, details, error: str,
+                          thread: QThread) -> None:
+        worker.reap(thread)
+        if error:
+            self.last_maps_error = error
+            self.app.main_window.status(f"Address details: {error}")
+            return
+        self._autofill_empty(details)
+
+    def _autofill_empty(self, details) -> None:
+        """Fill City and ZIP only where the user left them blank."""
+        if not self.city_input.text().strip() and details.city:
+            self.city_input.setText(details.city)
+        if not self.zip_input.text().strip() and details.postal_code:
+            self.zip_input.setText(details.postal_code)
+
     # -- portals ---------------------------------------------------------
 
     @staticmethod
@@ -459,6 +588,10 @@ class PropertyForm(QWidget):
         self.pill.set_color(self._status_colour(prop.status))
 
     def _clear_fields(self) -> None:
+        self._maps_timer.stop()
+        self._maps_model.setStringList([])
+        self._map_suggestions.clear()
+        self.last_maps_error = ""
         for widget in (self.address_input, self.city_input, self.zip_input,
                        self.available_input, self.pet_input,
                        self.check_in_input, self.check_out_input):

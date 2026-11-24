@@ -145,6 +145,9 @@ MainWindow (src/ui/main_window.py)
   │           (address, city, ZIP, pet policy, notes, enabled amenities)
   ├─ QTabWidget
   │     ├─ Properties tab = PropertyForm inside a QScrollArea + PhotoPanel
+  │     │     ├─ address_input → QCompleter(QStringListModel) ← place replies
+  │     │     │  └─ textEdited → 350 ms QTimer → _MapsAutocompleteThread
+  │     │     │     └─ activated → _MapsDetailsThread → fill empty City/ZIP
   │     │     ├─ kind_combo → _on_kind_changed() swaps Rental terms /
   │     │     │  Short-stay terms, shows Portals, relabels publish_btn
   │     │     └─ PhotoPanel: the "Photos" header is the collapse control;
@@ -187,7 +190,8 @@ thread. See `docs/PERFORMANCE.md` for measurements.
 ## Worker threads
 
 Every background operation (`_PingThread`, `_VerifyThread`, `_AutofillThread`,
-`_AgentThread`) goes through `src/ui/worker.py`. The registry owns each
+`_AgentThread`, `_MapsAutocompleteThread`, `_MapsDetailsThread`) goes through
+`src/ui/worker.py`. The registry owns each
 thread; the completion slot calls `worker.reap(thread)`, which waits for the
 thread to finish *before* releasing it.
 
@@ -198,6 +202,43 @@ app crashed on roughly 1 in 7 launches until this was fixed.
 
 Two rules, therefore: never drop the last reference to a running thread, and
 never call `reap()` from the worker thread itself.
+
+## Google Maps address lookup
+
+`src/services/maps_service.py` is a stdlib-only client for the Places API
+(New). It makes exactly two calls:
+
+- `autocomplete(key, text)` → `POST places:autocomplete` with
+  `{"input": text, "languageCode": "en"}` and the `X-Goog-Api-Key` header.
+  It parses `suggestions[].placePrediction.text.text` and `.placeId` into
+  frozen `Suggestion(description, place_id)` records.
+- `place_details(key, place_id)` → `GET places/{id}?fields=addressComponents,
+  formattedAddress,displayName`. It reads `longText`/`shortText`/`types` for
+  `street_number`, `route`, `locality`, `administrative_area_level_1` and
+  `postal_code` into a frozen `PlaceDetails` record.
+
+An empty key short-circuits both: no request is constructed, no popup appears.
+Network/HTTP failures raise `MapsError`; an HTTP body containing
+`error.message` is quoted verbatim (with its status code), so a quota error is
+not reported as a connectivity problem.
+
+Wiring in `PropertyForm`:
+
+1. `address_input.textEdited` → reset a 350 ms single-shot `QTimer`; fewer
+   than four characters clears the model instead.
+2. Timer fires → `_MapsAutocompleteThread` (registered with `worker.py`).
+   Its reply fills a `QStringListModel` attached to a real `QCompleter`, so
+   Qt shows the drop-down. A reply for a superseded query is ignored.
+3. `QCompleter.activated` → the full description is written into the address
+   field. When `settings.maps_autofill` is true, `_MapsDetailsThread` fetches
+   the components and `_autofill_empty()` writes City/ZIP **only where the
+   fields are blank**; typed values are never overwritten.
+4. Both completion slots call `worker.reap(thread)` from the GUI thread.
+
+The key lives in encrypted `Settings.maps_key` (plus the `maps_autofill` bool,
+default true), alongside the defaults in `src/config/default_config.py` and
+`config/default_config.json`. `SettingsDialog` edits both fields; the form
+reads them at request time, so changes apply without a restart.
 
 ## AI provider detection
 

@@ -13,6 +13,8 @@ def teardown_function():
 def test_defaults_are_offline_safe():
     d = load_defaults()
     assert d["autofill_enabled"] is False
+    assert d["maps_key"] == ""
+    assert d["maps_autofill"] is True
     assert len(d["model_chain"]) >= 2
     assert d["api_base"].startswith("https://")
 

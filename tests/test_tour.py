@@ -40,7 +40,8 @@ def test_tour_describes_the_real_feature_set(kekar_app):
     text = " ".join(f"{step.title} {step.body}" for step in steps)
     for phrase in ("collapse", "Light", "OLED", "Zillow", "apartments.com",
                    "Leases", "template", "Accounts", "print", "Airbnb",
-                   "calendar", "status bar", "Photos heading", "centred"):
+                   "calendar", "status bar", "Photos heading",
+                   "Help menu"):
         assert phrase in text, f"the tour never mentions {phrase!r}"
 
 

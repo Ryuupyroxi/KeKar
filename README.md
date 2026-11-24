@@ -48,8 +48,8 @@ package can be copied to any PC or USB drive.
 
 ## Status
 
-Implementation complete through Phase 7. **387 tests passing** (`pytest -q`).
-Source: 64 modules, 9,266 lines.
+Implementation complete through Phase 7. **414 tests passing**
+(`.venv/bin/python -m pytest -o addopts='' -q`). Source: 65 modules, 9,708 lines.
 
 | Phase | State |
 |---|---|
@@ -176,6 +176,8 @@ the three panels stay visually separate at any window size.
   **Type** switches the unit between a long-term rental and a short stay; the
   term group below Details swaps to match. Quick actions: Save, Copy listing,
   Preview listing, Publish to Marketplace, Mark as rented / vacant, Delete.
+  With a Google Maps key set, the Street address field offers live place
+  suggestions; see below.
 - **Photos** — import, thumbnail, set cover, delete. The cover becomes the
   row's thumbnail in the list. The section collapses from its own header and
   remembers the choice between runs.
@@ -202,6 +204,26 @@ the three panels stay visually separate at any window size.
 - **Assistant** — the chat pane talks to the in-app agent, which can only call
   whitelisted tools (never raw SQL, never `eval`). Offline is handled with a
   banner and a status pill rather than a crash.
+
+## Google Maps address suggestions
+
+Optional, off until you add a key. In **File → Settings**, paste a Google Maps
+Places API (New) key into **Google Maps key** (stored encrypted beside the
+assistant key) and leave **Auto-fill empty City and ZIP from Google Maps**
+checked if you want the extra fields completed.
+
+- Type at least four characters in **Street address**. After a 350 ms pause,
+  KeKar shows a real drop-down of matching places from Google. Selecting one
+  puts its full address into the field.
+- With auto-fill on, KeKar then fetches that place's address components and
+  fills **City** and **ZIP only if you left them blank** — anything you typed
+  is kept. Turn the checkbox off to use suggestions without any second call.
+- With no key, there is no drop-down and no network request at all; typing
+  addresses stays completely offline. Network work runs on a worker thread,
+  and an HTTP failure quotes Google's own error message (for example, a quota
+  error says so rather than claiming the app is offline).
+- The key never appears in a log, a dialog, or the database. A real key is
+  needed to exercise the live API; the automated tests mock the responses.
 
 ## Listing channels
 
@@ -297,7 +319,7 @@ greyed-out one.
 ## Verified by real execution
 
 - `bash build.sh` produces a working Linux one-folder build (`dist/KeKar`).
-- `dist/KeKar/KeKar --version` prints `KeKar 1.2.0` on a headless machine.
+- `dist/KeKar/KeKar --version` prints `KeKar 1.6.0` on a headless machine.
 - The built binary starts, creates `KeKarData/`, runs the schema migration, and
   reports `PRAGMA integrity_check = ok`. Confirmed by running the binary.
 - `tools/make_usb_package.py` + `tools/verify_usb.py` pass on the real build.

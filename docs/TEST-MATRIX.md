@@ -47,11 +47,12 @@ returning after a restart is `real` too.
 | 29 | Stays: adding an overlapping stay is refused with a readable message; cancelling frees the dates | demo | | | |
 | 30 | Portals: run `tools/live_sync_check.py` against a real portal calendar, then Sync now in the app twice (second run reports "unchanged") | demo | | | |
 | 31 | Portals: set a price/min-stay override, open Portal listing, the preview shows the override and says so; Export calendar writes an .ics | demo | | | |
+| 32 | Address lookup: with a Google Maps key in Settings, type 4+ characters in Street address, the drop-down appears, pick a place; City and blank ZIP fill, a typed ZIP is kept | real | | | needs a real Maps key |
 
 ## Automated coverage
 
-These are covered by the pytest suite (`pytest -q`, 392 tests) and must stay
-green:
+These are covered by the pytest suite (`pytest -q`, 414 tests as of this
+feature) and must stay green:
 
 - Schema creation, WAL mode, foreign keys, migration idempotency (`test_db.py`)
 - Property and applicant CRUD, stage validation, document records
@@ -119,6 +120,14 @@ green:
   `build_ical`/`parse_ical` round-trip including folded lines; sync imports by
   `UID`, reports `unchanged`, and logs the attempt; the Stays tab and the
   listing dialog apply what the form stores (`test_short_stay.py`)
+- Google Maps: autocomplete/details request construction and parsing from
+  mocked HTTP responses, no-key means no request, HTTP failures quote the
+  provider's message, and readable network errors (`test_maps_service.py`)
+- Address UI: a real QCompleter/QStringListModel on the address field, 350 ms
+  debounce, four-character minimum, no popup or request without a key,
+  selection fills the address and only blank City/ZIP, the autofill switch,
+  worker reaping, and Settings save/load (`test_maps_ui.py`, `test_settings.py`,
+  `test_default_config.py`)
 
 ## Scenario 12 — live Marketplace autofill
 

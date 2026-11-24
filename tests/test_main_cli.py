@@ -10,13 +10,13 @@ def test_version_flag_prints_version(capsys, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["KeKar", "--version"])
     assert main_module.main() == 0
     out = capsys.readouterr().out
-    assert "KeKar" in out and "1.2.0" in out
+    assert "KeKar" in out and "1.6.0" in out
 
 
 def test_version_flag_supports_short_form(capsys, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["KeKar", "-V"])
     assert main_module.main() == 0
-    assert "1.2.0" in capsys.readouterr().out
+    assert "1.6.0" in capsys.readouterr().out
 
 
 def test_help_flag_prints_usage(capsys, monkeypatch):
@@ -54,7 +54,7 @@ def test_version_flag_does_not_import_qt(monkeypatch):
 def test_main_accepts_explicit_argv(monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["KeKar"])
     assert main_module.main(["KeKar", "--version"]) == 0
-    assert "1.2.0" in capsys.readouterr().out
+    assert "1.6.0" in capsys.readouterr().out
 
 
 def test_app_version_matches_nsi_installer():

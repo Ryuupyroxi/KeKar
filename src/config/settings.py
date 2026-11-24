@@ -26,6 +26,11 @@ class Settings:
     max_agent_steps: int = 8
     browser_kind: str = "auto"          # auto | chrome | edge
     autofill_enabled: bool = False      # opt-in, experimental
+    # Google Maps Places key. Empty turns address suggestions off entirely.
+    maps_key: str = ""
+    # When a suggestion is picked, fill only the City and ZIP fields that are
+    # still empty. Never overwrite anything the user typed.
+    maps_autofill: bool = True
     backup_keep_days: int = 30
     passphrase_protected: bool = False
     tour_completed: bool = False

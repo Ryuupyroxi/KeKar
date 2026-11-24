@@ -19,6 +19,7 @@ Decision references (D1-D10) are defined in Part 1 of
 | §2 | Playwright/CDP integration | `src/services/browser/*` | `test_cdp_client.py`, `test_launcher.py`, `test_marketplace.py` |
 | §2 | PyInstaller packaging | `KeKar.spec`, `build.sh`, `build.ps1` | real build + `KeKar --version` |
 | §3.1 | Property schema + amenity toggles | `src/data/models.py`, `property_repo.py`, `src/ui/property_form.py` | `test_property_repo.py`, `test_gui_smoke.py` |
+| §3.1 | Optional Google Maps address suggestions with autofill of empty City/ZIP | `src/services/maps_service.py`, `src/ui/property_form.py`, `src/ui/settings_dialog.py`, `src/config/settings.py` | `test_maps_service.py`, `test_maps_ui.py`, `test_settings.py` |
 | §3.2 | Listing generator + clipboard + Marketplace | `src/services/listing_compiler.py`, `clipboard.py`, `browser/marketplace.py` | `test_listing_compiler.py`, `test_listing_templates.py`, `test_clipboard.py`, `test_marketplace.py` |
 | §3.3 | Scoped conversational assistant | `src/agent/runner.py`, `src/ui/chat_pane.py` | `test_agent_runner.py`, `test_gui_smoke.py` |
 | §3.4 | Applicant tracker | `src/data/applicant_repo.py`, `src/ui/crm_tab.py` | `test_applicant_repo.py`, `test_gui_smoke.py` |

@@ -279,9 +279,9 @@ def build_tour_steps(window) -> list[TourStep]:
             "KeKar asks for one when it starts."),
         TourStep(
             window.logo_label, "The brand",
-            "The centred wordmark in this compact header is the same mark used "
-            "in the About dialog, and as the window, taskbar and start-menu "
-            "icon. Find it in Help → About."),
+            "Click the wordmark to open the Help menu — the guided tour, "
+            "About and Exit demo mode all live there. The same mark is the "
+            "window, taskbar and start-menu icon."),
         TourStep(
             None, "You're in demo mode",
             "Everything you see is sample data. Your own records are safe and "

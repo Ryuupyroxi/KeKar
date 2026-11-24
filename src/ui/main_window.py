@@ -193,6 +193,21 @@ class _PingThread(QThread):
         self.result.emit(connectivity.provider_reachable(self.api_base))
 
 
+class _HelpLogo(QLabel):
+    """The header wordmark doubles as a shortcut to the Help menu."""
+
+    def __init__(self, window: "MainWindow"):
+        super().__init__(window)
+        self._window = window
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolTip("Open Help")
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._window._open_help_menu()
+        super().mousePressEvent(event)
+
+
 class AboutDialog(QDialog):
     def __init__(self, app=None, parent=None):
         super().__init__(parent)
@@ -260,7 +275,7 @@ class MainWindow(QMainWindow):
         # A gutter around the cards: without it the panel borders sit flush
         # against the window edge and the regions stop reading as cards.
         outer.setContentsMargins(8, 4, 8, 8)
-        self.logo_label = QLabel()
+        self.logo_label = _HelpLogo(self)
         # Centred, with the source's empty canvas trimmed: the strip is now
         # as tall as the visible wordmark, not as tall as the PNG file.
         self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -389,6 +404,7 @@ class MainWindow(QMainWindow):
         self._build_panel_toggles(menubar)
 
         help_menu = menubar.addMenu("&Help")
+        self.help_menu = help_menu
         tour_action = help_menu.addAction("Guided tour...")
         tour_action.triggered.connect(self._start_tour)
         self.exit_demo_action = help_menu.addAction("Exit demo mode")
@@ -397,6 +413,12 @@ class MainWindow(QMainWindow):
         help_menu.addSeparator()
         about_action = help_menu.addAction("About...")
         about_action.triggered.connect(lambda: AboutDialog(self.app, self).exec())
+
+    def _open_help_menu(self) -> None:
+        """Pop the Help menu under the wordmark when it is clicked."""
+        point = self.logo_label.mapToGlobal(
+            QPoint(0, self.logo_label.height()))
+        self.help_menu.popup(point)
 
     def _open_settings(self) -> None:
         SettingsDialog(self.app, self).exec()

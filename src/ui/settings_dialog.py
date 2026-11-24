@@ -175,6 +175,21 @@ class SettingsDialog(QDialog):
         self.autofill.setChecked(app.settings.autofill_enabled)
         form.addRow(self.autofill)
 
+        # A separate key for Google Places: empty means no address popup and
+        # no network call at all. Stored in the same encrypted Settings file.
+        self.maps_key = QLineEdit()
+        self.maps_key.setEchoMode(QLineEdit.EchoMode.Password)
+        self.maps_key.setText(app.settings.maps_key)
+        self.maps_key.setPlaceholderText("Optional — address suggestions")
+        form.addRow("Google Maps key", self.maps_key)
+
+        self.maps_autofill = QCheckBox(
+            "Auto-fill empty City and ZIP from Google Maps")
+        self.maps_autofill.setToolTip(
+            "Only blank fields are filled — anything you typed is kept.")
+        self.maps_autofill.setChecked(app.settings.maps_autofill)
+        form.addRow(self.maps_autofill)
+
         self.browser = QComboBox()
         self.browser.addItems(["auto", "chrome", "edge"])
         self.browser.setCurrentText(app.settings.browser_kind)
@@ -222,6 +237,8 @@ class SettingsDialog(QDialog):
                                 self.models_input.toPlainText().splitlines()
                                 if m.strip()]
         settings.autofill_enabled = self.autofill.isChecked()
+        settings.maps_key = self.maps_key.text().strip()
+        settings.maps_autofill = self.maps_autofill.isChecked()
         settings.browser_kind = self.browser.currentText()
         settings.backup_keep_days = self.keep_days.value()
         try:
