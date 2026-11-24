@@ -8,12 +8,9 @@ from PyQt6.QtWidgets import (QCheckBox, QComboBox, QCompleter,
                              QPushButton, QSpinBox, QTextEdit, QVBoxLayout,
                              QWidget)
 
-from ..data.models import (PORTAL_LABELS, PORTALS, PROPERTY_KINDS,
-                           PortalSettings, Property, SHORT_STAY_KIND)
-from ..services import maps_service
+from .. import features
+from ..data.models import PROPERTY_KINDS, Property, SHORT_STAY_KIND
 from ..services import image_service
-from ..services import ical_service
-from ..services import portal_sync
 from ..services.listing_compiler import (AMENITY_LABELS as AMENITY_FIELDS,
                                          compile_listing, validate_listing)
 from . import worker
@@ -22,11 +19,10 @@ from .palette import Theme
 from .theme import font
 from .widgets import StatusPill
 
-#: The kind selector, in the order the UI offers it.
-KIND_LABELS = (
-    ("Long-term rental", "rental"),
-    ("Short stay (Airbnb)", SHORT_STAY_KIND),
-)
+def _kind_labels() -> tuple[tuple[str, str], ...]:
+    """Lite has no portal connections, so it drops the site name."""
+    stay = "Short stay" if features.is_lite() else "Short stay (Airbnb)"
+    return (("Long-term rental", "rental"), (stay, SHORT_STAY_KIND))
 
 #: Google Maps suggestions wait for a pause in typing and need a real start.
 MAPS_DEBOUNCE_MS = 350
@@ -44,6 +40,7 @@ class _MapsAutocompleteThread(QThread):
         self.text = text
 
     def run(self) -> None:
+        from ..services import maps_service
         try:
             suggestions = maps_service.autocomplete(self.key, self.text)
         except Exception as exc:
@@ -63,6 +60,7 @@ class _MapsDetailsThread(QThread):
         self.place_id = place_id
 
     def run(self) -> None:
+        from ..services import maps_service
         try:
             details = maps_service.place_details(self.key, self.place_id)
         except Exception as exc:
@@ -88,6 +86,7 @@ class _PortalSyncThread(QThread):
             self.done.emit(self.portal, {
                 "status": "failed", "detail": "Property not found."})
             return
+        from ..services import portal_sync
         result = portal_sync.sync_portal(self.app.db, prop, self.portal)
         self.done.emit(self.portal, result)
 
@@ -111,7 +110,7 @@ class PropertyForm(QWidget):
         header = QHBoxLayout()
         header.addWidget(_form_label("Type"))
         self.kind_combo = QComboBox()
-        for label, key in KIND_LABELS:
+        for label, key in _kind_labels():
             self.kind_combo.addItem(label, key)
         header.addWidget(self.kind_combo)
         self.pill = StatusPill("No property selected", "#616161", self)
@@ -150,12 +149,13 @@ class PropertyForm(QWidget):
         self._map_suggestions: dict[str, str] = {}
         self._maps_model = QStringListModel(self)
         self._maps_completer = QCompleter(self._maps_model, self)
-        self.address_input.setCompleter(self._maps_completer)
-        self._maps_completer.activated.connect(self._on_address_selected)
         self._maps_timer = QTimer(self)
         self._maps_timer.setSingleShot(True)
-        self._maps_timer.timeout.connect(self._start_address_search)
-        self.address_input.textEdited.connect(self._on_address_edited)
+        if features.maps_enabled():
+            self.address_input.setCompleter(self._maps_completer)
+            self._maps_completer.activated.connect(self._on_address_selected)
+            self._maps_timer.timeout.connect(self._start_address_search)
+            self.address_input.textEdited.connect(self._on_address_edited)
 
         fields = [
             ("Street address", self.address_input),
@@ -253,60 +253,66 @@ class PropertyForm(QWidget):
         stay_grid.setColumnStretch(3, 1)
         layout.addWidget(self.short_stay_terms)
 
-        # --- portals -----------------------------------------------------
-        self.portals_box = QGroupBox("Portals", self)
-        self.portal_rows: dict[str, dict] = {}
-        portals_layout = QVBoxLayout(self.portals_box)
-        for key in PORTALS:
-            row = QHBoxLayout()
-            enabled = QCheckBox(PORTAL_LABELS[key])
-            enabled.setToolTip(f"List this unit on {PORTAL_LABELS[key]}")
-            price = QDoubleSpinBox()
-            price.setRange(0, 100000)
-            price.setPrefix("$")
-            price.setSpecialValueText("default")
-            price.setToolTip("Leave at 0 to use the property's nightly rate")
-            stay = QSpinBox()
-            stay.setRange(0, 365)
-            stay.setSuffix(" nights")
-            stay.setSpecialValueText("default")
-            stay.setToolTip("Leave at 0 to use the property's minimum stay")
-            sync = QPushButton("Sync now")
-            sync.setProperty("portal", key)
-            sync.clicked.connect(self._sync_portal)
-            sync.setToolTip(f"Import the {PORTAL_LABELS[key]} calendar")
-            last = QLabel("")
-            last.setProperty("portal_last", key)
-            last.setFont(font(9))
-            row.addWidget(enabled)
-            row.addWidget(QLabel("Price"))
-            row.addWidget(price)
-            row.addWidget(QLabel("Min stay"))
-            row.addWidget(stay)
-            row.addWidget(sync)
-            row.addWidget(last, 1)
-            portals_layout.addLayout(row)
+        if features.portal_sync_enabled():
+            from ..data.models import PORTALS, PORTAL_LABELS, PortalSettings
+            # --- portals -----------------------------------------------------
+            self.portals_box = QGroupBox("Portals", self)
+            self.portal_rows: dict[str, dict] = {}
+            portals_layout = QVBoxLayout(self.portals_box)
+            for key in PORTALS:
+                row = QHBoxLayout()
+                enabled = QCheckBox(PORTAL_LABELS[key])
+                enabled.setToolTip(f"List this unit on {PORTAL_LABELS[key]}")
+                price = QDoubleSpinBox()
+                price.setRange(0, 100000)
+                price.setPrefix("$")
+                price.setSpecialValueText("default")
+                price.setToolTip("Leave at 0 to use the property's nightly rate")
+                stay = QSpinBox()
+                stay.setRange(0, 365)
+                stay.setSuffix(" nights")
+                stay.setSpecialValueText("default")
+                stay.setToolTip("Leave at 0 to use the property's minimum stay")
+                sync = QPushButton("Sync now")
+                sync.setProperty("portal", key)
+                sync.clicked.connect(self._sync_portal)
+                sync.setToolTip(f"Import the {PORTAL_LABELS[key]} calendar")
+                last = QLabel("")
+                last.setProperty("portal_last", key)
+                last.setFont(font(9))
+                row.addWidget(enabled)
+                row.addWidget(QLabel("Price"))
+                row.addWidget(price)
+                row.addWidget(QLabel("Min stay"))
+                row.addWidget(stay)
+                row.addWidget(sync)
+                row.addWidget(last, 1)
+                portals_layout.addLayout(row)
 
-            url_row = QHBoxLayout()
-            url = QLineEdit()
-            url.setPlaceholderText(
-                f"{PORTAL_LABELS[key]} calendar URL (.ics)")
-            url.setToolTip("The portal's own iCal export URL")
-            url_row.addWidget(QLabel("Calendar"))
-            url_row.addWidget(url, 1)
-            portals_layout.addLayout(url_row)
-            self.portal_rows[key] = {
-                "enabled": enabled, "price": price, "stay": stay,
-                "url": url, "last": last, "sync": sync,
-            }
+                url_row = QHBoxLayout()
+                url = QLineEdit()
+                url.setPlaceholderText(
+                    f"{PORTAL_LABELS[key]} calendar URL (.ics)")
+                url.setToolTip("The portal's own iCal export URL")
+                url_row.addWidget(QLabel("Calendar"))
+                url_row.addWidget(url, 1)
+                portals_layout.addLayout(url_row)
+                self.portal_rows[key] = {
+                    "enabled": enabled, "price": price, "stay": stay,
+                    "url": url, "last": last, "sync": sync,
+                }
 
-        export_btn = QPushButton("Export calendar (.ics)…")
-        export_btn.setToolTip(
-            "Write an iCal file of this property's bookings, to upload to a "
-            "portal")
-        export_btn.clicked.connect(self.export_calendar)
-        portals_layout.addWidget(export_btn)
-        layout.addWidget(self.portals_box)
+            export_btn = QPushButton("Export calendar (.ics)…")
+            export_btn.setToolTip(
+                "Write an iCal file of this property's bookings, to upload to a "
+                "portal")
+            export_btn.clicked.connect(self.export_calendar)
+            portals_layout.addWidget(export_btn)
+            layout.addWidget(self.portals_box)
+        else:
+            self.portals_box = None
+            self.portal_rows = {}
+
 
         # --- amenities ---------------------------------------------------
         amenities_box = QGroupBox("Amenities", self)
@@ -344,10 +350,13 @@ class PropertyForm(QWidget):
         self.rented_btn.clicked.connect(lambda: self._set_status("Rented"))
         self.vacant_btn = QPushButton("Mark as vacant")
         self.vacant_btn.clicked.connect(lambda: self._set_status("Vacant"))
-        self.publish_btn = QPushButton("Publish to Marketplace...")
-        # The same button is the listing dialog for a short stay: the design
-        # gives a short stay "Portal listing…" instead of Marketplace autofill.
-        self.publish_btn.clicked.connect(self._publish_or_list)
+        self.publish_btn = None
+        if features.marketplace_enabled():
+            self.publish_btn = QPushButton("Publish to Marketplace...")
+            # The same button is the listing dialog for a short stay: the
+            # design gives a short stay "Portal listing…" instead of
+            # Marketplace autofill.
+            self.publish_btn.clicked.connect(self._publish_or_list)
         # Two rows of three: six buttons in one row gave the form a ~900 px
         # minimum width, so the detail pane scrolled horizontally on a 1280 px
         # window and the last field was clipped by the panel edge.
@@ -359,7 +368,8 @@ class PropertyForm(QWidget):
 
         actions_two = QHBoxLayout()
         for btn in (self.publish_btn, self.rented_btn, self.vacant_btn):
-            actions_two.addWidget(btn)
+            if btn is not None:
+                actions_two.addWidget(btn)
         actions_two.addStretch(1)
         layout.addLayout(actions_two)
         layout.addStretch(1)
@@ -384,6 +394,9 @@ class PropertyForm(QWidget):
 
     def _on_address_edited(self, text: str) -> None:
         """Debounce user typing; an unset key keeps this entirely offline."""
+        if not features.maps_enabled():
+            self._maps_timer.stop()
+            return
         key = self.app.settings.maps_key.strip()
         if not key or len(text.strip()) < MAPS_MIN_CHARS:
             self._maps_timer.stop()
@@ -394,6 +407,8 @@ class PropertyForm(QWidget):
         self._maps_timer.start(MAPS_DEBOUNCE_MS)
 
     def _start_address_search(self) -> None:
+        if not features.maps_enabled():
+            return
         key = self.app.settings.maps_key.strip()
         text = self.address_input.text().strip()
         if not key or len(text) < MAPS_MIN_CHARS:
@@ -427,6 +442,8 @@ class PropertyForm(QWidget):
 
     def _on_address_selected(self, description: str) -> None:
         """A pick fills the address and optionally the *empty* city/ZIP."""
+        if not features.maps_enabled():
+            return
         self.address_input.setText(description)
         place_id = self._map_suggestions.get(description, "")
         self._maps_model.setStringList([])
@@ -465,6 +482,8 @@ class PropertyForm(QWidget):
 
     def _load_portals(self, prop: Property) -> None:
         """Fill the portal rows from the stored settings."""
+        if self.portals_box is None:
+            return
         if prop.id is None:
             return
         for key, row in self.portal_rows.items():
@@ -488,6 +507,9 @@ class PropertyForm(QWidget):
         Only a short stay has portals, so saving a rental writes nothing —
         otherwise every long-term let would accumulate three inert rows.
         """
+        if self.portals_box is None:
+            return
+        from ..data.models import PortalSettings
         if prop.id is None or not self._is_short_stay():
             return
         for key, row in self.portal_rows.items():
@@ -501,6 +523,8 @@ class PropertyForm(QWidget):
                 last_sync_at=(existing.last_sync_at if existing else None)))
 
     def _sync_portal(self) -> None:
+        if self.portals_box is None:
+            return
         if self.current_id is None:
             QMessageBox.information(self, "KeKar", "Save the property first.")
             return
@@ -517,6 +541,9 @@ class PropertyForm(QWidget):
         thread.start()
 
     def _on_sync_done(self, portal: str, result: dict) -> None:
+        if self.portals_box is None:
+            return
+        from ..data.models import PORTAL_LABELS
         thread = self.sender()
         worker.reap(thread if isinstance(thread, QThread) else None)
         row = self.portal_rows[portal]
@@ -534,6 +561,9 @@ class PropertyForm(QWidget):
 
     def export_calendar(self) -> None:
         """Write this property's bookings as an iCal file for a portal."""
+        if self.portals_box is None:
+            return
+        from ..services import ical_service
         if self.current_id is None:
             QMessageBox.information(self, "KeKar", "Save the property first.")
             return
@@ -556,11 +586,13 @@ class PropertyForm(QWidget):
         short = self._is_short_stay()
         self.rental_terms.setVisible(not short)
         self.short_stay_terms.setVisible(short)
-        self.portals_box.setVisible(short)
+        if self.portals_box is not None:
+            self.portals_box.setVisible(short)
         # Marketplace auto-fill is a long-term listing flow; a short stay gets
         # the per-portal listing packages instead.
-        self.publish_btn.setText("Portal listing…" if short
-                                 else "Publish to Marketplace...")
+        if self.publish_btn is not None:
+            self.publish_btn.setText("Portal listing…" if short
+                                     else "Publish to Marketplace...")
 
     def apply_theme(self, theme: Theme) -> None:
         self._theme = theme
@@ -647,7 +679,8 @@ class PropertyForm(QWidget):
         if index >= 0:
             self.kind_combo.setCurrentIndex(index)
         self._on_kind_changed()
-        self._load_portals(p)
+        if self.portals_box is not None:
+            self._load_portals(p)
 
     def _collect(self) -> Property:
         return Property(
@@ -691,7 +724,8 @@ class PropertyForm(QWidget):
         else:
             self.app.property_repo.update(prop)
         prop.id = self.current_id
-        self._save_portals(prop)
+        if self.portals_box is not None:
+            self._save_portals(prop)
         self.pill.setText(prop.status)
         self.pill.set_color(self._status_colour(prop.status))
         self.property_saved.emit(self.current_id)
