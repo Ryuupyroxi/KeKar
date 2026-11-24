@@ -16,3 +16,4 @@ KeKarData/
 *.key
 out/
 *.log
+src/_variant.py

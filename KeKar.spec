@@ -1,12 +1,15 @@
 # KeKar.spec
 # Build:  pyinstaller KeKar.spec --noconfirm
 # Works on both Windows and Linux; PyInstaller detects the host OS.
+import os
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 block_cipher = None
 ROOT = Path(SPECPATH).resolve()
+LITE = os.environ.get("KEKAR_VARIANT", "full").strip().lower() == "lite"
+NAME = "KeKarLite" if LITE else "KeKar"
 
 datas = [
     (str(ROOT / "config"), "config"),
@@ -19,13 +22,18 @@ binaries = []
 hiddenimports = []
 excludes = ["tkinter", "matplotlib", "numpy", "pandas", "PySide6", "pytest"]
 
-for pkg in ("PyQt6", "playwright", "cryptography", "httpx", "PIL"):
+runtime_pkgs = ("PyQt6", "cryptography", "httpx", "PIL")
+if not LITE:
+    runtime_pkgs += ("playwright",)
+
+for pkg in runtime_pkgs:
     try:
         hiddenimports += collect_submodules(pkg)
     except Exception:
         pass
 
-for pkg in ("PyQt6", "playwright"):
+bundle_pkgs = ("PyQt6",) if LITE else ("PyQt6", "playwright")
+for pkg in bundle_pkgs:
     try:
         for binaries_, datas_, hiddenimports_ in collect_all(pkg):
             binaries += binaries_
@@ -60,7 +68,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="KeKar",
+    name=NAME,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -80,5 +88,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name="KeKar",
+    name=NAME,
 )
