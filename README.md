@@ -215,7 +215,7 @@ the three panels stay visually separate at any window size.
   selected property and tenant. Generate, then **copy**, **print** or **email**
   the result, or save it to the lease list. KeKar never sends mail itself —
   the email button opens your own mail app with the lease pre-filled.
-- **Stays tab** — reservations for Airbnb-style units: a month calendar with
+- **Short stays panel (inside Calendar)** — reservations for Airbnb-style units: a month calendar with
   the booked days marked, a table (guest, portal, dates, nights, payout,
   status, source), and add / edit / cancel / delete. A stay cannot overlap
   another one on the same property; a cancelled stay frees its dates.
@@ -233,8 +233,10 @@ the three panels stay visually separate at any window size.
 
 The **Calendar** tab turns the move-in and move-out dates entered on a property
 into a month view: green marks move-in, red marks move-out, and the list beside
-it shows every date sorted. Short-stay reservations stay on the Stays tab.
-Empty or invalid dates are ignored.
+it shows one line per address with both move dates. Purple marks short-stay
+reservations, managed in the **Short stays** panel inside this tab; Help has a
+calendar legend. Selecting a property emphasises its dates, and clicking a date
+names the property it belongs to. Empty or invalid dates are ignored.
 
 ## Google Maps address suggestions
 
@@ -387,7 +389,7 @@ greyed-out one.
   (`src/ui/worker.py`), 25 of 25 launches survived.
 - The short-stay UI was run on a real display at 1280x800 in Light, Dark and
   OLED: the **Type** selector swaps Rental terms for Short-stay terms and the
-  Portals group, the Stays tab marks the booked days on the calendar and lists
+  the Portals group, the Calendar tab's Short stays panel marks the booked days and lists
   the stay, and the listing dialog offers generic, Airbnb, Booking.com and
   Vrbo with the per-portal override applied and named.
 - A v1.1-shaped database (every rental column, none of the short-stay ones) was
@@ -395,7 +397,7 @@ greyed-out one.
   still reads as a long-term rental (`tests/test_short_stay.py`).
 - The **frozen** build was launched on a real display with a short-stay property
   and a booking: the drawer row reads "Short stay ·", the Type selector shows
-  "Short stay (Airbnb)", and the Stays tab renders the calendar with the
+  "Short stay (Airbnb)",  and the Calendar tab's Short stays panel renders the calendar with the
   booked days and the booking row — proving the new modules are inside the
   bundle rather than only importable from source.
 

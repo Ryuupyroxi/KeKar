@@ -53,7 +53,7 @@ plan → implement → test → next.
 | 9 | Same-line move-in/move-out rows | Applies to merged calendar | DONE — one address row carries both move dates |
 | 10 | Date click shows owning property | Applies to merged calendar | DONE — selecting a date names its property and event type |
 | 11 | Applicant profile on single click | Depends on #2 | DONE — single click opens an editable full profile panel |
-| — | Final regression + docs + release | After all eleven | Pending |
+| — | Final regression + docs + release | After all eleven | DONE — suites green, docs updated, handoff written |
 
 The numbers in the work-order table are execution positions, not the original
 note numbers. The original note number is in the "Note" column.

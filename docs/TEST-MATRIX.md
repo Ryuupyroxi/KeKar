@@ -43,7 +43,7 @@ returning after a restart is `real` too.
 | 25 | Accounts: add an account, turn on "Ask for a password", restart, log in, lock, unlock | real | | | |
 | 26 | Short stay: set Type to Short stay, the form swaps to nightly rate, fees, minimum stay, occupancy, check-in/out, Instant Book, house rules | demo | | | |
 | 27 | Short stay: the list row shows a "Short stay" subtitle and no Vacant/Rented stripe | demo | | | |
-| 28 | Stays: add a stay, its days are marked on the calendar, restart, it persists | real | | | |
+| 28 | Short stays: add a stay in the Calendar tab's Short stays panel, its days are purple on the calendar, restart, it persists | real | | | |
 | 29 | Stays: adding an overlapping stay is refused with a readable message; cancelling frees the dates | demo | | | |
 | 30 | Portals: run `tools/live_sync_check.py` against a real portal calendar, then Sync now in the app twice (second run reports "unchanged") | demo | | | |
 | 31 | Portals: set a price/min-stay override, open Portal listing, the preview shows the override and says so; Export calendar writes an .ics | demo | | | |
@@ -118,7 +118,7 @@ feature) and must stay green:
   packages, their warnings and the per-portal overrides; booking nights derived
   on write; overlap rejected in the repository and freed by a cancellation;
   `build_ical`/`parse_ical` round-trip including folded lines; sync imports by
-  `UID`, reports `unchanged`, and logs the attempt; the Stays tab and the
+  `UID`, reports `unchanged`, and logs the attempt; the Short stays panel and the
   listing dialog apply what the form stores (`test_short_stay.py`)
 - Google Maps: autocomplete/details request construction and parsing from
   mocked HTTP responses, no-key means no request, HTTP failures quote the

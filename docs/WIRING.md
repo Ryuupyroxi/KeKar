@@ -155,7 +155,7 @@ MainWindow (src/ui/main_window.py)
   │     │        and persists settings.photos_collapsed
   │     ├─ Applicants tab = CrmTab (stage combo box, colour per stage)
   │     ├─ Leases tab = LeaseTab (template editor, preview, saved list)
-  │     └─ Stays tab = StaysTab (QCalendarWidget + bookings table)
+  │     └─ Calendar tab = CalendarTab (month view + StaysTab panel)
   ├─ ChatPane (bottom) ──▶ AgentRunner
   ├─ OfflineBanner + StatusPill ◀── _PingThread every 30 s
   │     └─ connectivity.provider_reachable(api_base)  (plain TCP, no API key)
