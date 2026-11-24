@@ -158,3 +158,27 @@ chat input produced: "You have 7 properties in your portfolio, and all 7 are
 currently listed as vacant." The app was closed afterward. Full suite 478
 passed; Lite/production targeted suite 145 passed. No release tag or remote
 was touched.
+
+
+## Private upload packages and key audit
+
+Audit before packaging: the configured key was searched in all 175 tracked
+files and full git history (no exact key and no key-like strings). GitHub code
+search for the exact key, `sk-or-v1` and `sk-proj` in `Ryuupyroxi/KeKar`
+returned 0 results after pushing the current branch. The key exists only in
+encrypted `KeKarData/config/settings.enc` beside its `app.key`; those files
+are gitignored.
+
+Two private upload zips were assembled in `upload-packages/` (gitignored):
+
+- `KeKarLite_Windows_WithKey_v1.6.2.zip` — built by GitHub Actions from commit
+  `4a9df71` (workflow run `45510896995`), packaged locally with the configured
+  data folder. The run's NSIS step failed on a Chocolatey 503, but the Windows
+  portable artifact was produced and verified.
+- `KeKarLite_Linux_WithKey_v1.6.2.zip` — rebuilt locally from the same commit,
+  bundle-verified function-for-function against the checkout.
+
+Both zips were integrity-tested, scanned for the plaintext key (none), and
+their `settings.enc`/`app.key` pairs were loaded successfully from an
+extracted copy. `UPLOAD-README.txt` in that folder has hashes and install
+steps. No release tag or remote artifact was modified.
