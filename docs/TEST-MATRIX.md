@@ -182,6 +182,7 @@ calendar. Vrbo and Booking.com expose one in the owner/extranet dashboard.
 | L4 | Open the same `KeKarData/` with full KeKar | Properties, applicants, leases, stays and chat history all still present | PARTIAL — no data-layer change; both binaries opened against `out/KeKarLite_Linux/KeKarData` and `verify_usb.py` passed. Populated-data GUI round-trip not yet driven. |
 | L5 | Block outbound traffic | Every Lite feature works; no error dialogs | PASS by construction/tests — agent, provider ping, portal sync, Marketplace browser and Maps are not composed in Lite; `test_lite_ui.py::test_lite_form_never_starts_a_maps_request` proves no request with a stored key. Physical network unplug not performed. |
 | L6 | `out/KeKarLite_Linux/KeKarLite_Linux/KeKarLite --version` | Prints `KeKar Lite <version>` on a headless machine | PASS — printed `KeKar Lite 1.6.0`; full build printed `KeKar 1.6.0`. |
+| L7 | Help → Guided tour in Lite after saving a property date | Tour visits the Calendar tab and names no removed feature | PASS by variant tests — `test_tour.py` in Lite mode passes with the Calendar step; full wording guards reject Facebook, autofill, Airbnb, Vrbo and apartments.com. |
 
 ## How to run a scenario
 

@@ -11,7 +11,7 @@ def test_tour_steps_target_real_widgets(kekar_app):
     window = kekar_app.main_window
     steps = build_tour_steps(window)
 
-    assert len(steps) == (11 if features.chat_enabled() else 10)
+    assert len(steps) == (12 if features.chat_enabled() else 11)
     for step in steps:
         assert isinstance(step, TourStep)
         if step.target is not None:

@@ -17,6 +17,7 @@ from .. import features
 from .._version import APP_NAME, APP_VERSION, display_name
 from ..paths import icon_path, logo_path
 from ..services import connectivity
+from .calendar_tab import CalendarTab
 from .crm_tab import CrmTab
 from .lease_tab import LeaseTab
 from .photo_panel import PhotoPanel
@@ -315,6 +316,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.lease_tab, "Leases")
         self.stays_tab = StaysTab(app)
         self.tabs.addTab(self.stays_tab, "Stays")
+        self.calendar_tab = CalendarTab(app)
+        self.tabs.addTab(self.calendar_tab, "Calendar")
 
         # The tab area is a card too, so the right-hand region is outlined
         # like the drawer and the chat pane. The card carries the padding;
@@ -459,6 +462,7 @@ class MainWindow(QMainWindow):
     def _on_property_saved(self, property_id: int) -> None:
         self.drawer.reload()
         self.crm_tab.reload()
+        self.calendar_tab.reload()
         self.photo_panel.load_property(property_id)
         prop = self.app.property_repo.get(property_id)
         self.status(f"Saved {prop.address if prop else property_id}")
@@ -466,6 +470,7 @@ class MainWindow(QMainWindow):
     def _on_property_deleted(self) -> None:
         self.drawer.reload()
         self.crm_tab.reload()
+        self.calendar_tab.reload()
         self.photo_panel.load_property(None)
         self.status("Property deleted.")
 
@@ -479,6 +484,7 @@ class MainWindow(QMainWindow):
         self.crm_tab.reload()
         self.lease_tab.reload()
         self.stays_tab.reload()
+        self.calendar_tab.reload()
         current = self.property_form.current_id
         if current is None:
             return

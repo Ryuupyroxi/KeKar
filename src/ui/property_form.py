@@ -141,6 +141,10 @@ class PropertyForm(QWidget):
         self.sqft_input.setSingleStep(50)
         self.pet_input = QLineEdit()
         self.pet_input.setPlaceholderText("Cats OK")
+        self.move_in_input = QLineEdit()
+        self.move_in_input.setPlaceholderText("Move-in YYYY-MM-DD")
+        self.move_out_input = QLineEdit()
+        self.move_out_input.setPlaceholderText("Move-out YYYY-MM-DD")
 
         # --- Google Maps address suggestions ---------------------------
         # With no key the model stays empty, so Qt shows no popup and no
@@ -165,6 +169,8 @@ class PropertyForm(QWidget):
             ("Bathrooms", self.bathrooms_input),
             ("Square feet", self.sqft_input),
             ("Pet policy", self.pet_input),
+            ("Move-in date", self.move_in_input),
+            ("Move-out date", self.move_out_input),
         ]
         for index, (label, widget) in enumerate(fields):
             row, column = divmod(index, 2)
@@ -633,6 +639,7 @@ class PropertyForm(QWidget):
         self.last_maps_error = ""
         for widget in (self.address_input, self.city_input, self.zip_input,
                        self.available_input, self.pet_input,
+                       self.move_in_input, self.move_out_input,
                        self.check_in_input, self.check_out_input):
             widget.clear()
         self.notes_input.clear()
@@ -656,6 +663,8 @@ class PropertyForm(QWidget):
         self.rent_input.setValue(p.rent_price or 0)
         self.deposit_input.setValue(p.deposit_amount or 0)
         self.available_input.setText(p.available_date or "")
+        self.move_in_input.setText(p.move_in_date or "")
+        self.move_out_input.setText(p.move_out_date or "")
         self.nightly_input.setValue(p.nightly_price or 0)
         self.cleaning_input.setValue(p.cleaning_fee or 0)
         self.extra_guest_input.setValue(p.extra_guest_fee or 0)
@@ -691,6 +700,8 @@ class PropertyForm(QWidget):
             rent_price=self.rent_input.value() or None,
             deposit_amount=self.deposit_input.value() or None,
             available_date=self.available_input.text().strip() or None,
+            move_in_date=self.move_in_input.text().strip() or None,
+            move_out_date=self.move_out_input.text().strip() or None,
             bedrooms=self.bedrooms_input.value() or None,
             bathrooms=self.bathrooms_input.value() or None,
             sqft=self.sqft_input.value() or None,

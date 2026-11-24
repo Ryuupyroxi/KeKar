@@ -280,6 +280,12 @@ def build_tour_steps(window) -> list[TourStep]:
             "property form.",
             on_enter=lambda overlay: _show_tab(window, overlay, 3)),
         TourStep(
+            window.calendar_tab, "Calendar",
+            "Move-in and move-out dates you enter on a property appear here "
+            "automatically: green for move-in, red for move-out. Short-stay "
+            "reservations are still on the Stays tab.",
+            on_enter=lambda overlay: _show_tab(window, overlay, 4)),
+        TourStep(
             window.chat_pane, "The assistant",
             "Ask questions in plain language, or give an instruction like "
             "'draft a message to John'. It can read and update your records."),

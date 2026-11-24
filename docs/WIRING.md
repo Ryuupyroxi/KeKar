@@ -178,6 +178,16 @@ the form is taller than its viewport, `_new_property()` also resets the scroll
 bar to the top: a click that cleared fields while the view sat on Notes looked
 like nothing had happened at all.
 
+## Calendar tab
+
+`src/ui/calendar_tab.py` reads every property's `move_in_date` /
+`move_out_date`, ignores blank or unparseable values, colours the day on a
+`QCalendarWidget` (green move-in, red move-out) and lists the events in date
+order. `MainWindow.reload_all()` refreshes it, so saving a property or any
+agent change updates the calendar without a restart. No new table is involved:
+the two ISO date strings live on the existing `properties` row and migrate in
+through `Database._add_missing_columns`.
+
 ## Property list rendering
 
 Rows paint themselves in one `paintEvent` rather than building a child widget

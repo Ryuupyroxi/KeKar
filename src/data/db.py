@@ -30,6 +30,8 @@ _COLUMN_ADDITIONS: dict[str, dict[str, str]] = {
                         "CHECK (instant_book IN (0,1))",
         "cancellation_policy": "TEXT",
         "house_rules": "TEXT",
+        "move_in_date": "TEXT",
+        "move_out_date": "TEXT",
     },
 }
 

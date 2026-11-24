@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS properties (
   rent_price     REAL,
   deposit_amount REAL,
   available_date TEXT,
+  move_in_date   TEXT,
+  move_out_date  TEXT,
   bedrooms       INTEGER,
   bathrooms      REAL,
   sqft           INTEGER,

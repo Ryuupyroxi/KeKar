@@ -11,6 +11,9 @@ class Property:
     rent_price: float | None = None
     deposit_amount: float | None = None
     available_date: str | None = None
+    #: ISO dates entered in the property form; the Calendar tab shows them.
+    move_in_date: str | None = None
+    move_out_date: str | None = None
     bedrooms: int | None = None
     bathrooms: float | None = None
     sqft: int | None = None

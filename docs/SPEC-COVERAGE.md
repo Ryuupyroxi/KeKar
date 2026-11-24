@@ -62,6 +62,7 @@ Decision references (D1-D10) are defined in Part 1 of
 | §3.2 | Short-stay listing packages (Airbnb, Vrbo, Booking.com) and per-portal overrides | `src/services/listing_channels.py`, `src/ui/listing_dialog.py` | `test_short_stay.py`, `test_listing_channels.py` |
 | §8.3 | Reservations: calendar, bookings table, overlap rejection | `src/data/booking_repo.py`, `src/ui/stays_tab.py` | `test_short_stay.py` |
 | §10.1 | Two-way portal calendar sync over iCal, with a sync log | `src/services/ical_service.py`, `src/services/portal_sync.py`, `src/data/portal_repo.py`, `property_portals` / `portal_sync_log` | `test_short_stay.py` |
+| Calendar | Move-in/move-out dates from properties | `src/ui/calendar_tab.py`, `src/ui/property_form.py`, `src/data/models.py` | `test_calendar_tab.py` |
 | Lite | KeKar Lite variant | `src/features.py`, `tools/set_variant.py` | `test_features.py`, `test_set_variant.py`, `test_kekar_lite.py` |
 | Lite | KeKar Lite keeps copy-and-paste listings | `src/ui/listing_dialog.py`, `src/services/listing_compiler.py`, `src/services/clipboard.py` | `test_lite_ui.py`, `test_listing_channels.py` |
 

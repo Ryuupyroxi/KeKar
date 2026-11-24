@@ -64,7 +64,10 @@ Build both Linux packages with `bash build.sh` (outputs under
 `KeKarLite.sh` and `KeKarLite.bat`.
 
 `KEKAR_VARIANT=lite` selects the variant when running from source; an unset
-value always means full KeKar. `src/features.py` is the single switch, and a
+value always means full KeKar. Release tags follow the same split: Lite is the
+production build (`v1.6.0-lite`, also tagged `v1.6.0-production`), while the
+full-featured build is the experimental one (`v1.6.0`, also tagged
+`v1.6.0-experimental`). `src/features.py` is the single switch, and a
 frozen build gets its value from a generated, gitignored `src/_variant.py`.
 
 ## Status
@@ -225,6 +228,13 @@ the three panels stay visually separate at any window size.
 - **Assistant** — the chat pane talks to the in-app agent, which can only call
   whitelisted tools (never raw SQL, never `eval`). Offline is handled with a
   banner and a status pill rather than a crash.
+
+## Calendar
+
+The **Calendar** tab turns the move-in and move-out dates entered on a property
+into a month view: green marks move-in, red marks move-out, and the list beside
+it shows every date sorted. Short-stay reservations stay on the Stays tab.
+Empty or invalid dates are ignored.
 
 ## Google Maps address suggestions
 
