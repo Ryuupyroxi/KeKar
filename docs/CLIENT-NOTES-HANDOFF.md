@@ -35,6 +35,15 @@ release tag was moved and no build was pushed: the client tests first.
 - Real-display widget grabs of the current source with seeded data confirmed
   the Calendar tab (green/red/purple highlights, Dates + Short stays panels,
   date-detail label) and the Applicants tab (single-click profile form).
+- Real-pointer click-through with `xdotool` against the current source on
+  `:0` (throwaway copy of the seeded data, `KEKAR_TESTING=1`) confirmed:
+  Calendar tab click → active tab 3; property row click → selected id 3;
+  Dec 15 date click → "2026-12-15: Move-in — 14 Maple Street"; Applicants
+  tab click → active tab 1; row click → profile visible; typed name → saved
+  with status "Saved Pointer Test."; sidebar toggle → collapsed then
+  expanded; Help → Calendar legend opened and was dismissed. Every pointer
+  position reported the app's own window id before the click. The test
+  process was killed afterwards.
 
 ## Bugs found and fixed along the way
 
