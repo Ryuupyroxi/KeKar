@@ -353,6 +353,7 @@ class MainWindow(QMainWindow):
         self.property_form.property_saved.connect(self._on_property_saved)
         self.property_form.status_changed.connect(self._on_status_changed)
         self.property_form.property_deleted.connect(self._on_property_deleted)
+        self.photo_panel.photos_changed.connect(self.drawer.reload)
         self.drawer.reload()
         self.crm_tab.reload()
         if self.chat_pane is not None:
@@ -756,6 +757,10 @@ class MainWindow(QMainWindow):
         self.offline_banner.apply_theme(theme)
         self.demo_banner.apply_theme(theme)
         self.status_pill.apply_theme(theme)
+        if self.chat_pane is not None:
+            # StatusPill.apply_theme cannot know whether we are offline; the
+            # main window can, so re-assert the meaning after recolouring.
+            self.show_offline(not self.offline_banner.isHidden())
         self.drawer.apply_theme(theme)
         self.property_form.apply_theme(theme)
         self.photo_panel.apply_theme(theme)

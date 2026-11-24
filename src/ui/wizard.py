@@ -136,7 +136,10 @@ class FirstRunWizard(QDialog):
         with Qt's own loop.
         """
         import asyncio
+        from PyQt6.QtWidgets import QApplication
 
+        # Let the "Checking..." state paint before the blocking call.
+        QApplication.processEvents()
         try:
             return asyncio.run(self.app.client.verify_key())
         except Exception as exc:  # never let a network glitch crash setup

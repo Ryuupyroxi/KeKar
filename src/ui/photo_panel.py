@@ -150,7 +150,10 @@ class PhotoPanel(QWidget):
         if self.property_id is None or self.selected is None:
             QMessageBox.information(self, "KeKar", "Choose a photo first.")
             return
-        image_service.set_cover(self.property_id, self.selected)
+        if not image_service.set_cover(self.property_id, self.selected):
+            QMessageBox.information(
+                self, "KeKar", "Add a second photo before choosing a cover.")
+            return
         self.selected = None
         self.reload()
         self.photos_changed.emit()

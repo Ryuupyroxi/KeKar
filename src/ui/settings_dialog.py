@@ -297,8 +297,13 @@ class SettingsDialog(QDialog):
     def _set_busy(self, busy: bool) -> None:
         if getattr(self, "test_btn", None) is None:
             return
-        for widget in (self.test_btn, self.key_input, self.provider,
-                       self.api_base, self.models_input):
+        # Every button, including Detect/Fetch/Save/Cancel, is disabled while
+        # a provider task runs: a second task would overwrite self._thread and
+        # reap() would wait on the wrong one.
+        for button in self.findChildren(QPushButton):
+            button.setEnabled(not busy)
+        for widget in (self.key_input, self.provider, self.api_base,
+                       self.models_input):
             widget.setEnabled(not busy)
 
     def _on_task_done(self, ok: bool, payload) -> None:
@@ -306,7 +311,13 @@ class SettingsDialog(QDialog):
             return
         worker.reap(self._thread)
         self._thread = None
+        snapshot = getattr(self, "_verify_snapshot", None)
+        if snapshot is not None:
+            for attr, value in snapshot.items():
+                setattr(self.app.settings, attr, value)
+            self._verify_snapshot = None
         self._set_busy(False)
+        self.test_btn.setText("Test connection")
 
         if isinstance(payload, tuple) and payload and isinstance(payload[0],
                                                                  _providers().Provider):
@@ -371,6 +382,11 @@ class SettingsDialog(QDialog):
             QMessageBox.warning(self, APP_NAME,
                                 "Add at least one model first.")
             return
+        # Testing must not commit: Cancel leaves the live settings untouched.
+        self._verify_snapshot = {
+            attr: getattr(self.app.settings, attr)
+            for attr in ("api_key", "provider", "api_base", "model_chain")
+        }
         self.app.settings.api_key = key
         self.app.settings.provider = self.provider.currentData() or "custom"
         self.app.settings.api_base = self.api_base.text().strip()

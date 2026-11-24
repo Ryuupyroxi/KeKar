@@ -38,8 +38,11 @@ def property_photos(property_id: int) -> list[Path]:
     d = _property_dir(property_id)
     if not d.exists():
         return []
+    # Hidden .thumb_* files are caches, not photos. Treating them as photos
+    # made "Set as cover" swap a thumbnail and hid the real image.
     return sorted(p for p in d.iterdir()
-                  if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp"))
+                  if not p.name.startswith(".")
+                  and p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp"))
 
 
 def delete_property_photos(property_id: int) -> None:

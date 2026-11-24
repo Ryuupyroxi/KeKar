@@ -162,10 +162,15 @@ class StaysTab(QWidget):
 
     def reload(self) -> None:
         props = self.app.property_repo.list()
+        previous = self.property_combo.currentData()
         self._loading = True
         self.property_combo.clear()
         for prop in props:
             self.property_combo.addItem(prop.address, prop.id)
+        if previous is not None:
+            index = self.property_combo.findData(previous)
+            if index >= 0:
+                self.property_combo.setCurrentIndex(index)
         self._loading = False
         self._refresh()
 

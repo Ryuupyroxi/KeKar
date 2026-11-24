@@ -410,9 +410,12 @@ def test_settings_test_connection_uses_the_provider(kekar_app, monkeypatch):
 
     dialog = settings_dialog.SettingsDialog(kekar_app)
     dialog.key_input.setText("sk-test-key")
+    original = kekar_app.settings.api_key
     dialog._test_connection()
 
-    assert kekar_app.settings.api_key == "sk-test-key"
+    # Testing uses a temporary copy; only Save commits the key.
+    assert kekar_app.settings.api_key == original
+    assert dialog.key_input.text() == "sk-test-key"
 
 
 def test_settings_reports_the_task_result(kekar_app, monkeypatch):

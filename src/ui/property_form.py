@@ -810,6 +810,8 @@ class PropertyForm(QWidget):
 
     def _set_status(self, status: str) -> None:
         if self.current_id is None:
+            QMessageBox.information(
+                self, "KeKar", "Choose a saved property first.")
             return
         self.app.property_repo.set_status(self.current_id, status)
         self.status_changed.emit(self.current_id, status)

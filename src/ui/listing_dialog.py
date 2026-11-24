@@ -6,6 +6,7 @@ still works for any other site.
 """
 from __future__ import annotations
 
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout,
                              QLabel, QPlainTextEdit, QPushButton, QVBoxLayout,
                              QWidget)
@@ -79,6 +80,10 @@ class ListingDialog(QDialog):
         self.problems.setFont(font(9))
         layout.addWidget(self.problems)
 
+        self.copy_note = QLabel("")
+        self.copy_note.setWordWrap(True)
+        layout.addWidget(self.copy_note)
+
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         copy_btn = QPushButton("Copy to clipboard")
@@ -143,3 +148,7 @@ class ListingDialog(QDialog):
         label = ("listing" if self._current() == "generic"
                  else channel_label(self._current()))
         self.app.main_window.status(f"{label} copied — paste it into the site.")
+        # The status bar sits behind this modal dialog; keep the feedback
+        # inside the dialog where the user can actually see it.
+        self.copy_note.setText(f"{label} copied — paste it into the site.")
+        QTimer.singleShot(3000, self.copy_note.clear)
