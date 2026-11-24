@@ -658,7 +658,12 @@ In `_refresh_panel_actions`, guard the chat toggle's text/tooltip block with:
             return
 ```
 
-immediately before `if hasattr(self, "chat_toggle"):` — the sidebar block above it stays.
+immediately before `if hasattr(self, "chat_toggle"):` — the sidebar block above it stays. Also guard the earlier geometry read in the same method, because a one-pane splitter has no index 1:
+
+```python
+        chat_collapsed = (self.main_splitter.is_collapsed(1)
+                          if self.chat_pane is not None else False)
+```
 
 In `_restore_layout`, replace
 
