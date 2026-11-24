@@ -50,7 +50,7 @@ plan → implement → test → next.
 | 6 | Collapse button is unmarked | Independent, tiny UI fix | DONE — Lite sidebar toggle keeps its label and tooltip |
 | 7 | Merge Stays into Calendar + legend | Structural change; must precede calendar tweaks | DONE — Stays is a panel in Calendar; short stays are purple; Help has a legend |
 | 8 | Selected property highlights calendar | Applies to merged calendar | DONE — selected property's dates are bold and named in the summary |
-| 9 | Same-line move-in/move-out rows | Applies to merged calendar | Pending |
+| 9 | Same-line move-in/move-out rows | Applies to merged calendar | DONE — one address row carries both move dates |
 | 10 | Date click shows owning property | Applies to merged calendar | Pending |
 | 11 | Applicant profile on single click | Depends on #2 | Pending |
 | — | Final regression + docs + release | After all eleven | Pending |

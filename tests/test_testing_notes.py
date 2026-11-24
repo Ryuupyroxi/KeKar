@@ -114,6 +114,21 @@ def test_default_lease_mentions_pet_deposit():
     assert "Pet policy: Dogs OK" in text
 
 
+def test_calendar_shows_move_in_and_out_on_one_line(kekar_app):
+    """Note 9: one address line carries both move dates."""
+    kekar_app.property_repo.create(Property(
+        address="60 Both Dates Way", move_in_date="2026-12-01",
+        move_out_date="2026-12-31"))
+    window = kekar_app.main_window
+    window.calendar_tab.reload()
+    lines = [window.calendar_tab.events.item(i).text()
+             for i in range(window.calendar_tab.events.count())]
+    matches = [line for line in lines if "60 Both Dates Way" in line]
+    assert len(matches) == 1
+    assert "2026-12-01" in matches[0]
+    assert "2026-12-31" in matches[0]
+
+
 def test_selecting_a_property_marks_its_calendar_dates(kekar_app):
     """Note 8: the selected property is emphasised on the calendar."""
     from PyQt6.QtCore import QDate

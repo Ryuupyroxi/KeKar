@@ -62,6 +62,8 @@ class CalendarTab(QWidget):
         self._marked = []
         self.events.clear()
         rows: list[tuple[date, str]] = []
+        # One address takes one line: both move dates live in the same row.
+        grouped: dict[int, tuple[date, str, list[str]]] = {}
         for prop in self.app.property_repo.list():
             for label, value, colour in (
                     ("Move-in", prop.move_in_date, MOVE_IN_COLOUR),
@@ -79,8 +81,14 @@ class CalendarTab(QWidget):
                 self.calendar.setDateTextFormat(day, fmt)
                 self._marked.append(day)
                 prefix = "★ " if prop.id == self.selected_property_id else ""
-                rows.append((date(day.year(), day.month(), day.day()),
-                             f"{prefix}{label} — {prop.address} ({value})"))
+                entry = grouped.get(prop.id)
+                if entry is None:
+                    entry = (date(day.year(), day.month(), day.day()),
+                             f"{prefix}{prop.address}", [])
+                    grouped[prop.id] = entry
+                entry[2].append(f"{label} {value}")
+        for when, address, parts in grouped.values():
+            rows.append((when, f"{address} — {', '.join(parts)}"))
         for prop in self.app.property_repo.list():
             for stay in self.app.booking_repo.list(property_id=prop.id):
                 try:
