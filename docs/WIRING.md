@@ -138,6 +138,9 @@ never draws two nested outlines.
 MainWindow (src/ui/main_window.py)
   ├─ PropertyDrawer (left)  ──property_selected──▶ PropertyForm.load_property()
   │     │                          └──────────▶ PhotoPanel.load_property()
+  │     ├─ add_requested ──▶ MainWindow._new_property(): Properties tab to front,
+  │     │                    form cleared, scrolled to the address field, and a
+  │     │                    status-bar hint ("New property — … press Save.")
   │     └─ search box filters on PropertyDrawer.search_text(prop)
   │           (address, city, ZIP, pet policy, notes, enabled amenities)
   ├─ QTabWidget
@@ -164,7 +167,10 @@ widgets that need emphasis call `font(points, bold)`. `src/ui/widgets.py`
 holds the shared `StatusPill`, `OfflineBanner` and `SectionLabel`.
 
 The property form is wrapped in a `QScrollArea` with `setWidgetResizable(True)`
-so a short window scrolls instead of squeezing the group boxes flat.
+so a short window scrolls instead of squeezing the group boxes flat. Because
+the form is taller than its viewport, `_new_property()` also resets the scroll
+bar to the top: a click that cleared fields while the view sat on Notes looked
+like nothing had happened at all.
 
 ## Property list rendering
 

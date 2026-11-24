@@ -96,3 +96,75 @@ def test_settings_dialog_opens(kekar_app):
     assert dialog.isVisible() is False
     dialog.open()
     assert dialog.isVisible() is True
+
+
+# -- '+ Add New Property' --------------------------------------------------
+
+def _add_button(window):
+    """The drawer's add button, found by its label.
+
+    It is created as a local inside PropertyDrawer, so the suite reaches it
+    through the widget tree rather than a new attribute.
+    """
+    from PyQt6.QtWidgets import QPushButton
+    hits = [b for b in window.drawer.findChildren(QPushButton)
+            if "Add New Property" in b.text()]
+    assert len(hits) == 1, f"expected one add button, found {len(hits)}"
+    return hits[0]
+
+
+def test_add_new_property_gives_visible_feedback(kekar_app):
+    """Clicking '+ Add New Property' must always be unmistakable.
+
+    The form is taller than its viewport. A click that only cleared the fields
+    was invisible whenever the view happened to be scrolled past the top: the
+    pill and the address field were both off-screen, so the button looked dead.
+    """
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtTest import QTest
+
+    window = kekar_app.main_window
+    form = window.property_form
+    window.show()
+    kekar_app.processEvents()
+
+    pid = PropertyRepo(kekar_app.db.conn).create(
+        Property(address="4 Feedback Rd", rent_price=640.0))
+    form.load_property(pid)
+    assert form.current_id == pid
+    assert form.pill.text() != "New property"
+
+    scroll = window.form_scroll.verticalScrollBar()
+    scroll.setValue(scroll.maximum())       # worst case: scrolled past the top
+    window.tabs.setCurrentIndex(2)          # and not even on Properties
+
+    QTest.mouseClick(_add_button(window), Qt.MouseButton.LeftButton)
+    kekar_app.processEvents()
+
+    assert window.tabs.currentIndex() == 0
+    assert form.current_id is None
+    assert form.address_input.text() == ""
+    assert form.pill.text() == "New property"
+    assert scroll.value() == 0, "the form must scroll back to the address field"
+    assert "New property" in window.statusBar().currentMessage()
+
+
+def test_add_new_property_works_from_an_empty_portfolio(kekar_app):
+    """A second click on an already-blank form still reports what happened."""
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtTest import QTest
+
+    window = kekar_app.main_window
+    form = window.property_form
+    window.show()
+    kekar_app.processEvents()
+
+    QTest.mouseClick(_add_button(window), Qt.MouseButton.LeftButton)
+    kekar_app.processEvents()
+    QTest.mouseClick(_add_button(window), Qt.MouseButton.LeftButton)
+    kekar_app.processEvents()
+
+    assert form.current_id is None
+    assert form.pill.text() == "New property"
+    assert form.address_input.hasFocus()
+    assert "New property" in window.statusBar().currentMessage()

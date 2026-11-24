@@ -244,6 +244,7 @@ class MainWindow(QMainWindow):
         form_scroll.setWidgetResizable(True)
         form_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         form_scroll.setWidget(self.property_form)
+        self.form_scroll = form_scroll
         pv.addWidget(form_scroll, 1)
         pv.addWidget(self.photo_panel)
         self.tabs.addTab(properties_tab, "Properties")
@@ -363,9 +364,20 @@ class MainWindow(QMainWindow):
         self.photo_panel.load_property(property_id)
 
     def _new_property(self) -> None:
+        """Start a blank property.
+
+        The form is taller than its viewport, so a click that only cleared the
+        fields read as "nothing happened" whenever the view was scrolled past
+        the top: both the pill and the address field were off-screen. Bring the
+        Properties tab, the top of the form and the status bar into play so the
+        action is visible every time.
+        """
+        self.tabs.setCurrentIndex(0)
         self.property_form.load_property(None)
         self.photo_panel.load_property(None)
         self.property_form.address_input.setFocus()
+        self.form_scroll.verticalScrollBar().setValue(0)
+        self.status("New property — fill in the details, then press Save.")
 
     def _on_property_saved(self, property_id: int) -> None:
         self.drawer.reload()
