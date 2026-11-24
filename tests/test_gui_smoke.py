@@ -65,6 +65,43 @@ def test_photo_panel_imports(kekar_app, tmp_path):
     assert len(panel.paths) == 1
 
 
+# -- collapsible Photos section -------------------------------------------
+
+def test_photos_section_collapses_and_expands(kekar_app):
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtTest import QTest
+
+    panel = kekar_app.main_window.photo_panel
+    assert panel.is_collapsed() is False
+    assert panel.body.isVisibleTo(panel)
+
+    QTest.mouseClick(panel.toggle_btn, Qt.MouseButton.LeftButton)
+    kekar_app.processEvents()
+    assert panel.is_collapsed() is True
+    assert not panel.body.isVisibleTo(panel)
+    assert kekar_app.settings.photos_collapsed is True
+
+    QTest.mouseClick(panel.toggle_btn, Qt.MouseButton.LeftButton)
+    kekar_app.processEvents()
+    assert panel.is_collapsed() is False
+    assert panel.body.isVisibleTo(panel)
+    assert kekar_app.settings.photos_collapsed is False
+
+
+def test_photos_collapse_is_remembered_between_runs(kekar_app):
+    """A rebuilt panel (i.e. the next launch) starts from the setting."""
+    from src.ui.photo_panel import PhotoPanel
+
+    original = kekar_app.settings.photos_collapsed
+    try:
+        kekar_app.settings.photos_collapsed = True
+        assert PhotoPanel(kekar_app).is_collapsed() is True
+        kekar_app.settings.photos_collapsed = False
+        assert PhotoPanel(kekar_app).is_collapsed() is False
+    finally:
+        kekar_app.settings.photos_collapsed = original
+
+
 def test_crm_lists_applicants(kekar_app):
     repo = ApplicantRepo(kekar_app.db.conn)
     before = len(repo.list())

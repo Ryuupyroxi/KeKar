@@ -7,7 +7,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel,
                              QMessageBox, QProgressDialog, QPushButton,
-                             QScrollArea, QVBoxLayout, QWidget)
+                             QScrollArea, QToolButton, QVBoxLayout, QWidget)
 
 from ..services import image_service
 from .palette import Theme
@@ -29,12 +29,32 @@ class PhotoPanel(QWidget):
         self.paths: list[Path] = []
         self.selected: Path | None = None
         self._theme: Theme | None = None
+        self._collapsed = False
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
+        # The header is the control: its arrow shows which way the section
+        # will move, so the state is readable without clicking.
         header = QHBoxLayout()
-        header.addWidget(QLabel("<b>Photos</b>"))
+        self.toggle_btn = QToolButton()
+        self.toggle_btn.setText("Photos")
+        self.toggle_btn.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.toggle_btn.setArrowType(Qt.ArrowType.DownArrow)
+        self.toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.toggle_btn.clicked.connect(self.toggle_collapsed)
+        header.addWidget(self.toggle_btn)
+        header.addStretch(1)
+        layout.addLayout(header)
+
+        # Everything except the header lives in the body, so collapsing hides
+        # the buttons with the thumbnails instead of leaving dead controls.
+        self.body = QWidget()
+        body_layout = QVBoxLayout(self.body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+
+        actions = QHBoxLayout()
         self.add_btn = QPushButton("Add photos...")
         self.add_btn.clicked.connect(self.choose_photos)
         self.cover_btn = QPushButton("Set as cover")
@@ -42,9 +62,9 @@ class PhotoPanel(QWidget):
         self.remove_btn = QPushButton("Remove")
         self.remove_btn.clicked.connect(self.remove_selected)
         for button in (self.add_btn, self.cover_btn, self.remove_btn):
-            header.addWidget(button)
-        header.addStretch(1)
-        layout.addLayout(header)
+            actions.addWidget(button)
+        actions.addStretch(1)
+        body_layout.addLayout(actions)
 
         self.grid = QHBoxLayout()
         scroll = QScrollArea()
@@ -53,7 +73,32 @@ class PhotoPanel(QWidget):
         scroll.setWidget(container)
         scroll.setWidgetResizable(True)
         scroll.setFixedHeight(180)
-        layout.addWidget(scroll)
+        body_layout.addWidget(scroll)
+        layout.addWidget(self.body)
+
+        self.set_collapsed(bool(getattr(app.settings, "photos_collapsed", False)))
+
+    def set_collapsed(self, collapsed: bool) -> None:
+        """Show or hide the photo strip and its buttons."""
+        self._collapsed = bool(collapsed)
+        self.body.setVisible(not self._collapsed)
+        self.toggle_btn.setArrowType(
+            Qt.ArrowType.RightArrow if self._collapsed else Qt.ArrowType.DownArrow)
+        self.toggle_btn.setChecked(self._collapsed)
+
+    def is_collapsed(self) -> bool:
+        return self._collapsed
+
+    def toggle_collapsed(self) -> None:
+        self.set_collapsed(not self._collapsed)
+        try:
+            self.app.settings.photos_collapsed = self._collapsed
+            self.app.settings.save()
+        except Exception:
+            pass
+        self.app.main_window.status(
+            "Photos section collapsed." if self._collapsed
+            else "Photos section expanded.")
 
     def load_property(self, property_id: int | None) -> None:
         self.property_id = property_id

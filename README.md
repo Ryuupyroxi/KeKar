@@ -175,7 +175,8 @@ the three panels stay visually separate at any window size.
   term group below Details swaps to match. Quick actions: Save, Copy listing,
   Preview listing, Publish to Marketplace, Mark as rented / vacant, Delete.
 - **Photos** — import, thumbnail, set cover, delete. The cover becomes the
-  row's thumbnail in the list.
+  row's thumbnail in the list. The section collapses from its own header and
+  remembers the choice between runs.
 - **Applicants tab** — a table of applicants with a colour-coded screening
   stage (Inquiry Received → Questionnaire Sent → Background Check →
   Approved / Rejected). Adding an applicant asks which property they are

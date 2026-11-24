@@ -34,6 +34,7 @@ class Settings:
     # Panel layout, remembered between runs. True = collapsed to the edge.
     sidebar_collapsed: bool = False
     chat_collapsed: bool = False
+    photos_collapsed: bool = False
     # The client's example lease. Empty means "use the built-in template".
     lease_template: str = ""
     landlord_name: str = ""

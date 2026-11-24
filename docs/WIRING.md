@@ -145,8 +145,11 @@ MainWindow (src/ui/main_window.py)
   │           (address, city, ZIP, pet policy, notes, enabled amenities)
   ├─ QTabWidget
   │     ├─ Properties tab = PropertyForm inside a QScrollArea + PhotoPanel
-  │     │     └─ kind_combo → _on_kind_changed() swaps Rental terms /
-  │     │        Short-stay terms, shows Portals, relabels publish_btn
+  │     │     ├─ kind_combo → _on_kind_changed() swaps Rental terms /
+  │     │     │  Short-stay terms, shows Portals, relabels publish_btn
+  │     │     └─ PhotoPanel: the "Photos" header is the collapse control;
+  │     │        toggle_collapsed() hides the body (buttons + thumbnails)
+  │     │        and persists settings.photos_collapsed
   │     ├─ Applicants tab = CrmTab (stage combo box, colour per stage)
   │     ├─ Leases tab = LeaseTab (template editor, preview, saved list)
   │     └─ Stays tab = StaysTab (QCalendarWidget + bookings table)
