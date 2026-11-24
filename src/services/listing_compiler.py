@@ -130,6 +130,11 @@ def listing_title(prop: Property) -> str:
 
 def amenities_line(prop: Property) -> str:
     active = [label for attr, label in AMENITY_LABELS if getattr(prop, attr)]
+    if prop.garage_spaces:
+        suffix = " car" if prop.garage_spaces == 1 else " cars"
+        active.append(f"Garage: {prop.garage_spaces}{suffix}")
+    if prop.parking_type:
+        active.append(f"Parking: {prop.parking_type}")
     return "Amenities: " + (", ".join(active) if active else "None listed")
 
 

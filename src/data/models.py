@@ -24,6 +24,10 @@ class Property:
     amenity_yard: bool = False
     amenity_dishwasher: bool = False
     amenity_parking: bool = False
+    #: 0 = no garage, 1 or 2 = garage size. Parking type is a separate
+    #: street/driveway choice so a listing can say exactly where to park.
+    garage_spaces: int = 0
+    parking_type: str | None = None
     notes: str | None = None
     #: 'rental' is a long-term let; 'short_stay' is an Airbnb-style unit.
     kind: str = "rental"

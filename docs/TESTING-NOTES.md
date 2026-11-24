@@ -44,7 +44,7 @@ plan → implement → test → next.
 |---|---|---|---|
 | 1 | Lease Property selector | Root data-wiring bug; unblocks lease work | DONE — combo populated at startup and after save/delete |
 | 2 | Applicants Property dropdown | Same helper as #1 | DONE — Property cell is a live combo that saves the link |
-| 3 | Garage + parking amenities | Data-model change needed by lease/listing | Pending |
+| 3 | Garage + parking amenities | Data-model change needed by lease/listing | DONE — garage count + street/driveway persist and appear in listings |
 | 4 | Pet policy + pet deposit in lease | Depends on #1 and #3 | Pending |
 | 5 | Dark/OLED text contrast | Independent, highly visible | Pending |
 | 6 | Collapse button is unmarked | Independent, tiny UI fix | Pending |

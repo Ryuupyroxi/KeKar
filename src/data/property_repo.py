@@ -11,7 +11,7 @@ COLUMNS = [
     "amenity_parking", "notes", "nightly_price", "cleaning_fee",
     "extra_guest_fee", "min_stay_nights", "max_guests", "check_in_time",
     "check_out_time", "instant_book", "cancellation_policy", "house_rules",
-    "move_in_date", "move_out_date",
+    "move_in_date", "move_out_date", "garage_spaces", "parking_type",
 ]
 
 _INSERT = """
@@ -21,9 +21,9 @@ INSERT INTO properties
   amenity_wd, amenity_ac, amenity_yard, amenity_dishwasher, amenity_parking, notes,
   nightly_price, cleaning_fee, extra_guest_fee, min_stay_nights, max_guests,
   check_in_time, check_out_time, instant_book, cancellation_policy, house_rules,
-  move_in_date, move_out_date)
+  move_in_date, move_out_date, garage_spaces, parking_type)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?)
+        ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 _UPDATE = """
@@ -34,7 +34,7 @@ UPDATE properties SET
   amenity_parking=?, notes=?, nightly_price=?, cleaning_fee=?,
   extra_guest_fee=?, min_stay_nights=?, max_guests=?, check_in_time=?,
   check_out_time=?, instant_book=?, cancellation_policy=?, house_rules=?,
-  move_in_date=?, move_out_date=?,
+  move_in_date=?, move_out_date=?, garage_spaces=?, parking_type=?,
   updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
 WHERE id=?
 """
@@ -63,6 +63,8 @@ def _row_to_property(row: sqlite3.Row) -> Property:
         house_rules=row["house_rules"],
         move_in_date=row["move_in_date"],
         move_out_date=row["move_out_date"],
+        garage_spaces=row["garage_spaces"] or 0,
+        parking_type=row["parking_type"],
     )
 
 
@@ -134,5 +136,5 @@ def _values(p: Property) -> list:
         p.notes, p.nightly_price, p.cleaning_fee, p.extra_guest_fee,
         p.min_stay_nights, p.max_guests, p.check_in_time, p.check_out_time,
         int(p.instant_book), p.cancellation_policy, p.house_rules,
-        p.move_in_date, p.move_out_date,
+        p.move_in_date, p.move_out_date, p.garage_spaces, p.parking_type,
     ]

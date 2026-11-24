@@ -330,6 +330,16 @@ class PropertyForm(QWidget):
             box = QCheckBox(label)
             self.amenity_boxes[attr] = box
             amenities_layout.addWidget(box, index // 3, index % 3)
+
+        self.garage_combo = QComboBox()
+        self.garage_combo.addItems(["No garage", "1 car", "2 cars"])
+        self.parking_combo = QComboBox()
+        self.parking_combo.addItems(
+            ["(not specified)", "Street parking", "Driveway"])
+        garage_row = (len(AMENITY_FIELDS) + 2) // 3
+        amenities_layout.addWidget(QLabel("Garage"), garage_row, 0)
+        amenities_layout.addWidget(self.garage_combo, garage_row, 1)
+        amenities_layout.addWidget(self.parking_combo, garage_row, 2)
         amenities_layout.setColumnStretch(2, 1)
         layout.addWidget(amenities_box)
 
@@ -644,6 +654,8 @@ class PropertyForm(QWidget):
             widget.clear()
         self.notes_input.clear()
         self.house_rules_input.clear()
+        self.garage_combo.setCurrentIndex(0)
+        self.parking_combo.setCurrentIndex(0)
         for widget in (self.rent_input, self.deposit_input,
                        self.bedrooms_input, self.bathrooms_input,
                        self.sqft_input, self.nightly_input, self.cleaning_input,
@@ -683,6 +695,9 @@ class PropertyForm(QWidget):
         self.notes_input.setPlainText(p.notes or "")
         for attr, box in self.amenity_boxes.items():
             box.setChecked(bool(getattr(p, attr)))
+        self.garage_combo.setCurrentIndex(min(p.garage_spaces or 0, 2))
+        self.parking_combo.setCurrentText(p.parking_type
+                                          or "(not specified)")
         index = self.kind_combo.findData(
             p.kind if p.kind in PROPERTY_KINDS else "rental")
         if index >= 0:
@@ -706,6 +721,9 @@ class PropertyForm(QWidget):
             bathrooms=self.bathrooms_input.value() or None,
             sqft=self.sqft_input.value() or None,
             pet_policy=self.pet_input.text().strip() or None,
+            garage_spaces=self.garage_combo.currentIndex(),
+            parking_type=(self.parking_combo.currentText()
+                          if self.parking_combo.currentIndex() > 0 else None),
             notes=self.notes_input.toPlainText().strip() or None,
             status=self.pill.text() if self.pill.text() in ("Vacant", "Rented")
             else "Vacant",

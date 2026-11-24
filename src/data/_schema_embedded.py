@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS properties (
   amenity_yard       INTEGER NOT NULL DEFAULT 0 CHECK (amenity_yard IN (0,1)),
   amenity_dishwasher INTEGER NOT NULL DEFAULT 0 CHECK (amenity_dishwasher IN (0,1)),
   amenity_parking    INTEGER NOT NULL DEFAULT 0 CHECK (amenity_parking IN (0,1)),
+  garage_spaces      INTEGER NOT NULL DEFAULT 0,
+  parking_type       TEXT,
   notes          TEXT,
   -- Short-stay (Airbnb-style) terms. NULL for a long-term rental.
   nightly_price      REAL,

@@ -53,6 +53,38 @@ def test_applicant_property_combo_saves_the_new_link(kekar_app):
     assert kekar_app.applicant_repo.get(aid).property_id == second
 
 
+def test_garage_and_parking_round_trip(kekar_app):
+    """Note 3: new amenity fields survive a repository write/read."""
+    pid = kekar_app.property_repo.create(Property(
+        address="21 Garage Way", garage_spaces=2,
+        parking_type="Driveway"))
+    saved = kekar_app.property_repo.get(pid)
+    assert saved.garage_spaces == 2
+    assert saved.parking_type == "Driveway"
+
+
+def test_property_form_edits_garage_and_parking(kekar_app):
+    form = kekar_app.main_window.property_form
+    form.load_property(None)
+    form.address_input.setText("22 Garage Way")
+    form.garage_combo.setCurrentIndex(2)
+    form.parking_combo.setCurrentText("Street parking")
+    form.save()
+    saved = kekar_app.property_repo.get(form.current_id)
+    assert saved.garage_spaces == 2
+    assert saved.parking_type == "Street parking"
+
+
+def test_listing_mentions_garage_and_parking():
+    from src.services.listing_compiler import amenities_line
+
+    text = amenities_line(Property(
+        address="23 Garage Way", garage_spaces=1,
+        parking_type="Driveway"))
+    assert "Garage: 1 car" in text
+    assert "Parking: Driveway" in text
+
+
 def test_lease_property_selector_refreshes_after_save(kekar_app):
     window = MainWindow(kekar_app)
     try:
