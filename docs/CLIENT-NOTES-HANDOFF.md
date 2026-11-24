@@ -100,3 +100,21 @@ Finish back to the app. That exposed a genuine defect: the last button read
 "Finish" but was wired to `next()`, which does nothing past the final step.
 It now calls `finish()`. Full suite 478 passed; Lite/production targeted
 suite 108 passed.
+
+
+## Lite/production build installed locally
+
+The menu entry for the experimental build pointed at
+`dist/KeKar/KeKar`. Lite was only a portable folder and had no launcher.
+A fresh Lite production bundle was rebuilt from the current checkout, verified
+identical to source with `bundle_source_diff.py`, and installed at:
+
+- Bundle: `/home/Ryuu/Documents/kekar project/out/KeKarLite_Linux/`
+- Launcher: `/home/Ryuu/Documents/kekar project/out/KeKarLite_Linux/KeKarLite.sh`
+- Menu: "KeKar Lite (Production)" via
+  `~/.local/share/applications/kekar-lite.desktop`
+- Desktop copy: `~/Desktop/kekar-lite.desktop`
+
+The seeded `KeKarData` folder was preserved across the swap. A launch check
+showed the active window title "KeKar — KeKar Lite Property Manager"; the
+throwaway instance was closed. No release tag or remote was touched.
