@@ -18,4 +18,10 @@ fi
 .venv/bin/python -m PyInstaller KeKar.spec --noconfirm
 .venv/bin/python tools/make_usb_package.py --platform linux --source dist/KeKar --out out/KeKar_Linux
 .venv/bin/python tools/verify_usb.py out/KeKar_Linux --platform linux
-echo "Built: out/KeKar_Linux/"
+.venv/bin/python tools/set_variant.py lite -- \
+  .venv/bin/python -m PyInstaller KeKar.spec --noconfirm
+.venv/bin/python tools/make_usb_package.py --platform linux \
+  --source dist/KeKarLite --out out/KeKarLite_Linux --variant lite
+.venv/bin/python tools/verify_usb.py out/KeKarLite_Linux \
+  --platform linux --variant lite
+echo "Built: out/KeKar_Linux/ and out/KeKarLite_Linux/"

@@ -15,4 +15,10 @@ if (-not (Test-Path ".venv")) {
 .venv\Scripts\python.exe -m PyInstaller KeKar.spec --noconfirm
 .venv\Scripts\python.exe tools\make_usb_package.py --platform windows --source dist\KeKar --out out\KeKar_Windows
 .venv\Scripts\python.exe tools\verify_usb.py out\KeKar_Windows --platform windows
-Write-Host "Built: out\KeKar_Windows\"
+.venv\Scripts\python.exe tools\set_variant.py lite -- `
+  .venv\Scripts\python.exe -m PyInstaller KeKar.spec --noconfirm
+.venv\Scripts\python.exe tools\make_usb_package.py --platform windows `
+  --source dist\KeKarLite --out out\KeKarLite_Windows --variant lite
+.venv\Scripts\python.exe tools\verify_usb.py out\KeKarLite_Windows `
+  --platform windows --variant lite
+Write-Host "Built: out\KeKar_Windows\ and out\KeKarLite_Windows\"

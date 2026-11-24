@@ -29,6 +29,9 @@ def test_lite_application_has_no_agent_or_chat(tmp_path):
 
 
 def test_full_application_still_has_the_agent(kekar_app):
+    from src import features
+    if features.is_lite():
+        return
     assert kekar_app.agent_runner is not None
     assert kekar_app.client is not None
     assert kekar_app.chat_repo is not None

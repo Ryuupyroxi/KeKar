@@ -13,6 +13,7 @@ Layout produced:
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -109,10 +110,33 @@ Forgot which drive                Look for the folder named KeKarData
 Need help? Contact your family's KeKar helper.
 """
 
+def _lite(text: str) -> str:
+    """Swap product names but never the shared KeKarData folder."""
+    return re.sub(r"KeKar(?!Data)", "KeKarLite", text)
+
+
+def bat_for(variant: str) -> str:
+    return BAT if variant == "full" else _lite(BAT)
+
+
+def sh_for(variant: str) -> str:
+    return SH if variant == "full" else _lite(SH)
+
+
+def readme_for(variant: str) -> str:
+    if variant == "full":
+        return README
+    text = README.replace("KEKAR PROPERTY MANAGER", "KEKAR LITE")
+    text = _lite(text)
+    return "\n".join(line for line in text.splitlines()
+                      if "Chat says it can't connect" not in line) + "\n"
+
+
 DATA_SUBDIRS = ("photos", "applicants", "memory", "config", "backups", "logs")
 
 
-def make_platform_package(platform: str, source: Path, out: Path) -> Path:
+def make_platform_package(platform: str, source: Path, out: Path,
+                          variant: str = "full") -> Path:
     if not source.exists():
         sys.exit(f"source build not found: {source}")
     # Clear the previous package so nothing stale survives (an old
@@ -120,11 +144,12 @@ def make_platform_package(platform: str, source: Path, out: Path) -> Path:
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True, exist_ok=True)
-    target = out / f"KeKar_{platform.capitalize()}"
+    name = "KeKarLite" if variant == "lite" else "KeKar"
+    target = out / f"{name}_{platform.capitalize()}"
     shutil.copytree(source, target)
     if platform == "windows":
         _stage_icon(target)
-    _write_launchers(out)
+    _write_launchers(out, variant)
     return out
 
 
@@ -141,25 +166,28 @@ def _stage_icon(target: Path) -> None:
         shutil.copy2(source, target / "kekar.ico")
 
 
-def combine(linux_dir: Path, windows_dir: Path, out: Path) -> Path:
+def combine(linux_dir: Path, windows_dir: Path, out: Path,
+            variant: str = "full") -> Path:
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
+    name = "KeKarLite" if variant == "lite" else "KeKar"
     if windows_dir.exists():
-        shutil.copytree(windows_dir, out / "KeKar_Windows")
-        _stage_icon(out / "KeKar_Windows")
+        shutil.copytree(windows_dir, out / f"{name}_Windows")
+        _stage_icon(out / f"{name}_Windows")
     if linux_dir.exists():
-        shutil.copytree(linux_dir, out / "KeKar_Linux")
-    _write_launchers(out)
+        shutil.copytree(linux_dir, out / f"{name}_Linux")
+    _write_launchers(out, variant)
     return out
 
 
-def _write_launchers(out: Path) -> Path:
-    (out / "KeKar.bat").write_text(BAT, encoding="utf-8")
-    sh = out / "KeKar.sh"
-    sh.write_text(SH, encoding="utf-8")
+def _write_launchers(out: Path, variant: str = "full") -> Path:
+    name = "KeKarLite" if variant == "lite" else "KeKar"
+    (out / f"{name}.bat").write_text(bat_for(variant), encoding="utf-8")
+    sh = out / f"{name}.sh"
+    sh.write_text(sh_for(variant), encoding="utf-8")
     sh.chmod(0o755)
-    (out / "README.txt").write_text(README, encoding="utf-8")
+    (out / "README.txt").write_text(readme_for(variant), encoding="utf-8")
 
     # The one-click installer travels with the package. It auto-detects the
     # binary inside KeKar_Linux/ and writes a validated .desktop entry.
@@ -180,16 +208,18 @@ def main() -> int:
     parser.add_argument("--platform", choices=["linux", "windows"])
     parser.add_argument("--source", type=Path)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--variant", choices=["full", "lite"], default="full")
     parser.add_argument("--combine", action="store_true")
     parser.add_argument("--linux", type=Path)
     parser.add_argument("--windows", type=Path)
     args = parser.parse_args()
 
     if args.combine:
-        combine(args.linux, args.windows, args.out)
+        combine(args.linux, args.windows, args.out, args.variant)
         print(f"Combined USB package: {args.out}")
     elif args.platform and args.source:
-        make_platform_package(args.platform, args.source, args.out)
+        make_platform_package(args.platform, args.source, args.out,
+                              args.variant)
         print(f"Platform package: {args.out}")
     else:
         parser.error("use --combine with --linux/--windows, "

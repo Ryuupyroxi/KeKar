@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-22.04          # oldest glibc we support -> widest compatibility
     permissions:
       contents: write            # needed to attach builds to a release
+    strategy:
+      matrix:
+        variant: [full, lite]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,28 +25,62 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1
+      - name: Resolve variant names
+        id: names
+        shell: bash
+        run: |
+          if [ "${{ matrix.variant }}" = "lite" ]; then
+            echo "app=KeKarLite" >> "$GITHUB_OUTPUT"
+          else
+            echo "app=KeKar" >> "$GITHUB_OUTPUT"
+          fi
+      # The full suite exercises the agent, portals and Marketplace; those
+      # tests are deliberately full-mode only. Lite runs the variant-aware,
+      # packaging and CLI suites that are valid for both products.
       - run: pytest -q
-      - run: pyinstaller KeKar.spec --noconfirm
-      - run: python tools/make_usb_package.py --platform linux --source dist/KeKar --out out/KeKar_Linux
-      - run: python tools/verify_usb.py out/KeKar_Linux --platform linux
+        if: matrix.variant == 'full'
+      - name: Test ${{ matrix.variant }}
+        if: matrix.variant == 'lite'
+        run: >-
+          pytest -q tests/test_features.py tests/test_kekar_lite.py
+          tests/test_lite_ui.py tests/test_tour.py tests/test_main_cli.py
+          tests/test_set_variant.py tests/test_usb_packaging.py
+          tests/test_bundle_safety.py
+      - name: Build ${{ matrix.variant }}
+        run: |
+          python tools/set_variant.py ${{ matrix.variant }} -- \
+            python -m PyInstaller KeKar.spec --noconfirm
+      - name: Package ${{ matrix.variant }}
+        run: >-
+          python tools/make_usb_package.py --platform linux
+          --source dist/${{ steps.names.outputs.app }}
+          --out out/${{ steps.names.outputs.app }}_Linux
+          --variant ${{ matrix.variant }}
+      - name: Verify ${{ matrix.variant }} package
+        run: >-
+          python tools/verify_usb.py out/${{ steps.names.outputs.app }}_Linux
+          --platform linux --variant ${{ matrix.variant }}
       - uses: actions/upload-artifact@v4
         with:
-          name: KeKar_Linux
-          path: out/KeKar_Linux/
+          name: ${{ steps.names.outputs.app }}_Linux
+          path: out/${{ steps.names.outputs.app }}_Linux/
 
       - name: Zip the Linux package
-        run: cd out && zip -qr KeKar_Linux.zip KeKar_Linux
+        run: cd out && zip -qr ${{ steps.names.outputs.app }}_Linux.zip ${{ steps.names.outputs.app }}_Linux
 
       - name: Attach the Linux build to the release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: out/KeKar_Linux.zip
+          files: out/${{ steps.names.outputs.app }}_Linux.zip
 
   windows:
     runs-on: windows-latest
     permissions:
       contents: write            # needed to attach builds to a release
+    strategy:
+      matrix:
+        variant: [full, lite]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -54,22 +91,43 @@ jobs:
       # asserts Unix path separators, executable bits, and deletes database
       # files that Windows keeps locked. The Windows job builds and packages.
       - run: pip install -r requirements.txt
-      - run: pyinstaller KeKar.spec --noconfirm
-      - run: python tools/make_usb_package.py --platform windows --source dist/KeKar --out out/KeKar_Windows
-      - run: python tools/verify_usb.py out/KeKar_Windows --platform windows
+      - name: Resolve variant names
+        id: names
+        shell: bash
+        run: |
+          if [ "${{ matrix.variant }}" = "lite" ]; then
+            echo "app=KeKarLite" >> "$GITHUB_OUTPUT"
+          else
+            echo "app=KeKar" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build ${{ matrix.variant }}
+        shell: pwsh
+        run: |
+          python tools/set_variant.py ${{ matrix.variant }} -- python -m PyInstaller KeKar.spec --noconfirm
+      - name: Package ${{ matrix.variant }}
+        shell: pwsh
+        run: |
+          python tools/make_usb_package.py --platform windows --source dist/${{ steps.names.outputs.app }} --out out/${{ steps.names.outputs.app }}_Windows --variant ${{ matrix.variant }}
+      - name: Verify ${{ matrix.variant }} package
+        shell: pwsh
+        run: |
+          python tools/verify_usb.py out/${{ steps.names.outputs.app }}_Windows --platform windows --variant ${{ matrix.variant }}
       - uses: actions/upload-artifact@v4
         with:
-          name: KeKar_Windows
-          path: out/KeKar_Windows/
+          name: ${{ steps.names.outputs.app }}_Windows
+          path: out/${{ steps.names.outputs.app }}_Windows/
 
       - name: Zip the Windows package
         shell: pwsh
-        run: Compress-Archive -Path out/KeKar_Windows -DestinationPath out/KeKar_Windows.zip
+        run: |
+          $app = "${{ steps.names.outputs.app }}"
+          Compress-Archive -Path "out/$app" -DestinationPath "out/$app.zip"
 
       # NSIS is not on the runner image. choco installs it to
       # C:\Program Files (x86)\NSIS but does not put it on PATH, so the
       # compiler is invoked by full path (probed on the runner, 2026-11-16).
       - name: Compile the NSIS installer
+        if: matrix.variant == 'full'
         shell: pwsh
         run: |
           choco install nsis --yes --no-progress
@@ -87,7 +145,7 @@ jobs:
           Get-Item $out | Select-Object Name, Length
 
       - name: Attach the installer to the release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' && matrix.variant == 'full'
         uses: softprops/action-gh-release@v2
         with:
           files: out/KeKar_Setup_*.exe
@@ -96,4 +154,4 @@ jobs:
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: out/KeKar_Windows.zip
+          files: out/${{ steps.names.outputs.app }}_Windows.zip

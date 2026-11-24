@@ -10,30 +10,32 @@ LEAK_MARKERS = [b"/home/", b"C:\\Users\\", b"/mnt/usb", b"Ryuu"]
 TEXT_SUFFIXES = (".py", ".sh", ".bat", ".json", ".txt", ".desktop", ".nsi")
 
 
-def verify(root: Path, platform: str | None = None) -> list[str]:
+def verify(root: Path, platform: str | None = None,
+           variant: str = "full") -> list[str]:
     problems: list[str] = []
 
     if not root.exists():
         return [f"package directory does not exist: {root}"]
 
-    builds = [b for b in ("KeKar_Windows", "KeKar_Linux")
+    name = "KeKarLite" if variant == "lite" else "KeKar"
+    builds = [b for b in (f"{name}_Windows", f"{name}_Linux")
               if (root / b).is_dir()]
     if not builds:
-        problems.append("no build folder found (expected KeKar_Windows or KeKar_Linux)")
-    if platform == "linux" and "KeKar_Linux" not in builds:
-        problems.append("missing KeKar_Linux/")
-    if platform == "windows" and "KeKar_Windows" not in builds:
-        problems.append("missing KeKar_Windows/")
+        problems.append(f"no build folder found (expected {name}_Windows or {name}_Linux)")
+    if platform == "linux" and f"{name}_Linux" not in builds:
+        problems.append(f"missing {name}_Linux/")
+    if platform == "windows" and f"{name}_Windows" not in builds:
+        problems.append(f"missing {name}_Windows/")
 
     for build in builds:
         count = sum(1 for p in (root / build).rglob("*") if p.is_file())
         if count < 100:
             problems.append(f"{build}: only {count} files (copy incomplete?)")
-        binary = "KeKar.exe" if build.endswith("Windows") else "KeKar"
+        binary = f"{name}.exe" if build.endswith("Windows") else name
         if not (root / build / binary).exists():
             problems.append(f"{build}: missing {binary}")
 
-    for rel in ("KeKarData", "README.txt", "KeKar.sh", "KeKar.bat",
+    for rel in ("KeKarData", "README.txt", f"{name}.sh", f"{name}.bat",
                 "install_linux.py"):
         if not (root / rel).exists():
             problems.append(f"missing: {rel}")
@@ -55,8 +57,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=Path)
     parser.add_argument("--platform", choices=["linux", "windows"])
+    parser.add_argument("--variant", choices=["full", "lite"], default="full")
     args = parser.parse_args()
-    problems = verify(args.root, args.platform)
+    problems = verify(args.root, args.platform, args.variant)
     if problems:
         print("FAILED:")
         for p in problems:

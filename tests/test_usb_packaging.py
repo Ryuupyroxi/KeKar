@@ -262,3 +262,32 @@ def test_installer_attach_step_is_not_pinned_to_one_version():
     assert "KEKAR_OUT_FILE" in workflow and "KEKAR_OUT_FILE" in nsi, (
         "the output path must be a define too: NSIS anchors a relative "
         "OutFile to the script as well")
+
+
+def test_lite_usb_package_layout(tool, tmp_path):
+    source = tmp_path / "build" / "KeKarLite"
+    (source / "_internal").mkdir(parents=True)
+    (source / "KeKarLite").write_text("binary", encoding="utf-8")
+    out = tool.make_platform_package(
+        "linux", source, tmp_path / "out", variant="lite")
+    assert (out / "KeKarLite_Linux" / "KeKarLite").exists()
+    assert (out / "KeKarLite.sh").exists()
+    assert (out / "KeKarLite.sh").stat().st_mode & 0o111
+    assert (out / "KeKarData").is_dir()
+    readme = (out / "README.txt").read_text(encoding="utf-8")
+    assert "KEKAR LITE" in readme
+    assert "Chat says it can't connect" not in readme
+    launcher = (out / "KeKarLite.sh").read_text(encoding="utf-8")
+    assert "KeKarLite_Linux/KeKarLite" in launcher
+    assert "./KeKarLite.sh" in launcher
+
+
+def test_full_usb_package_layout_is_unchanged(tool, tmp_path):
+    source = tmp_path / "build" / "KeKar"
+    (source / "_internal").mkdir(parents=True)
+    (source / "KeKar").write_text("binary", encoding="utf-8")
+    out = tool.make_platform_package(
+        "linux", source, tmp_path / "out-full")
+    assert (out / "KeKar_Linux" / "KeKar").exists()
+    assert (out / "KeKar.sh").read_text(encoding="utf-8") == tool.SH
+    assert (out / "README.txt").read_text(encoding="utf-8") == tool.README
