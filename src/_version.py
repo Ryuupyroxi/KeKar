@@ -5,7 +5,7 @@ from here, so they cannot drift apart.
 """
 
 APP_NAME = "KeKar"
-APP_VERSION = "1.6.0"
+APP_VERSION = "1.6.1"
 
 LITE_APP_NAME = "KeKar Lite"
 

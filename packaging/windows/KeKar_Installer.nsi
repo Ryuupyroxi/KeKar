@@ -4,7 +4,7 @@
 ; primary, install-free path; this installer is optional.
 !define APPNAME "KeKar"
 !define COMPANY "KeKar Rental Properties"
-!define VERSION "1.6.0"
+!define VERSION "1.6.1"
 
 ; The folder to package. A manual run from the directory that contains
 ; KeKar_Windows needs nothing. CI passes an absolute path, because NSIS
