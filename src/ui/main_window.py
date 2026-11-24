@@ -356,6 +356,7 @@ class MainWindow(QMainWindow):
         self.photo_panel.photos_changed.connect(self.drawer.reload)
         self.drawer.reload()
         self.crm_tab.reload()
+        self.lease_tab.reload()
         if self.chat_pane is not None:
             self.chat_pane.load_history()
 
@@ -463,6 +464,7 @@ class MainWindow(QMainWindow):
     def _on_property_saved(self, property_id: int) -> None:
         self.drawer.reload()
         self.crm_tab.reload()
+        self.lease_tab.reload()
         self.calendar_tab.reload()
         self.photo_panel.load_property(property_id)
         prop = self.app.property_repo.get(property_id)
@@ -471,6 +473,7 @@ class MainWindow(QMainWindow):
     def _on_property_deleted(self) -> None:
         self.drawer.reload()
         self.crm_tab.reload()
+        self.lease_tab.reload()
         self.calendar_tab.reload()
         self.photo_panel.load_property(None)
         self.status("Property deleted.")
