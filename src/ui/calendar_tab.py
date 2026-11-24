@@ -24,11 +24,13 @@ class CalendarTab(QWidget):
         self.setWindowTitle("Calendar")
         self._marked: list[QDate] = []
         self.selected_property_id: int | None = None
+        self._details: dict[str, list[str]] = {}
 
         layout = QHBoxLayout(self)
         left = QVBoxLayout()
         self.calendar = QCalendarWidget()
         self.calendar.setGridVisible(True)
+        self.calendar.selectionChanged.connect(self._on_date_selected)
         left.addWidget(self.calendar)
         layout.addLayout(left, 1)
 
@@ -37,6 +39,10 @@ class CalendarTab(QWidget):
         self.summary = QLabel("No property dates yet.")
         self.summary.setWordWrap(True)
         right.addWidget(self.summary)
+        self.date_detail = QLabel(
+            "Select a highlighted date to see which property it belongs to.")
+        self.date_detail.setWordWrap(True)
+        right.addWidget(self.date_detail)
         self.events = QListWidget()
         right.addWidget(self.events, 1)
 
@@ -46,6 +52,19 @@ class CalendarTab(QWidget):
         self.panels.addTab(self.stays, "Short stays")
         layout.addWidget(self.panels, 1)
         self.reload()
+
+    def _on_date_selected(self) -> None:
+        """Show which property a picked date's colour refers to."""
+        picked = self.calendar.selectedDate()
+        if not picked.isValid():
+            return
+        key = picked.toString(Qt.DateFormat.ISODate)
+        entries = self._details.get(key)
+        if entries:
+            self.date_detail.setText(f"{key}: " + "; ".join(entries))
+        else:
+            self.date_detail.setText(
+                f"{key}: no move-in, move-out or short stay recorded.")
 
     def set_selected_property(self, property_id: int | None) -> None:
         """Emphasise one property's dates in the month view and event list."""
@@ -60,6 +79,7 @@ class CalendarTab(QWidget):
         for day in self._marked:
             self.calendar.setDateTextFormat(day, QTextCharFormat())
         self._marked = []
+        self._details = {}
         self.events.clear()
         rows: list[tuple[date, str]] = []
         # One address takes one line: both move dates live in the same row.
@@ -80,6 +100,8 @@ class CalendarTab(QWidget):
                     fmt.setFontWeight(700)
                 self.calendar.setDateTextFormat(day, fmt)
                 self._marked.append(day)
+                self._details.setdefault(value, []).append(
+                    f"{label} — {prop.address}")
                 prefix = "★ " if prop.id == self.selected_property_id else ""
                 entry = grouped.get(prop.id)
                 if entry is None:
@@ -106,11 +128,14 @@ class CalendarTab(QWidget):
                         fmt.setFontWeight(700)
                     self.calendar.setDateTextFormat(marked, fmt)
                     self._marked.append(marked)
+                    self._details.setdefault(stay.check_in, []).append(
+                        f"Short stay — {stay.guest_name} — {prop.address}")
                     day = date.fromordinal(day.toordinal() + 1)
                 rows.append((start, f"Short stay — {stay.guest_name} — "
                                     f"{prop.address} ({stay.check_in})"))
         for _, text in sorted(rows):
             self.events.addItem(text)
+        self._on_date_selected()
         selected = next((p for p in self.app.property_repo.list()
                          if p.id == self.selected_property_id), None)
         focus = f" Selected: {selected.address}." if selected else ""

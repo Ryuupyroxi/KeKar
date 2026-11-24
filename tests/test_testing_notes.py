@@ -114,6 +114,19 @@ def test_default_lease_mentions_pet_deposit():
     assert "Pet policy: Dogs OK" in text
 
 
+def test_clicking_a_calendar_date_names_its_property(kekar_app):
+    """Note 10: a highlighted date tells the user which property it means."""
+    from PyQt6.QtCore import QDate
+
+    kekar_app.property_repo.create(Property(
+        address="70 Dated Court", move_in_date="2026-12-20"))
+    window = kekar_app.main_window
+    window.calendar_tab.reload()
+    window.calendar_tab.calendar.setSelectedDate(QDate(2026, 12, 20))
+    assert "70 Dated Court" in window.calendar_tab.date_detail.text()
+    assert "Move-in" in window.calendar_tab.date_detail.text()
+
+
 def test_calendar_shows_move_in_and_out_on_one_line(kekar_app):
     """Note 9: one address line carries both move dates."""
     kekar_app.property_repo.create(Property(
