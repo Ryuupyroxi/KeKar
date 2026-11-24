@@ -388,8 +388,9 @@ paths.icon_path() / paths.logo_path()  →  resource_path("icons", …)
 Application.__init__   → self.setWindowIcon(QIcon(icon_path()))
 MainWindow.__init__    → self.setWindowIcon(QIcon(icon_path()))
 MainWindow             → logo_label centred in the header at HEADER_LOGO_HEIGHT
-                         (96 px), _set_logo(); the strip is exactly the logo's
-                         own height, so there is no empty band above or below
+                         (40 px), _set_logo(trim=True); the source PNG's empty
+                         alpha canvas is cropped to the wordmark, so the strip
+                         hugs the visible mark with no dead band
 AboutDialog             → logo_label centred at 96 px, word-wrapped body
 ```
 

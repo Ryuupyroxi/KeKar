@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 
-from PyQt6.QtCore import Qt, QThread, QTimer, QPoint, pyqtSignal
-from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap, QPolygon
+from PyQt6.QtCore import Qt, QThread, QTimer, QPoint, QRect, pyqtSignal
+from PyQt6.QtGui import (QColor, QIcon, QImage, QPainter, QPen, QPixmap,
+                         QPolygon)
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QHBoxLayout, QLabel,
                              QMainWindow, QMessageBox, QPushButton,
                              QScrollArea, QSplitter,
@@ -31,18 +33,54 @@ PING_INTERVAL_MS = 30_000
 
 #: Height of the logo in the window header and the About dialog.
 LOGO_HEIGHT = 44
-#: The window header gives the logo more room than the dialogs: a full-width
-#: strip with a small mark in one corner reads as empty, so the wordmark is
-#: centred and enlarged to be the header's focal point.
-HEADER_LOGO_HEIGHT = 96
+#: The header shows the wordmark at its current visible size (the source's
+#: opaque 909x314 area rendered at ~40 px) with the surrounding transparent
+#: canvas trimmed away. Scaling the whole 1408x768 file to 96 px left a 96 px
+#: header around a 40 px mark — dead space, not a bigger logo.
+HEADER_LOGO_HEIGHT = 40
 
 
-def _set_logo(label: QLabel, height: int = LOGO_HEIGHT) -> None:
+@lru_cache(maxsize=4)
+def _opaque_bbox(path: str) -> QRect | None:
+    """Find the non-transparent rectangle of a PNG, once per process.
+
+    The shipped wordmark is a 1408x768 canvas holding a 909x314 mark; most of
+    the file is empty alpha. Scanning the alpha channel in C-level byte chunks
+    keeps this cheap, and the cache means every later window reuses it.
+    """
+    image = QImage(path)
+    if image.isNull():
+        return None
+    image = image.convertToFormat(QImage.Format.Format_RGBA8888)
+    bits = image.constBits()
+    bits.setsize(image.sizeInBytes())
+    alpha = memoryview(bits)[3::4]
+    width, height = image.width(), image.height()
+    min_x, min_y, max_x, max_y = width, height, -1, -1
+    for y in range(height):
+        row = bytes(alpha[y * width:(y + 1) * width]).rstrip(b"\x00")
+        if not row:
+            continue
+        first = width - len(row)
+        last = first + len(row.lstrip(b"\x00")) - 1
+        min_x = min(min_x, first)
+        max_x = max(max_x, last)
+        min_y = min(min_y, y)
+        max_y = y
+    if max_x < 0:
+        return None
+    return QRect(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
+
+
+def _set_logo(label: QLabel, height: int = LOGO_HEIGHT,
+              trim: bool = False) -> None:
     """Scale the shipped logo onto a QLabel, keeping its proportions.
 
     The logo has an alpha channel, so it composites onto whatever theme is
-    active. A missing or unreadable file leaves the label empty rather than
-    raising — a missing logo must not stop the window from opening.
+    active. ``trim`` drops the empty canvas around the wordmark so the strip
+    fits the visible art rather than the source file's padding. A missing or
+    unreadable file leaves the label empty rather than raising — a missing
+    logo must not stop the window from opening.
     """
     label.setFixedHeight(height)
     path = logo_path()
@@ -51,6 +89,10 @@ def _set_logo(label: QLabel, height: int = LOGO_HEIGHT) -> None:
     pixmap = QPixmap(str(path))
     if pixmap.isNull():
         return
+    if trim:
+        bbox = _opaque_bbox(str(path))
+        if bbox is not None and bbox.isValid():
+            pixmap = pixmap.copy(bbox)
     label.setPixmap(pixmap.scaledToHeight(
         height, Qt.TransformationMode.SmoothTransformation))
 
@@ -219,11 +261,10 @@ class MainWindow(QMainWindow):
         # against the window edge and the regions stop reading as cards.
         outer.setContentsMargins(8, 4, 8, 8)
         self.logo_label = QLabel()
-        # Centred, with no side margin: the wordmark is a wide strip of its
-        # own (1408x768), so it reads as a header band rather than a corner
-        # mark. The label keeps exactly the logo's height.
+        # Centred, with the source's empty canvas trimmed: the strip is now
+        # as tall as the visible wordmark, not as tall as the PNG file.
         self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        _set_logo(self.logo_label, height=HEADER_LOGO_HEIGHT)
+        _set_logo(self.logo_label, height=HEADER_LOGO_HEIGHT, trim=True)
         outer.addWidget(self.logo_label)
         outer.addWidget(self.offline_banner)
         outer.addWidget(self.demo_banner)

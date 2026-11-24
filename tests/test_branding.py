@@ -74,10 +74,11 @@ def test_logo_label_is_not_a_wasteful_band(kekar_app):
 
 
 def test_header_logo_is_enlarged_and_centred(kekar_app):
-    """The header logo is the focal point: readable size, dead centre.
+    """The wordmark keeps its readable size while its strip stays tight.
 
     A small wordmark tucked into the left corner left the full-width header
-    reading as dead space.
+    reading as dead space; inflating the strip to the source file's 96 px did
+    the same thing in a different way.
     """
     from src.ui.main_window import HEADER_LOGO_HEIGHT
 
@@ -85,7 +86,8 @@ def test_header_logo_is_enlarged_and_centred(kekar_app):
     label = window.logo_label
     pix = label.pixmap()
     assert pix.isNull() is False
-    assert pix.height() >= 64, "the wordmark must be more than a corner mark"
+    assert pix.height() >= 36, "the wordmark must keep its visible size"
+    assert pix.width() >= 100
     assert pix.height() == HEADER_LOGO_HEIGHT
     assert pix.width() > pix.height(), "the logo is a wide lockup"
 
@@ -100,6 +102,25 @@ def test_header_logo_is_enlarged_and_centred(kekar_app):
         assert offset <= 2, f"header logo is {offset}px off centre"
     finally:
         window.hide()
+
+
+def test_header_logo_trims_transparent_padding(kekar_app):
+    """The header fits the visible mark, not the PNG's empty canvas."""
+    from PIL import Image
+
+    from src.ui.main_window import HEADER_LOGO_HEIGHT
+
+    with Image.open(logo_path()) as image:
+        bbox = image.getchannel("A").getbbox()
+    assert bbox is not None, "the logo must have visible pixels"
+    left, top, right, bottom = bbox
+    expected_ratio = (right - left) / (bottom - top)
+
+    label = kekar_app.main_window.logo_label
+    pix = label.pixmap()
+    assert abs(pix.width() / pix.height() - expected_ratio) < 0.05, (
+        "the header must use the wordmark's own aspect ratio")
+    assert label.height() <= 48, "the strip must hug the visible logo"
 
 
 def test_about_dialog_shows_the_logo(kekar_app):
