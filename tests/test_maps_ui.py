@@ -63,12 +63,15 @@ def test_suggestions_populate_the_completer_model(maps_form, kekar_app,
     monkeypatch.setattr(maps_service, "autocomplete", fake_autocomplete)
     baseline = worker.live_count()
 
+    maps_form.address_input.setFocus()
     _type(maps_form, "10 main")
     assert calls == []                     # debounced, not immediate
     assert _pump(kekar_app, lambda: maps_form._maps_model.rowCount() == 2)
 
     assert maps_form._maps_model.stringList() == [
         DESCRIPTION, "20 Oak Ave, Tulsa, OK"]
+    assert maps_form.address_input.completer().popup().isVisible(), (
+        "a delayed reply must reopen the dropdown, not wait for another key")
     assert calls == [("test-maps-key", "10 main")]
     assert _pump(kekar_app, lambda: worker.live_count() == baseline)
 

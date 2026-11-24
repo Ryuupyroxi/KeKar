@@ -388,6 +388,7 @@ class PropertyForm(QWidget):
         if not key or len(text.strip()) < MAPS_MIN_CHARS:
             self._maps_timer.stop()
             self._maps_model.setStringList([])
+            self._maps_completer.popup().hide()
             self._map_suggestions.clear()
             return
         self._maps_timer.start(MAPS_DEBOUNCE_MS)
@@ -418,6 +419,11 @@ class PropertyForm(QWidget):
         self._map_suggestions = {
             item.description: item.place_id for item in (suggestions or [])}
         self._maps_model.setStringList(list(self._map_suggestions))
+        # The model was empty when Qt handled the keystroke, so re-trigger
+        # completion once the delayed reply arrives — otherwise the user
+        # types again before the dropdown appears.
+        if self._map_suggestions:
+            self._maps_completer.complete()
 
     def _on_address_selected(self, description: str) -> None:
         """A pick fills the address and optionally the *empty* city/ZIP."""
@@ -590,6 +596,7 @@ class PropertyForm(QWidget):
     def _clear_fields(self) -> None:
         self._maps_timer.stop()
         self._maps_model.setStringList([])
+        self._maps_completer.popup().hide()
         self._map_suggestions.clear()
         self.last_maps_error = ""
         for widget in (self.address_input, self.city_input, self.zip_input,
