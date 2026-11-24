@@ -46,7 +46,7 @@ plan → implement → test → next.
 | 2 | Applicants Property dropdown | Same helper as #1 | DONE — Property cell is a live combo that saves the link |
 | 3 | Garage + parking amenities | Data-model change needed by lease/listing | DONE — garage count + street/driveway persist and appear in listings |
 | 4 | Pet policy + pet deposit in lease | Depends on #1 and #3 | DONE — pets-allowed leases include a $300 refundable pet-deposit clause |
-| 5 | Dark/OLED text contrast | Independent, highly visible | Pending |
+| 5 | Dark/OLED text contrast | Independent, highly visible | DONE — placeholder + muted labels follow dark/OLED palettes |
 | 6 | Collapse button is unmarked | Independent, tiny UI fix | Pending |
 | 7 | Merge Stays into Calendar + legend | Structural change; must precede calendar tweaks | Pending |
 | 8 | Selected property highlights calendar | Applies to merged calendar | Pending |

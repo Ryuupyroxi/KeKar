@@ -622,7 +622,7 @@ class PropertyForm(QWidget):
 
     def _restyle_labels(self) -> None:
         colour = self._theme.text_secondary if self._theme is not None \
-            else "#4a453e"
+            else "#ece7e0"
         for label in self.findChildren(QLabel):
             if label.property("muted") is True:
                 label.setStyleSheet(f"color:{colour};")
@@ -845,5 +845,5 @@ def _form_label(text: str) -> QLabel:
     label = QLabel(text)
     label.setFont(font(10))
     label.setProperty("muted", True)
-    label.setStyleSheet("color:#4a453e;")
+    label.setStyleSheet("")
     return label

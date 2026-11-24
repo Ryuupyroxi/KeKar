@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QColor, QIcon, QPalette
 from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
 
 from . import features
@@ -244,6 +244,14 @@ class Application(QApplication):
         key = key if is_valid(key) else "system"
         theme = resolve(key)
         self.setStyleSheet(build_stylesheet(theme))
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(theme.window))
+        palette.setColor(QPalette.ColorRole.WindowText, QColor(theme.text))
+        palette.setColor(QPalette.ColorRole.Text, QColor(theme.text))
+        palette.setColor(QPalette.ColorRole.PlaceholderText,
+                         QColor(theme.text_secondary))
+        palette.setColor(QPalette.ColorRole.Base, QColor(theme.input_bg))
+        self.setPalette(palette)
         self._theme = theme
         if self.settings.theme != key:
             self.settings.theme = key

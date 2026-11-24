@@ -114,6 +114,34 @@ def test_default_lease_mentions_pet_deposit():
     assert "Pet policy: Dogs OK" in text
 
 
+def test_dark_themes_have_no_dark_form_labels(kekar_app):
+    """Note 5: muted labels must follow the dark/OLED palette."""
+    from PyQt6.QtWidgets import QLabel
+    from src.ui.palette import DARK, OLED
+
+    form = kekar_app.main_window.property_form
+    for theme in (DARK, OLED):
+        kekar_app.apply_theme(theme.key)
+        labels = [w for w in form.findChildren(QLabel)
+                  if w.property("muted") is True]
+        assert labels
+        for label in labels:
+            assert theme.text_secondary in label.styleSheet()
+            assert "#4a453e" not in label.styleSheet()
+
+
+def test_dark_themes_set_placeholder_text_colour(kekar_app):
+    from PyQt6.QtGui import QPalette
+    from PyQt6.QtWidgets import QApplication
+    from src.ui.palette import DARK, OLED
+
+    for theme in (DARK, OLED):
+        kekar_app.apply_theme(theme.key)
+        palette = QApplication.palette()
+        assert palette.color(QPalette.ColorRole.PlaceholderText).name() \
+            == theme.text_secondary
+
+
 def test_lease_property_selector_refreshes_after_save(kekar_app):
     window = MainWindow(kekar_app)
     try:
