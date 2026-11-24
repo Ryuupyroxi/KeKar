@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHBoxLayout,
                              QLabel, QPlainTextEdit, QPushButton, QVBoxLayout,
                              QWidget)
 
+from .. import features
 from ..data.models import (PORTALS, PORTAL_LABELS, Property,
                            SHORT_STAY_KIND)
 from ..services.clipboard import copy_text
@@ -35,18 +36,25 @@ class ListingDialog(QDialog):
         picker.addWidget(QLabel("<b>Channel</b>"))
         self.channel = QComboBox()
         self.channel.addItem("Any site (generic)", "generic")
-        for key in known_channels(prop.kind):
+        for key in features.visible_channels(known_channels(prop.kind)):
             self.channel.addItem(CHANNELS[key]["label"], key)
         self.channel.currentIndexChanged.connect(self._refresh)
         picker.addWidget(self.channel, 1)
         layout.addLayout(picker)
 
         self.note = QLabel(
+            "Copy the listing and paste it into the site's form — posting "
+            "stays with you."
+            if features.is_lite() else
             "Zillow and apartments.com have no posting API, so KeKar builds "
             "the listing for each site's form. Copy it and paste it in — "
             "posting stays with you.")
         if prop.kind == SHORT_STAY_KIND:
             self.note.setText(
+                "Short-stay sites have no posting API for an independent "
+                "host. Copy the package and paste it in — posting stays "
+                "with you."
+                if features.is_lite() else
                 "Airbnb, Vrbo and Booking.com have no posting API for an "
                 "independent host, so KeKar builds the listing for each "
                 "portal's form. Copy it and paste it in — posting stays "

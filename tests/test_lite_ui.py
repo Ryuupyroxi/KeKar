@@ -1,6 +1,7 @@
 """Widget-level behaviour of the Lite composition."""
 from src.app import Application
-from src.data.models import SHORT_STAY_KIND
+from src.data.models import SHORT_STAY_KIND, Property
+from src.ui.listing_dialog import ListingDialog
 from src.ui.main_window import MainWindow
 from src.ui.property_form import PropertyForm
 
@@ -79,3 +80,34 @@ def test_lite_form_still_saves_a_short_stay_without_portal_rows(
     assert saved.nightly_price == 175
     assert kekar_app.portal_repo.list_for_property(saved.id) == []
     form.close()
+
+
+def test_lite_listing_dialog_offers_only_local_rental_channels(
+        kekar_app, monkeypatch):
+    monkeypatch.setenv("KEKAR_VARIANT", "lite")
+    prop = Property(address="10 Copy Court", rent_price=900, sqft=800,
+                    bedrooms=2, bathrooms=1.0)
+    dialog = ListingDialog(kekar_app, prop)
+    keys = [dialog.channel.itemData(i) for i in range(dialog.channel.count())]
+    assert keys == ["generic", "zillow"]
+    dialog.close()
+
+
+def test_lite_listing_dialog_offers_only_local_stay_channels(
+        kekar_app, monkeypatch):
+    monkeypatch.setenv("KEKAR_VARIANT", "lite")
+    prop = Property(address="11 Copy Court", kind=SHORT_STAY_KIND,
+                    nightly_price=190, max_guests=4, min_stay_nights=2)
+    dialog = ListingDialog(kekar_app, prop)
+    keys = [dialog.channel.itemData(i) for i in range(dialog.channel.count())]
+    assert keys == ["generic", "booking_com"]
+    assert "Airbnb" not in dialog.note.text()
+    dialog.close()
+
+
+def test_lite_compile_channel_still_accepts_a_hidden_key():
+    """Hiding a channel in the picker must not change the data layer."""
+    from src.services.listing_channels import compile_channel
+    prop = Property(address="12 Copy Court", rent_price=700, sqft=700)
+    package = compile_channel(prop, "apartments_com")
+    assert "Description" in [name for name, _ in package.fields]
