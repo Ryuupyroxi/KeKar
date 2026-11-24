@@ -93,7 +93,10 @@ feature) and must stay green:
 - Guided tour: step targets resolve to real widgets, the overlay paints without
   raising, navigation clamps at both ends, Esc closes, the Applicants tab is
   restored, the caption stays inside the window at two sizes, and the wording
-  names the features just shipped (`test_tour.py`)
+  names the features just shipped, including garage, parking, pet deposit,
+  applicant profile, legend and one-line move dates (`test_tour.py`). A real
+  pointer walkthrough clicked Next through all 11 steps and Finish back to the
+  app
 - Themes: every palette clears the WCAG contrast ratios, resolution falls back
   safely, switching recolours the painted rows, and the View menu reflects the
   stored preference (`test_themes.py`)

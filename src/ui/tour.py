@@ -178,6 +178,10 @@ class TourOverlay(QWidget):
         if self.current_index < len(self._steps) - 1:
             self.current_index += 1
             self._apply_step()
+        else:
+            # The button reads "Finish" on the last step, so it must actually
+            # close the tour instead of doing nothing.
+            self.finish()
 
     def back(self) -> None:
         if self.current_index > 0:
@@ -234,20 +238,26 @@ def build_tour_steps(window) -> list[TourStep]:
             window.drawer, "Your properties",
             "This is your property list. The search box filters as you type — "
             "it matches the address, city, ZIP, pet policy, notes and every "
-            "enabled amenity. '+ Add New Property' brings these details to the "
+            "enabled amenity. Click a property here to load it in the form "
+            "and emphasise its dates on the calendar. '+ Add New Property' "
+            "brings these details to the "
             "front, focuses the address field and leaves a hint in the status "
             "bar, so you can always see that it worked."),
         TourStep(
             window.property_form, "The details form",
             "Address, rent, deposit and the rest. Use Type to switch a unit "
             "to a short stay, which brings its own nightly rate, fees and "
-            "minimum stay. 'Preview listing' builds a copy package you can "
+            "minimum stay. In Amenities you can record a one- or two-car "
+            "garage and Street parking or Driveway, and the Pet policy field "
+            "feeds the lease. 'Preview listing' builds a copy package you can "
             "paste into Zillow for a rental, or Booking.com for a short "
             "stay. 'Copy listing' copies the generic version for any site."
             if features.is_lite() else
             "Address, rent, deposit and the rest. Use Type to switch a unit "
             "to a short stay, which brings its own nightly rate, fees, "
-            "minimum stay and portal calendars. 'Preview listing' builds a "
+            "minimum stay and portal calendars. In Amenities you can record "
+            "a one- or two-car garage and Street parking or Driveway, and the "
+            "Pet policy field feeds the lease. 'Preview listing' builds a "
             "copy package — Zillow and apartments.com for a rental, Airbnb, "
             "Vrbo and Booking.com for a short stay — and the action button "
             "reads 'Publish to Marketplace' (the opt-in Facebook auto-fill) "
@@ -259,21 +269,31 @@ def build_tour_steps(window) -> list[TourStep]:
             "collapse this section; it remembers your choice next time."),
         TourStep(
             window.crm_tab, "Applicants",
-            "Track every applicant through the pipeline, from first enquiry to "
-            "approved or rejected.",
+            "Track every applicant through the pipeline, from first enquiry "
+            "to approved or rejected. The Property column is a live dropdown "
+            "of your saved properties. Click any row to open the full profile "
+            "below — edit the name, property, contact, stage and notes, then "
+            "press Save profile.",
             on_enter=lambda overlay: _show_tab(window, overlay, 1)),
         TourStep(
             window.lease_tab, "Leases",
             "Draw up a lease from the example lease your client provided. Load "
             "it once as the template, then generate a filled-in copy for any "
-            "property and tenant, and copy, print, email or save the result.",
+            "property and tenant — the Property dropdown is filled from your "
+            "saved properties. A property that allows pets adds a refundable "
+            "pet deposit clause automatically; custom templates can use the "
+            "{{pet_deposit}} marker. Then copy, print, email or save the "
+            "result.",
             on_enter=lambda overlay: _show_tab(window, overlay, 2)),
         TourStep(
             window.calendar_tab, "Calendar and short stays",
             "Move-in and move-out dates you enter on a property appear here "
             "automatically: green for move-in, red for move-out, purple for "
-            "a short-stay reservation. The calendar and the Short stays panel "
-            "below manage every booking — guest, dates and payout"
+            "a short-stay reservation. Each address takes one line with both "
+            "its move-in and move-out dates; the property you selected in the "
+            "list is shown in bold. Click any highlighted date to see which "
+            "property and event it belongs to. The Short stays panel below "
+            "manages every booking — guest, dates and payout"
             + ("" if features.is_lite() else
                ", with the portal and import from the property form")
             + ". Everything stays on this device.",
@@ -284,19 +304,22 @@ def build_tour_steps(window) -> list[TourStep]:
             "'draft a message to John'. It can read and update your records."),
         TourStep(
             window.menuBar(), "Panels, themes and accounts",
-            ("The button at the right end of this bar collapses the property "
-             "list, and View switches between Light, Dark and OLED. File → "
-             "Accounts sets up a login and decides whether KeKar asks for "
-             "one when it starts.")
+            ("The labelled button at the right end of this bar collapses or "
+             "expands the property list. View switches between Light, Dark "
+             "and OLED; text stays readable in every theme. Help → Calendar "
+             "legend explains the date colours. File → Accounts sets up a "
+             "login and decides whether KeKar asks for one when it starts.")
             if features.is_lite() else
             ("The two buttons at the right end of this bar collapse the "
              "property list and the chat, and View switches between Light, "
-             "Dark and OLED. File → Accounts sets up a login and decides "
-             "whether KeKar asks for one when it starts.")),
+             "Dark and OLED; text stays readable in every theme. Help → "
+             "Calendar legend explains the date colours. File → Accounts "
+             "sets up a login and decides whether KeKar asks for one when "
+             "it starts.")),
         TourStep(
             window.logo_label, "The brand",
             "Click the wordmark to open the Help menu — the guided tour, "
-            "About and Exit demo mode all live there. The same mark is the "
+            "Calendar legend, About and Exit demo mode all live there. The same mark is the "
             "window, taskbar and start-menu icon."),
         TourStep(
             None, "You're in demo mode",

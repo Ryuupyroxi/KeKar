@@ -307,8 +307,11 @@ current target, then draws an amber ring around it — no composition modes, so
 it cannot fail on a platform that dislikes `CompositionMode_Clear`.
 
 The overlay is modal: it captures clicks, so the tour is a guided walkthrough
-rather than free play. `Esc` exits, arrow keys navigate, and the Applicants step
-switches to that tab and restores the previous one on exit.
+rather than free play. `Esc` exits, arrow keys navigate, and the Applicants,
+Leases and Calendar steps switch to those tabs and restore the previous one on
+exit. `next()` calls `finish()` on the last step, so the button labelled
+"Finish" really closes the overlay. The step text is guarded by tests: it must
+name every shipped feature the client was taught to use.
 
 The overlay installs an event filter on the main window for the duration of the
 tour, because a child widget does not resize itself when its parent does —

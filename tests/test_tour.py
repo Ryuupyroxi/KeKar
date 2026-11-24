@@ -41,7 +41,8 @@ def test_tour_describes_the_real_feature_set(kekar_app):
     text = " ".join(f"{step.title} {step.body}" for step in steps)
     for phrase in ("collapse", "Light", "OLED", "Leases", "template",
                    "Accounts", "print", "calendar", "status bar",
-                   "Photos heading", "Help menu"):
+                   "Photos heading", "Help menu", "garage", "parking",
+                   "pet deposit", "profile", "legend", "purple", "one line"):
         assert phrase in text, f"the tour never mentions {phrase!r}"
     if features.chat_enabled():
         for phrase in ("Zillow", "apartments.com", "Airbnb",
@@ -62,6 +63,21 @@ def test_overlay_paints_without_raising(kekar_app):
 
     overlay.grab()  # forces a paint; raises if painting fails
     overlay.finish()
+
+
+def test_finish_button_closes_the_tour_on_the_last_step(kekar_app):
+    window = kekar_app.main_window
+    steps = build_tour_steps(window)
+    overlay = TourOverlay(window, steps)
+    closed = []
+    overlay.closed.connect(lambda: closed.append(True))
+    overlay.resize(window.size())
+    overlay.show()
+    kekar_app.processEvents()
+    overlay.goto_last()
+    assert overlay.next_button.text() == "Finish"
+    overlay.next()
+    assert closed == [True]
 
 
 def test_overlay_navigation(kekar_app):

@@ -84,3 +84,19 @@ stay recorded" even though the day was purple. It now records every booked day.
 
 Final counts after the fix: full suite 477 passed; Lite/production targeted
 suite 107 passed. Commit `9e56040` adds the scenarios and the fix.
+
+
+## Guided tour review
+
+The 11-step tour now names every shipped feature: property search and
+selection, garage/parking/pet policy in the details form, the applicants
+dropdown and single-click profile, lease generation with the pet-deposit
+clause, the combined Calendar/short-stay panel with one-line move dates and
+date identification, themes, the labelled panel toggle, Help legend and demo
+mode. `test_tour.py` guards the wording in both variants.
+
+A real-pointer walkthrough on `:0` clicked Next through all 11 steps and
+Finish back to the app. That exposed a genuine defect: the last button read
+"Finish" but was wired to `next()`, which does nothing past the final step.
+It now calls `finish()`. Full suite 478 passed; Lite/production targeted
+suite 108 passed.

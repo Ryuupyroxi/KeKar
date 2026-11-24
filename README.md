@@ -151,9 +151,12 @@ See `docs/WIRING.md` for how detection and model discovery are wired.
 ## Demo mode and guided tour
 
 A new install offers a tour right after setup, and **Help → Guided tour...**
-runs it any time. The walkthrough calls out the visible feedback after
-**+ Add New Property**, the collapsible Photos section, and the centred header
-logo.
+runs it any time. The walkthrough covers the whole current app: property
+search, selection and the details form (including garage, parking and pet
+policy), Photos, the applicants dropdown and single-click profile, lease
+generation with the pet-deposit clause, the combined Calendar and short-stay
+panel, themes, the property-panel toggle, the Help legend and demo mode. The
+**Finish** button on the last step closes the tour.
 
 The tour runs in **demo mode**: KeKar opens a separate demo database
 (`KeKarData/demo/database.db`) seeded with four sample properties and four
