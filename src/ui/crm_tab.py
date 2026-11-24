@@ -66,15 +66,28 @@ class CrmTab(QWidget):
     def reload(self) -> None:
         self.table.blockSignals(True)
         self.table.setRowCount(0)
-        props = {p.id: p for p in self.app.property_repo.list()}
+        properties = self.app.property_repo.list()
+        props = {p.id: p for p in properties}
         for applicant in self.app.applicant_repo.list():
             row = self.table.rowCount()
             self.table.insertRow(row)
             self.table.setItem(row, 0,
                                QTableWidgetItem(applicant.applicant_name))
             prop = props.get(applicant.property_id)
-            self.table.setItem(row, 1, QTableWidgetItem(
-                prop.address if prop else ""))
+            property_combo = QComboBox()
+            property_combo.addItem("(no property)", None)
+            for item in properties:
+                label = item.address
+                if item.city:
+                    label += f", {item.city}"
+                property_combo.addItem(label, item.id)
+            index = property_combo.findData(applicant.property_id)
+            if index >= 0:
+                property_combo.setCurrentIndex(index)
+            property_combo.setProperty("row", row)
+            property_combo.currentIndexChanged.connect(
+                self._on_property_changed)
+            self.table.setCellWidget(row, 1, property_combo)
             self.table.setItem(row, 2, QTableWidgetItem(
                 applicant.contact_info or ""))
             stage = QComboBox()
@@ -88,6 +101,20 @@ class CrmTab(QWidget):
                                             applicant.id)
             self._tint_stage(row, applicant.screening_stage)
         self.table.blockSignals(False)
+
+    def _on_property_changed(self) -> None:
+        combo = self.sender()
+        row = combo.property("row")
+        item = self.table.item(row, 0)
+        if item is None:
+            return
+        applicant_id = item.data(Qt.ItemDataRole.UserRole)
+        applicant = self.app.applicant_repo.get(applicant_id)
+        if applicant is None:
+            return
+        value = combo.currentData()
+        applicant.property_id = int(value) if value is not None else None
+        self.app.applicant_repo.update(applicant)
 
     def _tint_stage(self, row: int, stage: str) -> None:
         """Colour the stage cell so the pipeline reads at a glance.
