@@ -350,7 +350,7 @@ greyed-out one.
 ## Verified by real execution
 
 - `bash build.sh` produces a working Linux one-folder build (`dist/KeKar`).
-- `dist/KeKar/KeKar --version` prints `KeKar 1.6.1` on a headless machine.
+- `dist/KeKar/KeKar --version` prints `KeKar 1.6.2` on a headless machine.
 - The built binary starts, creates `KeKarData/`, runs the schema migration, and
   reports `PRAGMA integrity_check = ok`. Confirmed by running the binary.
 - `tools/make_usb_package.py` + `tools/verify_usb.py` pass on the real build.
