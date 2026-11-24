@@ -23,6 +23,7 @@ class CalendarTab(QWidget):
         self.app = app
         self.setWindowTitle("Calendar")
         self._marked: list[QDate] = []
+        self.selected_property_id: int | None = None
 
         layout = QHBoxLayout(self)
         left = QVBoxLayout()
@@ -46,6 +47,13 @@ class CalendarTab(QWidget):
         layout.addWidget(self.panels, 1)
         self.reload()
 
+    def set_selected_property(self, property_id: int | None) -> None:
+        """Emphasise one property's dates in the month view and event list."""
+        if self.selected_property_id == property_id:
+            return
+        self.selected_property_id = property_id
+        self.reload()
+
     def reload(self) -> None:
         """Rebuild highlights and the event list from all saved records."""
         self.stays.reload()
@@ -66,10 +74,13 @@ class CalendarTab(QWidget):
                 fmt = QTextCharFormat()
                 fmt.setBackground(QColor(colour))
                 fmt.setForeground(QColor("white"))
+                if prop.id == self.selected_property_id:
+                    fmt.setFontWeight(700)
                 self.calendar.setDateTextFormat(day, fmt)
                 self._marked.append(day)
+                prefix = "★ " if prop.id == self.selected_property_id else ""
                 rows.append((date(day.year(), day.month(), day.day()),
-                             f"{label} — {prop.address} ({value})"))
+                             f"{prefix}{label} — {prop.address} ({value})"))
         for prop in self.app.property_repo.list():
             for stay in self.app.booking_repo.list(property_id=prop.id):
                 try:
@@ -83,6 +94,8 @@ class CalendarTab(QWidget):
                     fmt = QTextCharFormat()
                     fmt.setBackground(QColor(SHORT_STAY_COLOUR))
                     fmt.setForeground(QColor("white"))
+                    if prop.id == self.selected_property_id:
+                        fmt.setFontWeight(700)
                     self.calendar.setDateTextFormat(marked, fmt)
                     self._marked.append(marked)
                     day = date.fromordinal(day.toordinal() + 1)
@@ -90,7 +103,10 @@ class CalendarTab(QWidget):
                                     f"{prop.address} ({stay.check_in})"))
         for _, text in sorted(rows):
             self.events.addItem(text)
+        selected = next((p for p in self.app.property_repo.list()
+                         if p.id == self.selected_property_id), None)
+        focus = f" Selected: {selected.address}." if selected else ""
         self.summary.setText(
             f"{len(rows)} date(s). Green = move-in, red = move-out, "
-            f"purple = short stay."
+            f"purple = short stay.{focus}"
             if rows else "No move-in or move-out dates in any property yet.")

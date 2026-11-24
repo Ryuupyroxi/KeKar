@@ -455,6 +455,7 @@ class MainWindow(QMainWindow):
     def _on_property_selected(self, property_id: int) -> None:
         self.property_form.load_property(property_id)
         self.photo_panel.load_property(property_id)
+        self.calendar_tab.set_selected_property(property_id)
 
     def _new_property(self) -> None:
         """Start a blank property.

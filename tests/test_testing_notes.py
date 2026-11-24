@@ -114,6 +114,27 @@ def test_default_lease_mentions_pet_deposit():
     assert "Pet policy: Dogs OK" in text
 
 
+def test_selecting_a_property_marks_its_calendar_dates(kekar_app):
+    """Note 8: the selected property is emphasised on the calendar."""
+    from PyQt6.QtCore import QDate
+
+    first = kekar_app.property_repo.create(
+        Property(address="51 Chosen Road", move_in_date="2026-12-15"))
+    second = kekar_app.property_repo.create(
+        Property(address="52 Other Road", move_in_date="2026-12-16"))
+    window = kekar_app.main_window
+    window.drawer.reload()
+    window.drawer.property_selected.emit(first)
+    fmt_first = window.calendar_tab.calendar.dateTextFormat(
+        QDate(2026, 12, 15))
+    fmt_second = window.calendar_tab.calendar.dateTextFormat(
+        QDate(2026, 12, 16))
+    assert fmt_first.fontWeight() >= 700
+    assert fmt_second.fontWeight() < 700
+    assert "51 Chosen Road" in window.calendar_tab.summary.text()
+    assert second is not None
+
+
 def test_stays_are_inside_the_calendar_tab(kekar_app):
     """Note 7: Stays is a panel inside Calendar, not a separate tab."""
     from src.ui.calendar_tab import SHORT_STAY_COLOUR
