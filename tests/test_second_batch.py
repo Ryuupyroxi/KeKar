@@ -17,6 +17,18 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_generic_parking_amenity_is_removed(kekar_app):
+    """Note 4: 'Parking spot' is redundant with the new parking controls."""
+    from src.data.models import Property
+    from src.services.listing_compiler import amenities_line
+
+    form = kekar_app.main_window.property_form
+    assert "amenity_parking" not in form.amenity_boxes
+    text = amenities_line(Property(address="No Spot Way",
+                                   amenity_parking=True))
+    assert "Parking spot" not in text
+
+
 def test_pet_deposit_amount_round_trips_and_feeds_lease(kekar_app):
     """Note 4: the deposit is set in Rental terms and used by the lease."""
     from src.services import lease_builder

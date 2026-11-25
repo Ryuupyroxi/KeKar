@@ -17,7 +17,6 @@ AMENITY_LABELS = [
     ("amenity_ac", "Central AC & heat"),
     ("amenity_yard", "Fenced yard"),
     ("amenity_dishwasher", "Dishwasher"),
-    ("amenity_parking", "Parking spot"),
 ]
 
 DEFAULT_TEMPLATE = """{title}
