@@ -6,7 +6,7 @@
 
 **Architecture:** One Kotlin Android Studio project under `android/`, using Compose for UI, Room for the local SQLite database, Hilt for dependency injection, WorkManager for explicit sync jobs, and a package-per-concern layout (`data`, `domain`, `sync`, `ui`, `photos`, `listings`, `assistant`, `settings`, `updates`). The app is fully usable without a desktop; sync is an explicit user action using a `.kekarsync` ZIP and three-way field-level merge.
 
-**Tech Stack:** Kotlin 2.0, Jetpack Compose + Material 3, Room 2.6, Hilt, Navigation Compose, WorkManager, DataStore, kotlinx.serialization, OkHttp, Coil, AndroidX Security, JUnit 5, Truth, Turbine, MockK, Gradle Kotlin DSL, AGP 8.5.
+**Tech Stack:** Kotlin 2.0, Jetpack Compose + Material 3, Room 2.6, Hilt, Navigation Compose, WorkManager, DataStore, kotlinx.serialization, OkHttp, Coil, AndroidX Security, JUnit 4, Truth, Turbine, MockK, Gradle Kotlin DSL, AGP 8.5.
 
 ## Global Constraints
 
