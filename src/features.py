@@ -18,7 +18,10 @@ VALID_VARIANTS = (FULL, LITE)
 
 # Channel keys hidden from the Lite picker. The copy/paste mechanism itself is
 # never disabled: compile_channel() still accepts every key in both builds.
-LITE_HIDDEN_CHANNELS = frozenset({"apartments_com", "airbnb", "vrbo"})
+# Listing packages are offline copy/paste text, so every site stays visible
+# in Lite. Direct connections (portal sync, Marketplace autofill, Maps) remain
+# disabled; those are separate feature flags below.
+LITE_HIDDEN_CHANNELS = frozenset()
 
 
 def _stamped_variant() -> str | None:

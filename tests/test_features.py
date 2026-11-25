@@ -29,8 +29,7 @@ def test_lite_hides_only_the_named_site_channels(monkeypatch):
     monkeypatch.setenv("KEKAR_VARIANT", "lite")
     channels = ["generic", "zillow", "apartments_com", "airbnb", "vrbo",
                 "booking_com"]
-    assert features.visible_channels(channels) == [
-        "generic", "zillow", "booking_com"]
+    assert features.visible_channels(channels) == channels
 
 
 def test_full_keeps_every_channel(monkeypatch):

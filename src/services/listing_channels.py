@@ -115,6 +115,24 @@ CHANNELS = {
             "{notes}"
         ),
     },
+    "facebook_marketplace": {
+        "label": "Facebook Marketplace",
+        "kind": "rental",
+        "title_template": "{beds} bd {baths} ba rental - {city}",
+        "max_title": 100,
+        "body_template": (
+            "{title}\n\n"
+            "{address}, {city}, {zip}\n"
+            "Rent: ${rent}/month | Deposit: ${deposit}\n"
+            "{bedrooms} bd | {bathrooms} ba | {sqft} sqft\n"
+            "Available {available_date}\n\n"
+            "{amenities}\n\n"
+            "{pet_line}\n\n"
+            "{notes}\n\n"
+            "Message me to arrange a viewing. No application fee. "
+            "Please beware of scams — view in person before paying."
+        ),
+    },
     "booking_com": {
         "label": "Booking.com",
         "kind": "short_stay",
@@ -138,6 +156,11 @@ CHANNELS = {
 
 #: What the user must check by hand before posting, per site.
 SITE_NOTES = {
+    "facebook_marketplace": [
+        "Marketplace has no listing API; copy this package into the post form.",
+        "Meet the renter in person and never wire a deposit before viewing — "
+        "Marketplace attracts scams.",
+    ],
     "zillow": [
         "Zillow posts through Rental Manager; the address field may reformat "
         "the street name.",
@@ -273,7 +296,7 @@ def compile_channel(prop: Property, channel: str, *,
 
     fields = _common_fields(prop, config["kind"], nightly=rate,
                             min_stay_nights=stay)
-    if channel == "apartments_com":
+    if channel in {"apartments_com", "facebook_marketplace"}:
         fields = fields + [("Description", body)]
 
     warnings: list[str] = []

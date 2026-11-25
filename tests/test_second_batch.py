@@ -17,6 +17,38 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_all_requested_sites_are_available_in_lite():
+    """Note 8: the client-facing sites are offered in the production build."""
+    import os
+    os.environ["KEKAR_VARIANT"] = "lite"
+    from src import features
+    from src.services.listing_channels import CHANNELS, known_channels
+
+    for key in ("facebook_marketplace", "apartments_com", "airbnb", "vrbo"):
+        assert key in known_channels()
+        assert key in features.visible_channels(known_channels())
+    try:
+        assert features.visible_channels(known_channels()) == sorted(CHANNELS)
+    finally:
+        os.environ.pop("KEKAR_VARIANT", None)
+
+
+def test_facebook_marketplace_package_is_distinct(kekar_app):
+    from src.data.models import Property
+    from src.services.listing_channels import compile_channel
+
+    prop = Property(address="44 Market Way", city="Pawhuska",
+                    rent_price=900, deposit_amount=900, bedrooms=2,
+                    bathrooms=1.0, sqft=800, pet_policy="Yes",
+                    available_date="2027-01-01")
+    pkg = compile_channel(prop, "facebook_marketplace")
+    assert pkg.label == "Facebook Marketplace"
+    assert "No application fee" in pkg.body
+    assert dict(pkg.fields).get("Monthly rent") == "900"
+    assert any("scam" in w.lower() or "meeting" in w.lower()
+               for w in pkg.warnings)
+
+
 def test_builtin_lease_is_comprehensive_and_tutorial_wording_fits(kekar_app):
     """Note 1/9: a full base lease, and the tour speaks to the new user."""
     from src.services import lease_builder

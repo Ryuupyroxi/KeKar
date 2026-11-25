@@ -93,7 +93,8 @@ def test_kind_round_trips(db):
 
 def test_short_stay_channels_are_marked():
     assert known_channels("short_stay") == ["airbnb", "booking_com", "vrbo"]
-    assert known_channels("rental") == ["apartments_com", "zillow"]
+    assert known_channels("rental") == [
+        "apartments_com", "facebook_marketplace", "zillow"]
     assert channel_kind("airbnb") == "short_stay"
     assert channel_kind("zillow") == "rental"
 

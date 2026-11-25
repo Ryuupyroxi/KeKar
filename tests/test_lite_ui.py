@@ -87,7 +87,8 @@ def test_lite_listing_dialog_offers_only_local_rental_channels(
                     bedrooms=2, bathrooms=1.0)
     dialog = ListingDialog(kekar_app, prop)
     keys = [dialog.channel.itemData(i) for i in range(dialog.channel.count())]
-    assert keys == ["generic", "zillow"]
+    assert keys == ["generic", "apartments_com", "facebook_marketplace",
+                    "zillow"]
     dialog.close()
 
 
@@ -98,7 +99,8 @@ def test_lite_listing_dialog_offers_only_local_stay_channels(
                     nightly_price=190, max_guests=4, min_stay_nights=2)
     dialog = ListingDialog(kekar_app, prop)
     keys = [dialog.channel.itemData(i) for i in range(dialog.channel.count())]
-    assert keys == ["generic", "booking_com"]
+    assert keys == ["generic", "airbnb", "booking_com", "vrbo"]
+
     assert "Airbnb" not in dialog.note.text()
     dialog.close()
 

@@ -216,3 +216,23 @@ advice; a client should have local counsel review it where required.
 
 [1] https://www.nolo.com/legal-encyclopedia/free-books/renters-rights-book/chapter2-4.html — Nolo - Typical Provisions in Leases
 [2] https://www.pandadoc.com/residential-lease-agreement-template — PandaDoc - Residential Lease Template
+
+
+## Listing sites research
+
+All requested sites — Facebook Marketplace, apartments.com, Airbnb and Vrbo —
+are now offered in the Lite/production preview as offline copy packages. The
+Facebook Marketplace package uses a short neighbourhood-style title, a plain
+description, separate rent/deposit/address fields and a scam warning, reflecting
+guidance for Marketplace rentals[3]. Airbnb and Vrbo keep their short-stay
+structure (nightly rate, cleaning fee, minimum stay, occupancy, house rules),
+matching their own listing guidance[4][5]. apartments.com keeps its separate
+description field and lead-friendly structure[6]. No site is posted to
+automatically; the client still copies and pastes.
+
+## Sources
+
+[3] https://www.landlordstudio.com/blog/how-to-use-facebook-marketplace-for-rentals — Landlord Studio - Facebook Marketplace rentals
+[4] https://www.airbnb.com/resources/hosting-homes/a/guidelines-for-writing-your-listing-title-533 — Airbnb - Listing title guidelines
+[5] https://help.vrbo.com/articles/How-do-I-list-my-property — Vrbo - How to list your property
+[6] https://www.apartments.com/rental-manager/resources/listing/writing-tips-mind-blowing-property-description — Apartments.com - Property description writing tips
