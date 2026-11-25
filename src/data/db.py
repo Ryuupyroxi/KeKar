@@ -30,6 +30,7 @@ _COLUMN_ADDITIONS: dict[str, dict[str, str]] = {
                         "CHECK (instant_book IN (0,1))",
         "cancellation_policy": "TEXT",
         "house_rules": "TEXT",
+        "pet_deposit_amount": "REAL",
         "garage_spaces": "INTEGER NOT NULL DEFAULT 0",
         "parking_type": "TEXT",
         "move_in_date": "TEXT",

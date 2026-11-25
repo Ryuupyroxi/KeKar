@@ -18,6 +18,7 @@ class Property:
     bathrooms: float | None = None
     sqft: int | None = None
     pet_policy: str | None = None
+    pet_deposit_amount: float | None = None
     status: str = "Vacant"
     amenity_wd: bool = False
     amenity_ac: bool = False

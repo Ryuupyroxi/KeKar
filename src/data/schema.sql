@@ -17,8 +17,9 @@ CREATE TABLE IF NOT EXISTS properties (
   bedrooms       INTEGER,
   bathrooms      REAL,
   sqft           INTEGER,
-  pet_policy     TEXT,
-  status         TEXT NOT NULL DEFAULT 'Vacant'
+  pet_policy TEXT,
+  pet_deposit_amount REAL,
+  status          TEXT NOT NULL DEFAULT 'Vacant'
                  CHECK (status IN ('Vacant','Rented')),
   kind           TEXT NOT NULL DEFAULT 'rental'
                  CHECK (kind IN ('rental','short_stay')),

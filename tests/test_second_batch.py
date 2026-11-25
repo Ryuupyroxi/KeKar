@@ -17,6 +17,25 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_pet_deposit_amount_round_trips_and_feeds_lease(kekar_app):
+    """Note 4: the deposit is set in Rental terms and used by the lease."""
+    from src.services import lease_builder
+
+    form = kekar_app.main_window.property_form
+    form.load_property(None)
+    widget = form.pet_deposit_input
+    assert form.rental_terms.isAncestorOf(widget)
+    form.address_input.setText("Deposit Way")
+    form.pet_input.setCurrentText("Yes")
+    widget.setValue(425)
+    form.save()
+    prop = kekar_app.property_repo.get(form.current_id)
+    assert prop.pet_deposit_amount == 425
+    fields = lease_builder.tokens_for(prop)
+    assert fields["pet_deposit"] == "425.00"
+    assert "$425.00" in fields["pet_clause"]
+
+
 def test_move_dates_live_in_rental_terms(kekar_app):
     """Note 3: move dates belong with the other long-term rental terms."""
     form = kekar_app.main_window.property_form

@@ -69,11 +69,15 @@ def _pets_allowed(prop: Property) -> bool:
     return bool(policy) and policy not in _NO_PETS
 
 
+def _pet_deposit(prop: Property) -> float:
+    return prop.pet_deposit_amount or PET_DEPOSIT_AMOUNT
+
+
 def _pet_clause(prop: Property) -> str:
     if not _pets_allowed(prop):
         return ""
     return (f" Tenant shall pay a refundable pet deposit of "
-            f"${money(PET_DEPOSIT_AMOUNT)} before move-in.")
+            f"${money(_pet_deposit(prop))} before move-in.")
 
 
 def _sqft_clause(prop: Property) -> str:
@@ -100,7 +104,7 @@ def tokens_for(prop: Property | None, tenant: str = "",
         "sqft_clause": _sqft_clause(prop) if prop else "",
         "available_date": prop.available_date if prop else "",
         "pet_policy": prop.pet_policy or "No pets" if prop else "",
-        "pet_deposit": (money(PET_DEPOSIT_AMOUNT)
+        "pet_deposit": (money(_pet_deposit(prop))
                         if prop and _pets_allowed(prop) else "0.00"),
         "pet_clause": _pet_clause(prop) if prop else "",
         "status": prop.status if prop else "",

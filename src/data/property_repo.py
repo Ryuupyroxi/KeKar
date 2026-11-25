@@ -6,7 +6,8 @@ from .models import Property
 
 COLUMNS = [
     "id", "address", "city", "zip_code", "rent_price", "deposit_amount",
-    "available_date", "bedrooms", "bathrooms", "sqft", "pet_policy", "status",
+    "available_date",    "bedrooms", "bathrooms", "sqft", "pet_policy", "pet_deposit_amount",
+    "status",
     "kind", "amenity_wd", "amenity_ac", "amenity_yard", "amenity_dishwasher",
     "amenity_parking", "notes", "nightly_price", "cleaning_fee",
     "extra_guest_fee", "min_stay_nights", "max_guests", "check_in_time",
@@ -17,19 +18,20 @@ COLUMNS = [
 _INSERT = """
 INSERT INTO properties
  (address, city, zip_code, rent_price, deposit_amount, available_date,
-  bedrooms, bathrooms, sqft, pet_policy, status, kind,
+  bedrooms, bathrooms, sqft, pet_policy, pet_deposit_amount, status, kind,
   amenity_wd, amenity_ac, amenity_yard, amenity_dishwasher, amenity_parking, notes,
   nightly_price, cleaning_fee, extra_guest_fee, min_stay_nights, max_guests,
   check_in_time, check_out_time, instant_book, cancellation_policy, house_rules,
   move_in_date, move_out_date, garage_spaces, parking_type)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?)
+?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 _UPDATE = """
 UPDATE properties SET
   address=?, city=?, zip_code=?, rent_price=?, deposit_amount=?,
-  available_date=?, bedrooms=?, bathrooms=?, sqft=?, pet_policy=?, status=?,
+  available_date=?, bedrooms=?, bathrooms=?, sqft=?, pet_policy=?,
+  pet_deposit_amount=?, status=?,
   kind=?, amenity_wd=?, amenity_ac=?, amenity_yard=?, amenity_dishwasher=?,
   amenity_parking=?, notes=?, nightly_price=?, cleaning_fee=?,
   extra_guest_fee=?, min_stay_nights=?, max_guests=?, check_in_time=?,
@@ -47,7 +49,8 @@ def _row_to_property(row: sqlite3.Row) -> Property:
         deposit_amount=row["deposit_amount"],
         available_date=row["available_date"], bedrooms=row["bedrooms"],
         bathrooms=row["bathrooms"], sqft=row["sqft"],
-        pet_policy=row["pet_policy"], status=row["status"],
+        pet_policy=row["pet_policy"],
+        pet_deposit_amount=row["pet_deposit_amount"], status=row["status"],
         kind=row["kind"],
         amenity_wd=bool(row["amenity_wd"]), amenity_ac=bool(row["amenity_ac"]),
         amenity_yard=bool(row["amenity_yard"]),
@@ -131,7 +134,7 @@ def _values(p: Property) -> list:
     return [
         p.address, p.city, p.zip_code, p.rent_price, p.deposit_amount,
         p.available_date, p.bedrooms, p.bathrooms, p.sqft, p.pet_policy,
-        p.status, p.kind, int(p.amenity_wd), int(p.amenity_ac),
+        p.pet_deposit_amount, p.status, p.kind, int(p.amenity_wd), int(p.amenity_ac),
         int(p.amenity_yard), int(p.amenity_dishwasher), int(p.amenity_parking),
         p.notes, p.nightly_price, p.cleaning_fee, p.extra_guest_fee,
         p.min_stay_nights, p.max_guests, p.check_in_time, p.check_out_time,

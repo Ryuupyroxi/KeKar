@@ -197,10 +197,15 @@ class PropertyForm(QWidget):
         self.deposit_input.setSingleStep(25)
         self.available_input = QLineEdit()
         self.available_input.setPlaceholderText("2026-12-01")
+        self.pet_deposit_input = QDoubleSpinBox()
+        self.pet_deposit_input.setRange(0, 100000)
+        self.pet_deposit_input.setPrefix("$")
+        self.pet_deposit_input.setSingleStep(25)
         for index, (label, widget) in enumerate((
                 ("Monthly rent", self.rent_input),
                 ("Security deposit", self.deposit_input),
                 ("Available date", self.available_input),
+                ("Pet deposit", self.pet_deposit_input),
                 ("Move-in date", self.move_in_input),
                 ("Move-out date", self.move_out_input))):
             rental_grid.addWidget(_form_label(label), index, 0)
@@ -658,6 +663,7 @@ class PropertyForm(QWidget):
         self.notes_input.clear()
         self.house_rules_input.clear()
         self.pet_input.setCurrentIndex(0)
+        self.pet_deposit_input.setValue(0)
         self.move_in_input.setDate(self.move_in_input.minimumDate())
         self.move_out_input.setDate(self.move_out_input.minimumDate())
         self.garage_combo.setCurrentIndex(0)
@@ -681,6 +687,7 @@ class PropertyForm(QWidget):
         self.rent_input.setValue(p.rent_price or 0)
         self.deposit_input.setValue(p.deposit_amount or 0)
         self.available_input.setText(p.available_date or "")
+        self.pet_deposit_input.setValue(p.pet_deposit_amount or 0)
         self._load_date(self.move_in_input, p.move_in_date)
         self._load_date(self.move_out_input, p.move_out_date)
         self.nightly_input.setValue(p.nightly_price or 0)
@@ -741,6 +748,7 @@ class PropertyForm(QWidget):
             bathrooms=self.bathrooms_input.value() or None,
             sqft=self.sqft_input.value() or None,
             pet_policy=self.pet_input.currentText(),
+            pet_deposit_amount=self.pet_deposit_input.value() or None,
             garage_spaces=self.garage_combo.currentIndex(),
             parking_type=(self.parking_combo.currentText()
                           if self.parking_combo.currentIndex() > 0 else None),
