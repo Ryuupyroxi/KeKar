@@ -67,8 +67,8 @@ def test_property_form_edits_garage_and_parking(kekar_app):
     form = kekar_app.main_window.property_form
     form.load_property(None)
     form.address_input.setText("22 Garage Way")
-    form.garage_combo.setCurrentIndex(2)
-    form.parking_combo.setCurrentText("Street parking")
+    form.garage_2_box.setChecked(True)
+    form.street_box.setChecked(True)
     form.save()
     saved = kekar_app.property_repo.get(form.current_id)
     assert saved.garage_spaces == 2

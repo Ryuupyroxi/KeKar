@@ -83,7 +83,7 @@ Target variant: Lite/production must stay green; full must not regress.
 | 3 | Move dates in Rental terms | Move the two date widgets from Details into Rental terms without changing storage. | DONE — move dates now sit with rent/deposit/available date |
 | 4 | Pet deposit in Rental terms | Add a persisted deposit amount field beside the pet policy; feed the lease clause. | DONE — persisted amount in Rental terms feeds lease tokens |
 | 5 | Remove Parking spot amenity | Hide the redundant generic checkbox; keep legacy data readable. | DONE — generic checkbox and listing label removed |
-| 6 | Parking/garage checkboxes | Replace the two combos with Driveway, Street parking, 1-car and 2-car checkboxes; derive stored fields. | Pending |
+| 6 | Parking/garage checkboxes | Replace the two combos with Driveway, Street parking, 1-car and 2-car checkboxes; derive stored fields. | DONE — four mutually-exclusive checkboxes |
 | 7 | Calendar address to top | When a property is selected, move its calendar row to the top of the event list. | Pending |
 | 8 | Preview text cleanup | Remove the "Before you post" line from the preview body. | Pending |
 | 9 | Channel -> Site | Rename the preview label and related user-facing text. | Pending |

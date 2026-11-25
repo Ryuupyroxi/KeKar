@@ -340,15 +340,21 @@ class PropertyForm(QWidget):
             self.amenity_boxes[attr] = box
             amenities_layout.addWidget(box, index // 3, index % 3)
 
-        self.garage_combo = QComboBox()
-        self.garage_combo.addItems(["No garage", "1 car", "2 cars"])
-        self.parking_combo = QComboBox()
-        self.parking_combo.addItems(
-            ["(not specified)", "Street parking", "Driveway"])
-        garage_row = (len(AMENITY_FIELDS) + 2) // 3
-        amenities_layout.addWidget(QLabel("Garage"), garage_row, 0)
-        amenities_layout.addWidget(self.garage_combo, garage_row, 1)
-        amenities_layout.addWidget(self.parking_combo, garage_row, 2)
+        self.driveway_box = QCheckBox("Driveway")
+        self.street_box = QCheckBox("Street parking")
+        self.garage_1_box = QCheckBox("1-car garage")
+        self.garage_2_box = QCheckBox("2-car garage")
+        for box in (self.driveway_box, self.street_box):
+            box.toggled.connect(self._on_parking_toggled)
+        for box in (self.garage_1_box, self.garage_2_box):
+            box.toggled.connect(self._on_garage_toggled)
+        parking_row = (len(AMENITY_FIELDS) + 2) // 3
+        amenities_layout.addWidget(QLabel("Parking"), parking_row, 0)
+        amenities_layout.addWidget(self.driveway_box, parking_row, 1)
+        amenities_layout.addWidget(self.street_box, parking_row, 2)
+        amenities_layout.addWidget(QLabel("Garage"), parking_row + 1, 0)
+        amenities_layout.addWidget(self.garage_1_box, parking_row + 1, 1)
+        amenities_layout.addWidget(self.garage_2_box, parking_row + 1, 2)
         amenities_layout.setColumnStretch(2, 1)
         layout.addWidget(amenities_box)
 
@@ -664,10 +670,11 @@ class PropertyForm(QWidget):
         self.house_rules_input.clear()
         self.pet_input.setCurrentIndex(0)
         self.pet_deposit_input.setValue(0)
+        for box in (self.driveway_box, self.street_box,
+                    self.garage_1_box, self.garage_2_box):
+            box.setChecked(False)
         self.move_in_input.setDate(self.move_in_input.minimumDate())
         self.move_out_input.setDate(self.move_out_input.minimumDate())
-        self.garage_combo.setCurrentIndex(0)
-        self.parking_combo.setCurrentIndex(0)
         for widget in (self.rent_input, self.deposit_input,
                        self.bedrooms_input, self.bathrooms_input,
                        self.sqft_input, self.nightly_input, self.cleaning_input,
@@ -711,9 +718,10 @@ class PropertyForm(QWidget):
         self.notes_input.setPlainText(p.notes or "")
         for attr, box in self.amenity_boxes.items():
             box.setChecked(bool(getattr(p, attr)))
-        self.garage_combo.setCurrentIndex(min(p.garage_spaces or 0, 2))
-        self.parking_combo.setCurrentText(p.parking_type
-                                          or "(not specified)")
+        self.garage_1_box.setChecked(p.garage_spaces == 1)
+        self.garage_2_box.setChecked(p.garage_spaces == 2)
+        self.driveway_box.setChecked(p.parking_type == "Driveway")
+        self.street_box.setChecked(p.parking_type == "Street parking")
         index = self.kind_combo.findData(
             p.kind if p.kind in PROPERTY_KINDS else "rental")
         if index >= 0:
@@ -721,6 +729,22 @@ class PropertyForm(QWidget):
         self._on_kind_changed()
         if self.portals_box is not None:
             self._load_portals(p)
+
+    def _on_parking_toggled(self, checked: bool) -> None:
+        if not checked:
+            return
+        if self.sender() is self.driveway_box:
+            self.street_box.setChecked(False)
+        elif self.sender() is self.street_box:
+            self.driveway_box.setChecked(False)
+
+    def _on_garage_toggled(self, checked: bool) -> None:
+        if not checked:
+            return
+        if self.sender() is self.garage_1_box:
+            self.garage_2_box.setChecked(False)
+        elif self.sender() is self.garage_2_box:
+            self.garage_1_box.setChecked(False)
 
     @staticmethod
     def _load_date(widget: QDateEdit, value: str | None) -> None:
@@ -749,9 +773,11 @@ class PropertyForm(QWidget):
             sqft=self.sqft_input.value() or None,
             pet_policy=self.pet_input.currentText(),
             pet_deposit_amount=self.pet_deposit_input.value() or None,
-            garage_spaces=self.garage_combo.currentIndex(),
-            parking_type=(self.parking_combo.currentText()
-                          if self.parking_combo.currentIndex() > 0 else None),
+            garage_spaces=(2 if self.garage_2_box.isChecked()
+                           else 1 if self.garage_1_box.isChecked() else 0),
+            parking_type=("Driveway" if self.driveway_box.isChecked()
+                          else "Street parking"
+                          if self.street_box.isChecked() else None),
             notes=self.notes_input.toPlainText().strip() or None,
             status=self.pill.text() if self.pill.text() in ("Vacant", "Rented")
             else "Vacant",

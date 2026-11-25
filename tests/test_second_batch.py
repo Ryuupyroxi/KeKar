@@ -17,6 +17,30 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_parking_and_garage_are_checkboxes(kekar_app):
+    """Note 5: four explicit checkboxes replace the two combos."""
+    from PyQt6.QtWidgets import QCheckBox
+
+    form = kekar_app.main_window.property_form
+    form.load_property(None)
+    for name in ("driveway_box", "street_box", "garage_1_box",
+                 "garage_2_box"):
+        assert isinstance(getattr(form, name), QCheckBox)
+
+    form.address_input.setText("Checkbox Way")
+    form.driveway_box.setChecked(True)
+    form.garage_2_box.setChecked(True)
+    form.save()
+    prop = kekar_app.property_repo.get(form.current_id)
+    assert prop.parking_type == "Driveway"
+    assert prop.garage_spaces == 2
+
+    form.garage_1_box.setChecked(True)
+    assert form.garage_2_box.isChecked() is False
+    form.street_box.setChecked(True)
+    assert form.driveway_box.isChecked() is False
+
+
 def test_generic_parking_amenity_is_removed(kekar_app):
     """Note 4: 'Parking spot' is redundant with the new parking controls."""
     from src.data.models import Property

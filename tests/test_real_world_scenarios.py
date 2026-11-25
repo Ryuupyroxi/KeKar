@@ -23,8 +23,8 @@ def _fill_rental(form, address, move_in, move_out):
     form.move_in_input.setDate(QDate.fromString(move_in, Qt.DateFormat.ISODate))
     form.move_out_input.setDate(
         QDate.fromString(move_out, Qt.DateFormat.ISODate))
-    form.garage_combo.setCurrentIndex(2)
-    form.parking_combo.setCurrentText("Driveway")
+    form.garage_2_box.setChecked(True)
+    form.driveway_box.setChecked(True)
     form.save()
     return form.current_id
 
