@@ -121,6 +121,24 @@ desktop updater. The signing keystore is kept outside the repo. Play Store
 internal testing and production are a later phase requiring a privacy policy,
 store listing and upload signing path.
 
+## Aesthetic direction
+
+The Android app uses a clean neutral productivity style: white/graphite
+surfaces, generous spacing and minimal chrome. Warm amber is the only accent,
+reserved for active navigation, primary actions and status — no blue or teal.
+Screens use spacious cards with one primary task per screen, large 48dp touch
+targets and collapsible detail sections so long forms stay manageable.
+
+Themes follow the system by default with manual Light / Dark / OLED overrides.
+OLED is pure black (`#000000`) with bright text and no dark text anywhere,
+matching the desktop rule. Typography is system Roboto/Inter with generous line
+height and no bundled display font. Icons are Material Symbols outlined with a
+consistent 2px stroke; amber is used only for active or status states.
+
+Motion is deliberately quiet: short fades and soft 8dp card elevation, with no
+flashy transitions. Accessibility is a v1 requirement: dynamic type to 200%,
+48dp minimum touch targets and WCAG AA contrast in all three themes.
+
 ## Delivery phases
 
 1. Project scaffold: Gradle, Compose, Hilt, Navigation, Room schema and theme.
