@@ -188,3 +188,15 @@ emptying the real database, keeping the seeded tour demo database, adding
 `INSTRUCTIONS.txt`, setting `tour_completed=False`, and fixing the tour caption
 so long step text wraps instead of clipping. Both zips verified: real
 properties 0, demo properties 4, key configured, no plaintext key.
+
+
+## Local builds current check
+
+The source checkout, the installed Lite/production bundle, both upload zips,
+and both local full/experimental targets are now current as of commit
+`2b1f5dd`. The full build previously in `dist/KeKar` was stale, so it was
+rebuilt and replaced; the portable copy under `out/KeKar_Linux/KeKar_Linux`
+was refreshed from the same build. Both full targets are function-for-function
+identical to the checkout. The menu target `dist/KeKar/KeKar` was launched on
+the real display and showed the current tabs and chat pane; the test instance
+was closed. Lite data remains empty with the seeded tour demo intact.
