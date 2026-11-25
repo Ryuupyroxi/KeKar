@@ -89,4 +89,4 @@ Target variant: Lite/production must stay green; full must not regress.
 | 9 | Channel -> Site | Rename the preview label and related user-facing text. | DONE — picker label is "Site" |
 | 10 | Lease template + tutorial wording | Research a comprehensive base lease, update the built-in template and step 6 wording. | DONE — 14-clause template; tour says upload your own or use provided |
 | 11 | Add listing sites | Research and add Facebook Marketplace, Apartments.com, VRBO and Airbnb packages with distinct structures. | DONE — sites visible in Lite; Facebook package added; research cited in handoff |
-| 12 | Regression + docs | Full suite, Lite suite, docs and handoff. | Pending |
+| 12 | Regression + docs | Full suite, Lite suite, docs and handoff. | DONE — full 492, Lite 159; docs and research citations updated |
