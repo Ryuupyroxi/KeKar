@@ -236,3 +236,20 @@ automatically; the client still copies and pastes.
 [4] https://www.airbnb.com/resources/hosting-homes/a/guidelines-for-writing-your-listing-title-533 — Airbnb - Listing title guidelines
 [5] https://help.vrbo.com/articles/How-do-I-list-my-property — Vrbo - How to list your property
 [6] https://www.apartments.com/rental-manager/resources/listing/writing-tips-mind-blowing-property-description — Apartments.com - Property description writing tips
+
+
+## Cleanup and self-updater
+
+The five agreed redundancies were resolved: internal "channel" naming became
+"site", the empty hidden-channel filter was removed, clipboard warnings now say
+"Check before posting:", package README files became pointers to one
+INSTRUCTIONS.txt, and Windows packages stopped shipping install_linux.py. Old
+`dist/` rollback folders were moved to `dist/_archive/`.
+
+A GitHub self-updater was added under Help → Check for updates... It queries the
+latest release, matches the platform asset, verifies the GitHub-provided
+SHA-256, stages a new application folder under `KeKarData/updates/`, then runs a
+detached script that swaps the app folder after KeKar exits and relaunches it.
+`KeKarData/` — including the encrypted assistant key and all records — is never
+replaced. Live API check found version 1.6.2 with a valid digest and no update
+pending. Tests: full 500 passed; Lite 167 passed.

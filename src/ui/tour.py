@@ -317,14 +317,15 @@ def build_tour_steps(window) -> list[TourStep]:
             ("The labelled button at the right end of this bar collapses or "
              "expands the property list. View switches between Light, Dark "
              "and OLED; text stays readable in every theme. Help → Calendar "
-             "legend explains the date colours. File → Accounts sets up a "
+             "legend explains the date colours, and Check for updates pulls "
+             "new releases from GitHub. File → Accounts sets up a "
              "login and decides whether KeKar asks for one when it starts.")
             if features.is_lite() else
             ("The two buttons at the right end of this bar collapse the "
              "property list and the chat, and View switches between Light, "
              "Dark and OLED; text stays readable in every theme. Help → "
-             "Calendar legend explains the date colours. File → Accounts "
-             "sets up a login and decides whether KeKar asks for one when "
+             "Calendar legend explains the date colours, Check for updates "
+             "pulls new releases from GitHub, and File → Accounts sets up a login and decides whether KeKar asks for one when "
              "it starts.")),
         TourStep(
             window.logo_label, "The brand",

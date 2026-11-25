@@ -428,9 +428,15 @@ class MainWindow(QMainWindow):
         self.exit_demo_action.setVisible(False)
         help_menu.addAction("Calendar legend...").triggered.connect(
             self._show_calendar_legend)
+        help_menu.addAction("Check for updates...").triggered.connect(
+            self._check_for_updates)
         help_menu.addSeparator()
         about_action = help_menu.addAction("About...")
         about_action.triggered.connect(lambda: AboutDialog(self.app, self).exec())
+
+    def _check_for_updates(self) -> None:
+        from .update_dialog import UpdateDialog
+        UpdateDialog(self.app, self).exec()
 
     def _show_calendar_legend(self) -> None:
         from PyQt6.QtWidgets import QMessageBox

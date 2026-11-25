@@ -56,6 +56,11 @@ for Zillow, apartments.com, Facebook Marketplace, Airbnb, Vrbo and Booking.com
 are all available as offline copy-and-paste text; only the direct connections
 are absent.
 
+**Help → Check for updates...** queries the latest GitHub release, verifies the
+GitHub-provided SHA-256 of the matching zip, stages the new application folder
+beside the current one, then restarts KeKar. `KeKarData/` is never replaced, so
+your records and configured assistant key survive the update.
+
 Both builds use the same `KeKarData/` folder and the same SQLite schema; either
 can open a portfolio created by the other. No data is deleted or migrated.
 

@@ -354,7 +354,7 @@ dialog says plainly that nothing was published and points at **Copy listing**
 as the reliable fallback. Auto-fill is off unless the user enables it in
 Settings, and it can never click Publish.
 
-## Listing channels
+## Listing sites
 
 ```
 PropertyForm.preview_listing_btn          ("Portal listing…" for a short stay)
@@ -362,7 +362,7 @@ PropertyForm.preview_listing_btn          ("Portal listing…" for a short stay)
        └─ QComboBox: generic | the channels for prop.kind
             ├─ generic      → listing_compiler.compile_listing(prop)
             │                   (short_stay template for a short stay)
-            └─ a channel    → listing_channels.compile_channel(
+            └─ a site       → listing_sites.compile_site_package(
             │                    prop, channel,
             │                    price_override, min_stay_override)
             │                 └─ overrides come from PortalRepo.get(prop.id,
