@@ -54,6 +54,37 @@ def test_tour_describes_the_real_feature_set(kekar_app):
             assert phrase in text, f"the tour never mentions {phrase!r}"
 
 
+def test_tour_captions_fit_at_common_sizes(kekar_app):
+    """Long steps must wrap fully inside the card at both window sizes."""
+    from PyQt6.QtWidgets import QApplication
+
+    window = kekar_app.main_window
+    steps = build_tour_steps(window)
+    overlay = TourOverlay(window, steps)
+    overlay.apply_theme(kekar_app.current_theme())
+    overlay.resize(window.size())
+    window.show()
+    overlay.start()
+    try:
+        for width, height in ((1360, 900), (1024, 768)):
+            window.resize(width, height)
+            overlay.resize(window.size())
+            for index in range(len(steps)):
+                overlay.goto_step(index)
+                QApplication.processEvents()
+                body = overlay.body_label
+                needed = body.heightForWidth(body.width())
+                assert needed and needed > 0
+                assert body.height() >= needed - 2, (
+                    f"step {index + 1} clipped at {width}x{height}")
+                card = overlay.caption
+                assert card.x() >= 0 and card.y() >= 0
+                assert card.x() + card.width() <= width
+                assert card.y() + card.height() <= height
+    finally:
+        overlay.finish()
+
+
 def test_overlay_paints_without_raising(kekar_app):
     window = kekar_app.main_window
     overlay = TourOverlay(window, build_tour_steps(window))

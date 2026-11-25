@@ -113,8 +113,18 @@ class TourOverlay(QWidget):
         self._place_caption()
 
     def _place_caption(self) -> None:
-        self.caption.adjustSize()
+        # Width must be set before the height is measured: a word-wrapped
+        # QLabel reports a taller sizeHint at 280 px than at 360 px. Measuring
+        # first and only then forcing the width clipped the ends of long steps.
         width = min(360, max(280, self.width() - 32))
+        self.caption.resize(width, self.caption.height())
+        self.caption.layout().activate()
+        # QLabel.sizeHint() ignores heightForWidth in this layout, so the
+        # body was given the one-line hint and long steps lost their last
+        # lines. Pin it to the wrapped height before measuring the card.
+        wrapped = self.body_label.heightForWidth(self.body_label.width())
+        self.body_label.setMinimumHeight(wrapped if wrapped and wrapped > 0 else 0)
+        self.caption.adjustSize()
         height = self.caption.height()
         hole = self._hole_rect()
 
