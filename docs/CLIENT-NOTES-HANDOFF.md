@@ -253,3 +253,14 @@ detached script that swaps the app folder after KeKar exits and relaunches it.
 `KeKarData/` — including the encrypted assistant key and all records — is never
 replaced. Live API check found version 1.6.2 with a valid digest and no update
 pending. Tests: full 500 passed; Lite 167 passed.
+
+
+## Final rebuilt upload packages
+
+After the cleanup and self-updater, both private upload zips were rebuilt from
+commit `c45da2a`. Final SHA-256 values: Linux
+`40a10426ad4ad2b10da40b2190fabf0921c7f2531d46f03fa5bdb457d3b7ac18`, Windows
+`c2258b967cb63660bd3ff8ad19878c264e5244828beeb1e787ae434af86f062a`. Verified:
+archives valid, plaintext key absent, key configured, tour pending, real data
+empty, demo data seeded, INSTRUCTIONS.txt present, and install_linux.py present
+only in the Linux package.
