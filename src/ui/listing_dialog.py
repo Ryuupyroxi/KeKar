@@ -119,8 +119,7 @@ class ListingDialog(QDialog):
             f"color:{self.app.current_theme().accent};")
         self.problems.setStyleSheet(
             f"color:{self.app.current_theme().warn_text};")
-        self.problems.setText("Before you post: " + "; ".join(problems)
-                              if problems else "")
+        self.problems.setText("; ".join(problems) if problems else "")
 
     def _portal_settings(self, channel: str):
         """The stored settings for this portal, or None."""

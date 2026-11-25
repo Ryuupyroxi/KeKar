@@ -17,6 +17,17 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_preview_does_not_repeat_before_you_post(kekar_app):
+    """Note 5: the warning label should stand alone, not repeat the context."""
+    from src.ui.listing_dialog import ListingDialog
+
+    dialog = ListingDialog(kekar_app, Property(address="Sparse Way"))
+    try:
+        assert "Before you post" not in dialog.problems.text()
+    finally:
+        dialog.close()
+
+
 def test_selected_property_row_moves_to_the_top(kekar_app):
     """Note 2: highlighting a property brings its address to the top."""
     first = kekar_app.property_repo.create(Property(
