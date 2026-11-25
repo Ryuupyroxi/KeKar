@@ -24,9 +24,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ryuupyroxi.kekar.domain.model.Property
+import com.ryuupyroxi.kekar.photos.PhotoPickerButton
+import com.ryuupyroxi.kekar.photos.PhotoStore
 import com.ryuupyroxi.kekar.ui.common.SpaciousCard
 import kotlinx.coroutines.launch
 
@@ -38,6 +41,9 @@ fun PropertyDetailScreen(
     saveProperty: suspend (Property) -> Long
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val photoStore = remember { PhotoStore.from(context) }
+    var photoSha by remember { mutableStateOf<String?>(null) }
     var address by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var zip by remember { mutableStateOf("") }
@@ -94,6 +100,10 @@ fun PropertyDetailScreen(
                         }
                     }
                 }
+            }
+            SpaciousCard("Photos") {
+                PhotoPickerButton { bytes -> photoSha = photoStore.saveBytes(bytes) }
+                if (photoSha != null) Text("Photo saved: $photoSha")
             }
             SpaciousCard("Notes") {
                 OutlinedTextField(value = "", onValueChange = {}, label = { Text("Notes") }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp))

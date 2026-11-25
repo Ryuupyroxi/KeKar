@@ -724,19 +724,22 @@ git commit -m "feat(android): add navigation shell and property detail form"
 ```kotlin
 package com.ryuupyroxi.kekar.photos
 
-import android.graphics.Bitmap
-import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.test.runTest
+import java.nio.file.Files
 import org.junit.Test
 
 class PhotoStoreTest {
     @Test
-    fun saved_photo_is_in_app_private_files_dir() = runTest {
-        val store = PhotoStore(ApplicationProvider.getApplicationContext())
-        val sha = store.save(Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888))
+    fun saved_photo_is_written_under_the_app_photo_directory() {
+        val dir = Files.createTempDirectory("kekar-photos")
+        val store = PhotoStore(dir.toFile())
+        val bytes = "fake-jpeg-bytes".toByteArray()
+
+        val sha = store.saveBytes(bytes)
+
         assertThat(sha).matches("[0-9a-f]{64}")
-        assertThat(store.fileFor(sha).parentFile!!.name).isEqualTo("photos")
+        assertThat(store.fileFor(sha).readBytes()).isEqualTo(bytes)
+        assertThat(store.fileFor(sha).parentFile).isEqualTo(dir.toFile())
     }
 }
 ```
