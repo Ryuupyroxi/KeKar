@@ -7,6 +7,10 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 android {
     namespace = "com.ryuupyroxi.kekar"
     compileSdk = 35

@@ -142,23 +142,24 @@ android/
 - [ ] **Step 1: Write the failing test**
 
 ```kotlin
-package com.ryuupyroxi.kekar.theme
+package com.ryuupyroxi.kekar.ui.theme
 
+import androidx.compose.ui.graphics.Color
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class ThemeTokensTest {
     @Test
     fun oled_has_pure_black_background_and_light_text() {
-        assertThat(OledColors.background.value).isEqualTo(0xFF000000.toInt())
-        assertThat(OledColors.onBackground.value).isEqualTo(0xFFE8E6E1.toInt())
+        assertThat(OledColors.background).isEqualTo(Color(0xFF000000))
+        assertThat(OledColors.onBackground).isEqualTo(Color(0xFFE8E6E1))
     }
 
     @Test
     fun accent_is_amber_in_all_themes() {
-        assertThat(LightColors.primary.value).isEqualTo(0xFFC8892A.toInt())
-        assertThat(DarkColors.primary.value).isEqualTo(0xFFC8892A.toInt())
-        assertThat(OledColors.primary.value).isEqualTo(0xFFC8892A.toInt())
+        assertThat(LightColors.primary).isEqualTo(Color(0xFFC8892A))
+        assertThat(DarkColors.primary).isEqualTo(Color(0xFFC8892A))
+        assertThat(OledColors.primary).isEqualTo(Color(0xFFC8892A))
     }
 }
 ```
@@ -294,6 +295,7 @@ git commit -m "feat(android): scaffold Compose app with light, dark and OLED the
 package com.ryuupyroxi.kekar.data
 
 import com.google.common.truth.Truth.assertThat
+import com.ryuupyroxi.kekar.data.entities.PropertyEntity
 import org.junit.Test
 
 class SchemaTest {
@@ -305,8 +307,10 @@ class SchemaTest {
     @Test
     fun property_entity_keeps_desktop_legacy_fields() {
         val fieldNames = PropertyEntity::class.java.declaredFields.map { it.name }
-        assertThat(fieldNames).containsAllIn(
-            listOf("amenityParking", "petDepositAmount", "garageSpaces", "parkingType"))
+        assertThat(fieldNames).contains("amenityParking")
+        assertThat(fieldNames).contains("petDepositAmount")
+        assertThat(fieldNames).contains("garageSpaces")
+        assertThat(fieldNames).contains("parkingType")
     }
 }
 ```
