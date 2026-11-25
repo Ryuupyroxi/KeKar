@@ -34,23 +34,56 @@ This lease is made on {{date}} between {{landlord}} ("Landlord") and
 {{tenant}} ("Tenant").
 
 1. PROPERTY. Landlord rents to Tenant the premises at {{address}},
-   {{city}}, {{zip}}.
+   {{city}}, {{zip}} (the "Premises").
 
-2. TERM. The lease runs for {{term}} months from the move-in date.
+2. TERM. The lease runs for {{term}} months from the move-in date, ending on
+   the move-out date recorded for the Premises. Any renewal must be agreed in
+   writing.
 
 3. RENT. Tenant pays ${{rent}} per month, due on the first day of each month.
+   Rent is payable in full and without deduction unless agreed in writing.
 
 4. SECURITY DEPOSIT. Tenant pays a security deposit of ${{deposit}} before
-   move-in.
+   move-in. The deposit may be applied to unpaid rent or damage beyond fair
+   wear and tear, and the remaining balance will be returned after move-out
+   in accordance with applicable law.
 
-5. OCCUPANCY. The premises have {{bedrooms}} bedroom(s) and {{bathrooms}}
-   bathroom(s){{sqft_clause}}.
+5. OCCUPANCY. The Premises have {{bedrooms}} bedroom(s) and {{bathrooms}}
+   bathroom(s){{sqft_clause}}. The Premises are for residential use by Tenant
+   and the occupants agreed in writing only.
 
-6. PETS. Pet policy: {{pet_policy}}{{pet_clause}}.
+6. PETS. Pet policy: {{pet_policy}}{{pet_clause}}. Pets are subject to the
+   agreed policy and Tenant remains responsible for their care and damage.
 
-7. CONDITION. The premises are rented as at {{available_date}}, in good
-   repair, and Tenant will keep them clean and return them in the same
-   condition, fair wear and tear excepted.
+7. UTILITIES AND FEES. Tenant is responsible for utilities and other
+   recurring charges for the Premises unless the parties agree otherwise in
+   writing.
+
+8. MAINTENANCE AND REPAIRS. Tenant will keep the Premises reasonably clean
+   and notify Landlord promptly of needed repairs. Tenant will not make
+   alterations without Landlord's written consent.
+
+9. LANDLORD ACCESS. Landlord may enter the Premises to inspect, maintain or
+   repair them after reasonable notice to Tenant, except in an emergency.
+
+10. CONDITION. The Premises are rented as at {{available_date}}, in good
+    repair, and Tenant will return them in the same condition, fair wear and
+    tear excepted.
+
+11. ASSIGNMENT AND SUBLETTING. Tenant may not assign this lease or sublet the
+    Premises without Landlord's written consent.
+
+12. DEFAULT. Failure to pay rent or to follow a material term of this lease is
+    a default. The parties will use the notice and cure process required by
+    applicable law before termination for default.
+
+13. TERMINATION. Either party may terminate this lease as provided by law or
+    by written agreement. Tenant will give written notice and return all keys
+    on move-out.
+
+14. ENTIRE AGREEMENT. This document is the entire agreement between the
+    parties about the Premises and supersedes earlier discussions. Changes
+    must be in writing and signed by both parties.
 
 Signed: ________________________   Landlord
 

@@ -287,8 +287,8 @@ def build_tour_steps(window) -> list[TourStep]:
             on_enter=lambda overlay: _show_tab(window, overlay, 1)),
         TourStep(
             window.lease_tab, "Leases",
-            "Draw up a lease from the example lease your client provided. Load "
-            "it once as the template, then generate a filled-in copy for any "
+            "Draw up a lease from a template: upload your own example lease or "
+            "use the one provided. Generate a filled-in copy for any "
             "property and tenant — the Property dropdown is filled from your "
             "saved properties. A property that allows pets adds a refundable "
             "pet deposit clause automatically; custom templates can use the "

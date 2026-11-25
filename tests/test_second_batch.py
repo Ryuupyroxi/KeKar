@@ -17,6 +17,23 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_builtin_lease_is_comprehensive_and_tutorial_wording_fits(kekar_app):
+    """Note 1/9: a full base lease, and the tour speaks to the new user."""
+    from src.services import lease_builder
+    from src.ui.tour import build_tour_steps
+
+    template = lease_builder.DEFAULT_TEMPLATE
+    assert lease_builder.unknown_tokens(template) == []
+    for clause in ("UTILITIES", "MAINTENANCE", "LANDLORD ACCESS",
+                   "TERMINATION", "ENTIRE AGREEMENT"):
+        assert clause in template
+
+    text = " ".join(step.body
+                    for step in build_tour_steps(kekar_app.main_window))
+    assert "upload your own example lease or use the one provided" in text
+    assert "your client provided" not in text
+
+
 def test_preview_picker_says_site_not_channel(kekar_app):
     """Note 6: clients think in sites, not channels."""
     from PyQt6.QtWidgets import QLabel

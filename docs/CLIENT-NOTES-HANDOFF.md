@@ -200,3 +200,19 @@ was refreshed from the same build. Both full targets are function-for-function
 identical to the checkout. The menu target `dist/KeKar/KeKar` was launched on
 the real display and showed the current tabs and chat pane; the test instance
 was closed. Lite data remains empty with the seeded tour demo intact.
+
+
+## Lease template research
+
+The built-in lease was expanded from seven short clauses into a comprehensive
+residential template covering parties, property, term, rent, security deposit,
+occupancy, pets, utilities, maintenance, landlord access, condition,
+assignment, default, termination and entire agreement. The clause set was
+checked against Nolo's summary of typical lease provisions[1] and PandaDoc's
+residential lease template[2]. This is a working base template, not legal
+advice; a client should have local counsel review it where required.
+
+## Sources
+
+[1] https://www.nolo.com/legal-encyclopedia/free-books/renters-rights-book/chapter2-4.html — Nolo - Typical Provisions in Leases
+[2] https://www.pandadoc.com/residential-lease-agreement-template — PandaDoc - Residential Lease Template
