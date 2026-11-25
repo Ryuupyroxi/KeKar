@@ -57,3 +57,36 @@ plan → implement → test → next.
 
 The numbers in the work-order table are execution positions, not the original
 note numbers. The original note number is in the "Note" column.
+
+## Second batch — notes as received
+
+1) step six should not mention the client the tutorial is built for them not me,it should say something like upload your own example lease or use the one provided, we should look up a comprehensive lease that we can use as a base template.
+2)calendar highlighting should bring the address to th top of the list.
+3)Properties>Movein-Moveout should be a drop down mini calendar instead of a text box
+4)Move in and out shoud be in rental terms aswell as pet deposit
+4) remove parking spot from ammenties, its reduntant
+5)Drive way, street parking, and 1 car or 2car garage should be check boxes
+5)remove the before you post line in the test box for preview listing since its on he window itself already
+6) in preview list "channel" shoul be changed to "site"
+7) pet policy should be a yes or no drop down
+8) we need to add sites like Facebook Marketplace, Apartments.com, VRBO, AirBNB, and look up the best way tostructure those post to make sure they are correct and unique
+9) lets make sure out lease section is comprehensive
+
+## Second batch — dependency order and plan
+
+Target variant: Lite/production must stay green; full must not regress.
+
+| Pos | Note | Plan | Status |
+|---|---|---|---|
+| 1 | Pet policy yes/no dropdown | Replace free text with a Yes/No combo; keep the stored text compatible with leases and search. | DONE — Yes/No combo; old free text maps to Yes/No |
+| 2 | Move-in/out as mini calendar | Use QDateEdit with calendar popup; keep ISO strings in storage. | Pending |
+| 3 | Move dates in Rental terms | Move the two date widgets from Details into Rental terms without changing storage. | Pending |
+| 4 | Pet deposit in Rental terms | Add a persisted deposit amount field beside the pet policy; feed the lease clause. | Pending |
+| 5 | Remove Parking spot amenity | Hide the redundant generic checkbox; keep legacy data readable. | Pending |
+| 6 | Parking/garage checkboxes | Replace the two combos with Driveway, Street parking, 1-car and 2-car checkboxes; derive stored fields. | Pending |
+| 7 | Calendar address to top | When a property is selected, move its calendar row to the top of the event list. | Pending |
+| 8 | Preview text cleanup | Remove the "Before you post" line from the preview body. | Pending |
+| 9 | Channel -> Site | Rename the preview label and related user-facing text. | Pending |
+| 10 | Lease template + tutorial wording | Research a comprehensive base lease, update the built-in template and step 6 wording. | Pending |
+| 11 | Add listing sites | Research and add Facebook Marketplace, Apartments.com, VRBO and Airbnb packages with distinct structures. | Pending |
+| 12 | Regression + docs | Full suite, Lite suite, docs and handoff. | Pending |

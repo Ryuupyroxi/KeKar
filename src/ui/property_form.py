@@ -139,8 +139,8 @@ class PropertyForm(QWidget):
         self.sqft_input = QSpinBox()
         self.sqft_input.setRange(0, 100000)
         self.sqft_input.setSingleStep(50)
-        self.pet_input = QLineEdit()
-        self.pet_input.setPlaceholderText("Cats OK")
+        self.pet_input = QComboBox()
+        self.pet_input.addItems(["No", "Yes"])
         self.move_in_input = QLineEdit()
         self.move_in_input.setPlaceholderText("Move-in YYYY-MM-DD")
         self.move_out_input = QLineEdit()
@@ -648,12 +648,13 @@ class PropertyForm(QWidget):
         self._map_suggestions.clear()
         self.last_maps_error = ""
         for widget in (self.address_input, self.city_input, self.zip_input,
-                       self.available_input, self.pet_input,
+                       self.available_input,
                        self.move_in_input, self.move_out_input,
                        self.check_in_input, self.check_out_input):
             widget.clear()
         self.notes_input.clear()
         self.house_rules_input.clear()
+        self.pet_input.setCurrentIndex(0)
         self.garage_combo.setCurrentIndex(0)
         self.parking_combo.setCurrentIndex(0)
         for widget in (self.rent_input, self.deposit_input,
@@ -691,7 +692,10 @@ class PropertyForm(QWidget):
         self.bedrooms_input.setValue(p.bedrooms or 0)
         self.bathrooms_input.setValue(p.bathrooms or 0)
         self.sqft_input.setValue(p.sqft or 0)
-        self.pet_input.setText(p.pet_policy or "")
+        policy = (p.pet_policy or "").strip().lower()
+        self.pet_input.setCurrentIndex(
+            1 if policy and policy not in {"no", "none", "no pet", "no pets"}
+            else 0)
         self.notes_input.setPlainText(p.notes or "")
         for attr, box in self.amenity_boxes.items():
             box.setChecked(bool(getattr(p, attr)))
@@ -720,7 +724,7 @@ class PropertyForm(QWidget):
             bedrooms=self.bedrooms_input.value() or None,
             bathrooms=self.bathrooms_input.value() or None,
             sqft=self.sqft_input.value() or None,
-            pet_policy=self.pet_input.text().strip() or None,
+            pet_policy=self.pet_input.currentText(),
             garage_spaces=self.garage_combo.currentIndex(),
             parking_type=(self.parking_combo.currentText()
                           if self.parking_combo.currentIndex() > 0 else None),

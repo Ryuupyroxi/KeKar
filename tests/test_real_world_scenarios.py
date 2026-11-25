@@ -19,7 +19,7 @@ def _fill_rental(form, address, move_in, move_out):
     form.address_input.setText(address)
     form.city_input.setText("Pawhuska")
     form.rent_input.setValue(1250)
-    form.pet_input.setText("Cats OK")
+    form.pet_input.setCurrentText("Yes")
     form.move_in_input.setText(move_in)
     form.move_out_input.setText(move_out)
     form.garage_combo.setCurrentIndex(2)
@@ -42,7 +42,7 @@ def test_scenario_landlord_prepares_a_pet_friendly_rental(kekar_app):
     lease.tenant_edit.setText("Alicia Reyes")
     lease.generate()
     text = lease.preview.toPlainText()
-    assert "Pet policy: Cats OK" in text
+    assert "Pet policy: Yes" in text
     assert "$300.00" in text and "refundable pet deposit" in text
 
     calendar = window.calendar_tab
