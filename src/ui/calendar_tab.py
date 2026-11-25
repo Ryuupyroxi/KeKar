@@ -81,7 +81,7 @@ class CalendarTab(QWidget):
         self._marked = []
         self._details = {}
         self.events.clear()
-        rows: list[tuple[date, str]] = []
+        rows: list[tuple[int, date, str]] = []
         # One address takes one line: both move dates live in the same row.
         grouped: dict[int, tuple[date, str, list[str]]] = {}
         for prop in self.app.property_repo.list():
@@ -109,8 +109,10 @@ class CalendarTab(QWidget):
                              f"{prefix}{prop.address}", [])
                     grouped[prop.id] = entry
                 entry[2].append(f"{label} {value}")
-        for when, address, parts in grouped.values():
-            rows.append((when, f"{address} — {', '.join(parts)}"))
+        for prop_id, (when, address, parts) in grouped.items():
+            priority = 0 if prop_id == self.selected_property_id else 1
+            rows.append((priority, when,
+                         f"{address} — {', '.join(parts)}"))
         for prop in self.app.property_repo.list():
             for stay in self.app.booking_repo.list(property_id=prop.id):
                 try:
@@ -131,9 +133,11 @@ class CalendarTab(QWidget):
                     self._details.setdefault(day.isoformat(), []).append(
                         f"Short stay — {stay.guest_name} — {prop.address}")
                     day = date.fromordinal(day.toordinal() + 1)
-                rows.append((start, f"Short stay — {stay.guest_name} — "
-                                    f"{prop.address} ({stay.check_in})"))
-        for _, text in sorted(rows):
+                priority = 0 if prop.id == self.selected_property_id else 1
+                rows.append((priority, start,
+                             f"Short stay — {stay.guest_name} — "
+                             f"{prop.address} ({stay.check_in})"))
+        for _, _, text in sorted(rows):
             self.events.addItem(text)
         self._on_date_selected()
         selected = next((p for p in self.app.property_repo.list()

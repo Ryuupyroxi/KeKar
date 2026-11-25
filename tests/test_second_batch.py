@@ -17,6 +17,24 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_selected_property_row_moves_to_the_top(kekar_app):
+    """Note 2: highlighting a property brings its address to the top."""
+    first = kekar_app.property_repo.create(Property(
+        address="Top Row Place", move_in_date="2027-05-20"))
+    kekar_app.property_repo.create(Property(
+        address="Lower Row Place", move_in_date="2027-01-05"))
+    tab = kekar_app.main_window.calendar_tab
+    tab.set_selected_property(first)
+    rows = [tab.events.item(i).text()
+            for i in range(tab.events.count())]
+    assert rows
+    assert "Top Row Place" in rows[0]
+    tab.set_selected_property(None)
+    rows = [tab.events.item(i).text()
+            for i in range(tab.events.count())]
+    assert "Lower Row Place" in rows[0]
+
+
 def test_parking_and_garage_are_checkboxes(kekar_app):
     """Note 5: four explicit checkboxes replace the two combos."""
     from PyQt6.QtWidgets import QCheckBox
