@@ -181,7 +181,10 @@ Two private upload zips were assembled in `upload-packages/` (gitignored):
 Both zips were integrity-tested, scanned for the plaintext key (none), and
 their `settings.enc`/`app.key` pairs were loaded successfully from an
 extracted copy. `UPLOAD-README.txt` in that folder has hashes and install
-steps. No release tag or remote artifact was modified. The Windows zip was later rebuilt without an empty leftover `KeKarData.empty` folder; its final SHA-256 is `56f5ce5706a6a3a866fabe4779106d09d7880d05c33e32516823c80775c585bd` after
-adding `INSTRUCTIONS.txt`; the Linux zip's final hash is
-`8145a1f9069379ec563b8cdf11a254c89e74eafd0ea7bc9f65f5b32c09db4852`. Both
-values are in `UPLOAD-README.txt`.
+steps. No release tag or remote artifact was modified. The Windows zip was later rebuilt without an empty leftover `KeKarData.empty` folder; its final SHA-256 is `ff529afc99bb309d13f9c7382f478dd7108acc378091db140b8a3d58b25dc302` and the
+Linux zip's final hash is
+`1722e391749db070468452f12908e59a013b18846e3f861c1936e1fc18689386` after
+emptying the real database, keeping the seeded tour demo database, adding
+`INSTRUCTIONS.txt`, and setting `tour_completed=False` so a new client is
+offered the tour on first launch. Both zips verified: real properties 0, demo
+properties 4, key configured, no plaintext key.
