@@ -17,6 +17,13 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_move_dates_live_in_rental_terms(kekar_app):
+    """Note 3: move dates belong with the other long-term rental terms."""
+    form = kekar_app.main_window.property_form
+    assert form.rental_terms.isAncestorOf(form.move_in_input)
+    assert form.rental_terms.isAncestorOf(form.move_out_input)
+
+
 def test_move_dates_use_calendar_popups(kekar_app):
     """Note 2: move dates are picked from a mini calendar."""
     from PyQt6.QtCore import QDate

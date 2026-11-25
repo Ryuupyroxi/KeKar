@@ -173,8 +173,6 @@ class PropertyForm(QWidget):
             ("Bathrooms", self.bathrooms_input),
             ("Square feet", self.sqft_input),
             ("Pet policy", self.pet_input),
-            ("Move-in date", self.move_in_input),
-            ("Move-out date", self.move_out_input),
         ]
         for index, (label, widget) in enumerate(fields):
             row, column = divmod(index, 2)
@@ -202,7 +200,9 @@ class PropertyForm(QWidget):
         for index, (label, widget) in enumerate((
                 ("Monthly rent", self.rent_input),
                 ("Security deposit", self.deposit_input),
-                ("Available date", self.available_input))):
+                ("Available date", self.available_input),
+                ("Move-in date", self.move_in_input),
+                ("Move-out date", self.move_out_input))):
             rental_grid.addWidget(_form_label(label), index, 0)
             rental_grid.addWidget(widget, index, 1)
         rental_grid.setColumnStretch(1, 1)
