@@ -181,4 +181,7 @@ Two private upload zips were assembled in `upload-packages/` (gitignored):
 Both zips were integrity-tested, scanned for the plaintext key (none), and
 their `settings.enc`/`app.key` pairs were loaded successfully from an
 extracted copy. `UPLOAD-README.txt` in that folder has hashes and install
-steps. No release tag or remote artifact was modified. The Windows zip was later rebuilt without an empty leftover `KeKarData.empty` folder; its final SHA-256 is `b8890cd021a0398b874c9d174f0cb149364b5a5818ee21d30a52e9ead5e63dbc`, which is the value in `UPLOAD-README.txt`.
+steps. No release tag or remote artifact was modified. The Windows zip was later rebuilt without an empty leftover `KeKarData.empty` folder; its final SHA-256 is `56f5ce5706a6a3a866fabe4779106d09d7880d05c33e32516823c80775c585bd` after
+adding `INSTRUCTIONS.txt`; the Linux zip's final hash is
+`8145a1f9069379ec563b8cdf11a254c89e74eafd0ea7bc9f65f5b32c09db4852`. Both
+values are in `UPLOAD-README.txt`.
