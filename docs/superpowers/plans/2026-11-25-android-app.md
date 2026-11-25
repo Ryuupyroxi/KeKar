@@ -612,34 +612,35 @@ git commit -m "feat(android): add property repository and save use case"
 **Interfaces:**
 - Consumes: `SavePropertyUseCase` from Task 3.
 - Produces: `@Composable fun KeKarNavHost()`.
-- Produces: `@Composable fun PropertyDetailScreen(propertyId: Long?, onSaved: (Long) -> Unit)`.
+- Produces: `@Composable fun PropertyDetailScreen(propertyId: Long?, onSaved: (Long) -> Unit, saveProperty: suspend (Property) -> Long)`.
 
 - [ ] **Step 1: Write the failing instrumented test**
 
 ```kotlin
 package com.ryuupyroxi.kekar.ui
 
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.ryuupyroxi.kekar.MainActivity
 import org.junit.Rule
 import org.junit.Test
 
 class PropertyDetailScreenTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test
     fun save_button_is_enabled_after_address_is_entered() {
-        compose.setContent { PropertyDetailScreen(propertyId = null, onSaved = {}) }
-        compose.onNodeWithText("Save property").performClick()
+        compose.onNodeWithText("+").performClick()
         compose.onNodeWithText("Street address").assertExists()
+        compose.onNodeWithText("Save property").assertExists()
     }
 }
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd android && ./gradlew :app:connectedDebugAndroidTest --tests '*PropertyDetailScreenTest'`
+Run on an unlocked device, for example: `ANDROID_SERIAL=10.138.130.110:5555 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.ryuupyroxi.kekar.ui.PropertyDetailScreenTest`
 Expected: FAIL — unresolved composable.
 
 - [ ] **Step 3: Implement the screens**
@@ -694,7 +695,7 @@ Bottom destinations with outline Material Symbols: Dashboard, Properties, Calend
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `cd android && ./gradlew :app:connectedDebugAndroidTest --tests '*PropertyDetailScreenTest'`
+Run on an unlocked device, for example: `ANDROID_SERIAL=10.138.130.110:5555 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.ryuupyroxi.kekar.ui.PropertyDetailScreenTest`
 Expected: PASS — 1 test.
 
 - [ ] **Step 6: Commit**
