@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
+import com.ryuupyroxi.kekar.ui.calendar.CalendarScreen
 import com.ryuupyroxi.kekar.ui.property.PropertyDetailScreen
 import com.ryuupyroxi.kekar.ui.property.PropertyListScreen
 
@@ -58,6 +59,7 @@ fun KeKarNavHost() {
                     saveProperty = { 1L }
                 )
                 selected == "Properties" -> PropertyListScreen(emptyList()) { editing = true }
+                selected == "Calendar" -> CalendarScreen(emptyList())
                 else -> Text(destinations.first { it.label == selected }.label + " coming next")
             }
         }
