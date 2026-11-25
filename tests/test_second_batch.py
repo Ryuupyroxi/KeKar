@@ -17,6 +17,20 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_preview_picker_says_site_not_channel(kekar_app):
+    """Note 6: clients think in sites, not channels."""
+    from PyQt6.QtWidgets import QLabel
+    from src.ui.listing_dialog import ListingDialog
+
+    dialog = ListingDialog(kekar_app, Property(address="Site Way"))
+    try:
+        labels = [w.text() for w in dialog.findChildren(QLabel)]
+        assert any("Site" in text for text in labels)
+        assert not any("Channel" in text for text in labels)
+    finally:
+        dialog.close()
+
+
 def test_preview_does_not_repeat_before_you_post(kekar_app):
     """Note 5: the warning label should stand alone, not repeat the context."""
     from src.ui.listing_dialog import ListingDialog

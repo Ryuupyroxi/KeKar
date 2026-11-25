@@ -34,7 +34,7 @@ class ListingDialog(QDialog):
         layout = QVBoxLayout(self)
 
         picker = QHBoxLayout()
-        picker.addWidget(QLabel("<b>Channel</b>"))
+        picker.addWidget(QLabel("<b>Site</b>"))
         self.channel = QComboBox()
         self.channel.addItem("Any site (generic)", "generic")
         for key in features.visible_channels(known_channels(prop.kind)):

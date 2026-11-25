@@ -86,7 +86,7 @@ Target variant: Lite/production must stay green; full must not regress.
 | 6 | Parking/garage checkboxes | Replace the two combos with Driveway, Street parking, 1-car and 2-car checkboxes; derive stored fields. | DONE — four mutually-exclusive checkboxes |
 | 7 | Calendar address to top | When a property is selected, move its calendar row to the top of the event list. | DONE — selected property rows sort first |
 | 8 | Preview text cleanup | Remove the "Before you post" line from the preview body. | DONE — warnings show without the repeated prefix |
-| 9 | Channel -> Site | Rename the preview label and related user-facing text. | Pending |
+| 9 | Channel -> Site | Rename the preview label and related user-facing text. | DONE — picker label is "Site" |
 | 10 | Lease template + tutorial wording | Research a comprehensive base lease, update the built-in template and step 6 wording. | Pending |
 | 11 | Add listing sites | Research and add Facebook Marketplace, Apartments.com, VRBO and Airbnb packages with distinct structures. | Pending |
 | 12 | Regression + docs | Full suite, Lite suite, docs and handoff. | Pending |
