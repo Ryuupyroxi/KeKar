@@ -79,7 +79,7 @@ Target variant: Lite/production must stay green; full must not regress.
 | Pos | Note | Plan | Status |
 |---|---|---|---|
 | 1 | Pet policy yes/no dropdown | Replace free text with a Yes/No combo; keep the stored text compatible with leases and search. | DONE — Yes/No combo; old free text maps to Yes/No |
-| 2 | Move-in/out as mini calendar | Use QDateEdit with calendar popup; keep ISO strings in storage. | Pending |
+| 2 | Move-in/out as mini calendar | Use QDateEdit with calendar popup; keep ISO strings in storage. | DONE — QDateEdit with popup; ISO strings preserved |
 | 3 | Move dates in Rental terms | Move the two date widgets from Details into Rental terms without changing storage. | Pending |
 | 4 | Pet deposit in Rental terms | Add a persisted deposit amount field beside the pet policy; feed the lease clause. | Pending |
 | 5 | Remove Parking spot amenity | Hide the redundant generic checkbox; keep legacy data readable. | Pending |

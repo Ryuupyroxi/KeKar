@@ -20,8 +20,9 @@ def _fill_rental(form, address, move_in, move_out):
     form.city_input.setText("Pawhuska")
     form.rent_input.setValue(1250)
     form.pet_input.setCurrentText("Yes")
-    form.move_in_input.setText(move_in)
-    form.move_out_input.setText(move_out)
+    form.move_in_input.setDate(QDate.fromString(move_in, Qt.DateFormat.ISODate))
+    form.move_out_input.setDate(
+        QDate.fromString(move_out, Qt.DateFormat.ISODate))
     form.garage_combo.setCurrentIndex(2)
     form.parking_combo.setCurrentText("Driveway")
     form.save()

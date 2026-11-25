@@ -1,9 +1,10 @@
 """Editable property detail form with amenity toggles and quick actions."""
 from __future__ import annotations
 
-from PyQt6.QtCore import QThread, QTimer, QStringListModel, pyqtSignal
+from PyQt6.QtCore import (QDate, Qt, QThread, QTimer, QStringListModel,
+                          pyqtSignal)
 from PyQt6.QtWidgets import (QCheckBox, QComboBox, QCompleter,
-                             QDoubleSpinBox, QGridLayout, QGroupBox,
+                             QDateEdit, QDoubleSpinBox, QGridLayout, QGroupBox,
                              QHBoxLayout, QLabel, QLineEdit, QMessageBox,
                              QPushButton, QSpinBox, QTextEdit, QVBoxLayout,
                              QWidget)
@@ -141,10 +142,13 @@ class PropertyForm(QWidget):
         self.sqft_input.setSingleStep(50)
         self.pet_input = QComboBox()
         self.pet_input.addItems(["No", "Yes"])
-        self.move_in_input = QLineEdit()
-        self.move_in_input.setPlaceholderText("Move-in YYYY-MM-DD")
-        self.move_out_input = QLineEdit()
-        self.move_out_input.setPlaceholderText("Move-out YYYY-MM-DD")
+        self.move_in_input = QDateEdit()
+        self.move_out_input = QDateEdit()
+        for widget in (self.move_in_input, self.move_out_input):
+            widget.setCalendarPopup(True)
+            widget.setDisplayFormat("yyyy-MM-dd")
+            widget.setMinimumDate(QDate(2000, 1, 1))
+            widget.setSpecialValueText("Not set")
 
         # --- Google Maps address suggestions ---------------------------
         # With no key the model stays empty, so Qt shows no popup and no
@@ -649,12 +653,13 @@ class PropertyForm(QWidget):
         self.last_maps_error = ""
         for widget in (self.address_input, self.city_input, self.zip_input,
                        self.available_input,
-                       self.move_in_input, self.move_out_input,
                        self.check_in_input, self.check_out_input):
             widget.clear()
         self.notes_input.clear()
         self.house_rules_input.clear()
         self.pet_input.setCurrentIndex(0)
+        self.move_in_input.setDate(self.move_in_input.minimumDate())
+        self.move_out_input.setDate(self.move_out_input.minimumDate())
         self.garage_combo.setCurrentIndex(0)
         self.parking_combo.setCurrentIndex(0)
         for widget in (self.rent_input, self.deposit_input,
@@ -676,8 +681,8 @@ class PropertyForm(QWidget):
         self.rent_input.setValue(p.rent_price or 0)
         self.deposit_input.setValue(p.deposit_amount or 0)
         self.available_input.setText(p.available_date or "")
-        self.move_in_input.setText(p.move_in_date or "")
-        self.move_out_input.setText(p.move_out_date or "")
+        self._load_date(self.move_in_input, p.move_in_date)
+        self._load_date(self.move_out_input, p.move_out_date)
         self.nightly_input.setValue(p.nightly_price or 0)
         self.cleaning_input.setValue(p.cleaning_fee or 0)
         self.extra_guest_input.setValue(p.extra_guest_fee or 0)
@@ -710,6 +715,17 @@ class PropertyForm(QWidget):
         if self.portals_box is not None:
             self._load_portals(p)
 
+    @staticmethod
+    def _load_date(widget: QDateEdit, value: str | None) -> None:
+        day = QDate.fromString(value or "", Qt.DateFormat.ISODate)
+        widget.setDate(day if day.isValid() else widget.minimumDate())
+
+    @staticmethod
+    def _save_date(widget: QDateEdit) -> str | None:
+        if widget.date() == widget.minimumDate():
+            return None
+        return widget.date().toString(Qt.DateFormat.ISODate)
+
     def _collect(self) -> Property:
         return Property(
             id=self.current_id,
@@ -719,8 +735,8 @@ class PropertyForm(QWidget):
             rent_price=self.rent_input.value() or None,
             deposit_amount=self.deposit_input.value() or None,
             available_date=self.available_input.text().strip() or None,
-            move_in_date=self.move_in_input.text().strip() or None,
-            move_out_date=self.move_out_input.text().strip() or None,
+            move_in_date=self._save_date(self.move_in_input),
+            move_out_date=self._save_date(self.move_out_input),
             bedrooms=self.bedrooms_input.value() or None,
             bathrooms=self.bathrooms_input.value() or None,
             sqft=self.sqft_input.value() or None,

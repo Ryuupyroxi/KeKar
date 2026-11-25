@@ -1,4 +1,6 @@
 """Calendar tab: move-in and move-out dates come from saved properties."""
+from PyQt6.QtCore import QDate, Qt
+
 from src.data.models import Property
 
 
@@ -30,7 +32,8 @@ def test_saving_a_property_refreshes_the_calendar(kekar_app):
     form = kekar_app.main_window.property_form
     form.load_property(None)
     form.address_input.setText("8 Save Way")
-    form.move_in_input.setText("2026-01-15")
+    form.move_in_input.setDate(
+        QDate.fromString("2026-01-15", Qt.DateFormat.ISODate))
     form.save()
     tab = kekar_app.main_window.calendar_tab
     rows = [tab.events.item(i).text() for i in range(tab.events.count())]

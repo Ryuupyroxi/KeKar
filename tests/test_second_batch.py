@@ -17,6 +17,28 @@ def test_pet_policy_is_a_yes_no_dropdown(kekar_app):
     assert kekar_app.property_repo.get(form.current_id).pet_policy == "Yes"
 
 
+def test_move_dates_use_calendar_popups(kekar_app):
+    """Note 2: move dates are picked from a mini calendar."""
+    from PyQt6.QtCore import QDate
+    from PyQt6.QtWidgets import QDateEdit
+
+    form = kekar_app.main_window.property_form
+    form.load_property(None)
+    for widget in (form.move_in_input, form.move_out_input):
+        assert isinstance(widget, QDateEdit)
+        assert widget.calendarPopup() is True
+
+    form.address_input.setText("Date Picker Way")
+    form.move_in_input.setDate(QDate(2027, 3, 4))
+    form.move_out_input.setDate(QDate(2028, 3, 3))
+    form.save()
+    prop = kekar_app.property_repo.get(form.current_id)
+    assert prop.move_in_date == "2027-03-04"
+    assert prop.move_out_date == "2028-03-03"
+    form.load_property(prop.id)
+    assert form.move_in_input.date() == QDate(2027, 3, 4)
+
+
 def test_existing_pet_text_maps_to_the_new_dropdown(kekar_app):
     form = kekar_app.main_window.property_form
     pid = kekar_app.property_repo.create(
