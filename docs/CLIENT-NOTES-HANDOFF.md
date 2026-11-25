@@ -181,13 +181,13 @@ Two private upload zips were assembled in `upload-packages/` (gitignored):
 Both zips were integrity-tested, scanned for the plaintext key (none), and
 their `settings.enc`/`app.key` pairs were loaded successfully from an
 extracted copy. `UPLOAD-README.txt` in that folder has hashes and install
-steps. No release tag or remote artifact was modified. The Windows zip was later rebuilt without an empty leftover `KeKarData.empty` folder; its final SHA-256 is `87fad079ea70c7b3a2648a0d796d24abf8efccb171a070bf79cff770867af143` and the
+steps. No release tag or remote artifact was modified. The Windows zip was later rebuilt without an empty leftover `KeKarData.empty` folder; its final SHA-256 is `11af1e2b2646b0ea8d567d22e3b2e615cd1f66a985b0aa08ebc9c2a27ca72adf` and the
 Linux zip's final hash is
-`b56cb99a3978893996640ae74220031d0d1e22716113e592844d13fa7d8bfe67` after
-emptying the real database, keeping the seeded tour demo database, adding
-`INSTRUCTIONS.txt`, setting `tour_completed=False`, and fixing the tour caption
-so long step text wraps instead of clipping. Both zips verified: real
-properties 0, demo properties 4, key configured, no plaintext key.
+`d4f0a9fc0063b40c856c36b55202fe2469e980b61689c6fe1e6e79adc39af5f1` after the
+second batch of client notes. Both zips were rebuilt from the current source
+(Windows CI artifact `da7dac3`), verified with real properties 0, demo
+properties 4, key configured, tour pending, instructions present and no
+plaintext key.
 
 
 ## Local builds current check
