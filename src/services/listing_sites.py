@@ -19,8 +19,8 @@ from .listing_compiler import (amenities_line, listing_title, _bathrooms,
 
 
 @dataclass
-class ChannelListing:
-    channel: str
+class SiteListing:
+    site: str
     label: str
     title: str
     body: str
@@ -35,12 +35,12 @@ class ChannelListing:
             lines += ["", "Fields:"]
             lines += [f"  {label}: {value}" for label, value in self.fields]
         if self.warnings:
-            lines += ["", "Before you post:"] + [f"  - {w}" for w in self.warnings]
+            lines += ["", "Check before posting:"] + [f"  - {w}" for w in self.warnings]
         return "\n".join(lines).strip()
 
 
 #: Human names and the title conventions each site expects.
-CHANNELS = {
+SITES = {
     "zillow": {
         "label": "Zillow",
         "kind": "rental",
@@ -274,18 +274,18 @@ def _common_fields(prop: Property, kind: str, *,
     ]
 
 
-def compile_channel(prop: Property, channel: str, *,
+def compile_site_package(prop: Property, site: str, *,
                     price_override: float | None = None,
-                    min_stay_override: int | None = None) -> ChannelListing:
-    """Build the package for one channel.
+                    min_stay_override: int | None = None) -> SiteListing:
+    """Build the package for one site.
 
     ``price_override`` / ``min_stay_override`` are the per-portal settings
     from the Portals group: 0 or None means "no override", so the property's
     own nightly rate and minimum stay are used.
     """
-    config = CHANNELS.get(channel)
+    config = SITES.get(site)
     if config is None:
-        raise ValueError(f"unknown channel: {channel}")
+        raise ValueError(f"unknown site: {site}")
 
     rate = price_override or prop.nightly_price
     stay = min_stay_override or prop.min_stay_nights
@@ -296,7 +296,7 @@ def compile_channel(prop: Property, channel: str, *,
 
     fields = _common_fields(prop, config["kind"], nightly=rate,
                             min_stay_nights=stay)
-    if channel in {"apartments_com", "facebook_marketplace"}:
+    if site in {"apartments_com", "facebook_marketplace"}:
         fields = fields + [("Description", body)]
 
     warnings: list[str] = []
@@ -316,28 +316,28 @@ def compile_channel(prop: Property, channel: str, *,
             warnings.append("No rent is set, so the price is missing.")
         if not prop.sqft:
             warnings.append("No square footage is set.")
-    warnings.extend(SITE_NOTES.get(channel, []))
+    warnings.extend(SITE_NOTES.get(site, []))
 
-    return ChannelListing(
-        channel=channel, label=config["label"], title=title, body=body,
+    return SiteListing(
+        site=site, label=config["label"], title=title, body=body,
         fields=fields, warnings=warnings)
 
 
-def channel_fields(prop: Property, channel: str) -> list[tuple[str, str]]:
+def site_fields(prop: Property, site: str) -> list[tuple[str, str]]:
     """The individual fields the site's form asks for, one at a time."""
-    return compile_channel(prop, channel).fields
+    return compile_site_package(prop, site).fields
 
 
-def known_channels(kind: str | None = None) -> list[str]:
+def known_sites(kind: str | None = None) -> list[str]:
     """Channel keys, optionally limited to one property kind."""
-    return sorted(key for key, config in CHANNELS.items()
+    return sorted(key for key, config in SITES.items()
                   if kind is None or config.get("kind") == kind)
 
 
-def channel_kind(channel: str) -> str | None:
-    """The property kind a channel belongs to, or None for a generic package."""
-    return CHANNELS.get(channel, {}).get("kind")
+def site_kind(site: str) -> str | None:
+    """The property kind a site belongs to, or None for a generic package."""
+    return SITES.get(site, {}).get("kind")
 
 
-def channel_label(channel: str) -> str:
-    return CHANNELS.get(channel, {}).get("label", channel)
+def site_label(site: str) -> str:
+    return SITES.get(site, {}).get("label", site)

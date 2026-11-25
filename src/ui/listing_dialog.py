@@ -1,7 +1,7 @@
-"""Listing preview and per-channel copy packages.
+"""Listing preview and per-site copy packages.
 
 Zillow and apartments.com have no posting API, so the dialog offers a package
-shaped like each site's form: pick a channel, copy, paste. The generic package
+shaped like each site's form: pick a site, copy, paste. The generic package
 still works for any other site.
 """
 from __future__ import annotations
@@ -15,8 +15,8 @@ from .. import features
 from ..data.models import (PORTALS, PORTAL_LABELS, Property,
                            SHORT_STAY_KIND)
 from ..services.clipboard import copy_text
-from ..services.listing_channels import (CHANNELS, channel_label,
-                                         compile_channel, known_channels)
+from ..services.listing_sites import (SITES, compile_site_package,
+                                      known_sites, site_label)
 from ..services.listing_compiler import compile_listing, validate_listing
 from .theme import font
 
@@ -35,12 +35,12 @@ class ListingDialog(QDialog):
 
         picker = QHBoxLayout()
         picker.addWidget(QLabel("<b>Site</b>"))
-        self.channel = QComboBox()
-        self.channel.addItem("Any site (generic)", "generic")
-        for key in features.visible_channels(known_channels(prop.kind)):
-            self.channel.addItem(CHANNELS[key]["label"], key)
-        self.channel.currentIndexChanged.connect(self._refresh)
-        picker.addWidget(self.channel, 1)
+        self.site_combo = QComboBox()
+        self.site_combo.addItem("Any site (generic)", "generic")
+        for key in features.visible_sites(known_sites(prop.kind)):
+            self.site_combo.addItem(SITES[key]["label"], key)
+        self.site_combo.currentIndexChanged.connect(self._refresh)
+        picker.addWidget(self.site_combo, 1)
         layout.addLayout(picker)
 
         self.note = QLabel(
@@ -94,20 +94,20 @@ class ListingDialog(QDialog):
         self._refresh()
 
     def _current(self) -> str:
-        return self.channel.currentData()
+        return self.site_combo.currentData()
 
     def _refresh(self) -> None:
-        channel = self._current()
-        if channel == "generic":
+        site = self._current()
+        if site == "generic":
             body = compile_listing(self.prop)
             self.text.setReadOnly(True)
             self.text.setPlainText(body)
             problems = validate_listing(body)
             self.override_note.setText("")
         else:
-            settings = self._portal_settings(channel)
-            package = compile_channel(
-                self.prop, channel,
+            settings = self._portal_settings(site)
+            package = compile_site_package(
+                self.prop, site,
                 price_override=settings.price_override if settings else None,
                 min_stay_override=(settings.min_stay_override
                                    if settings else None))
@@ -121,11 +121,11 @@ class ListingDialog(QDialog):
             f"color:{self.app.current_theme().warn_text};")
         self.problems.setText("; ".join(problems) if problems else "")
 
-    def _portal_settings(self, channel: str):
+    def _portal_settings(self, site: str):
         """The stored settings for this portal, or None."""
-        if self.prop.id is None or channel not in PORTALS:
+        if self.prop.id is None or site not in PORTALS:
             return None
-        return self.app.portal_repo.get(self.prop.id, channel)
+        return self.app.portal_repo.get(self.prop.id, site)
 
     @staticmethod
     def _override_text(settings) -> str:
@@ -145,7 +145,7 @@ class ListingDialog(QDialog):
         text = self.text.toPlainText()
         copy_text(text)
         label = ("listing" if self._current() == "generic"
-                 else channel_label(self._current()))
+                 else site_label(self._current()))
         self.app.main_window.status(f"{label} copied — paste it into the site.")
         # The status bar sits behind this modal dialog; keep the feedback
         # inside the dialog where the user can actually see it.

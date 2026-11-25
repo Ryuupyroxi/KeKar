@@ -59,8 +59,8 @@ def test_linux_launcher_is_executable():
 
 
 def test_readme_documents_the_troubleshooting_table(tool):
-    assert "TROUBLESHOOTING" in tool.README
-    assert "Windows protected your PC" in tool.README
+    assert "TROUBLESHOOTING" in tool.INSTRUCTIONS
+    assert "Windows protected your PC" in tool.INSTRUCTIONS
 
 
 def test_readme_matches_top_level_usage_doc():
@@ -82,8 +82,9 @@ def test_make_platform_package_layout(tool, tmp_path):
     assert (out / "KeKar_Linux" / "KeKar").is_file()
     assert (out / "KeKar_Linux" / "_internal" / "lib.so").is_file()
     assert (out / "KeKar.sh").is_file()
-    assert (out / "KeKar.bat").is_file()
+    assert not (out / "KeKar.bat").exists()
     assert (out / "README.txt").is_file()
+    assert (out / "INSTRUCTIONS.txt").is_file()
     # The one-click installer travels with the package.
     assert (out / "install_linux.py").is_file()
     assert (out / "install_linux.py").stat().st_mode & 0o111, \
@@ -274,9 +275,11 @@ def test_lite_usb_package_layout(tool, tmp_path):
     assert (out / "KeKarLite.sh").exists()
     assert (out / "KeKarLite.sh").stat().st_mode & 0o111
     assert (out / "KeKarData").is_dir()
-    readme = (out / "README.txt").read_text(encoding="utf-8")
-    assert "KEKAR LITE" in readme
-    assert "Chat says it can't connect" not in readme
+    instructions = (out / "INSTRUCTIONS.txt").read_text(encoding="utf-8")
+    assert "KEKAR LITE" in instructions
+    assert "Chat says it can't connect" not in instructions
+    assert "INSTRUCTIONS.txt" in (out / "README.txt").read_text(
+        encoding="utf-8")
     launcher = (out / "KeKarLite.sh").read_text(encoding="utf-8")
     assert "KeKarLite_Linux/KeKarLite" in launcher
     assert "./KeKarLite.sh" in launcher
@@ -297,4 +300,5 @@ def test_full_usb_package_layout_is_unchanged(tool, tmp_path):
         "linux", source, tmp_path / "out-full")
     assert (out / "KeKar_Linux" / "KeKar").exists()
     assert (out / "KeKar.sh").read_text(encoding="utf-8") == tool.SH
-    assert (out / "README.txt").read_text(encoding="utf-8") == tool.README
+    assert (out / "README.txt").read_text(
+        encoding="utf-8") == tool.README_POINTER

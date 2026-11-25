@@ -10,8 +10,8 @@ from src.data.models import (PORTALS, Booking, PortalSettings, Property)
 from src.data.portal_repo import PortalRepo
 from src.data.property_repo import PropertyRepo
 from src.services import ical_service, portal_sync
-from src.services.listing_channels import (channel_kind, compile_channel,
-                                           known_channels)
+from src.services.listing_sites import (site_kind, compile_site_package,
+                                           known_sites)
 from src.services.listing_compiler import compile_listing
 
 
@@ -92,15 +92,15 @@ def test_kind_round_trips(db):
 # -- listings -------------------------------------------------------------
 
 def test_short_stay_channels_are_marked():
-    assert known_channels("short_stay") == ["airbnb", "booking_com", "vrbo"]
-    assert known_channels("rental") == [
+    assert known_sites("short_stay") == ["airbnb", "booking_com", "vrbo"]
+    assert known_sites("rental") == [
         "apartments_com", "facebook_marketplace", "zillow"]
-    assert channel_kind("airbnb") == "short_stay"
-    assert channel_kind("zillow") == "rental"
+    assert site_kind("airbnb") == "short_stay"
+    assert site_kind("zillow") == "rental"
 
 
 def test_airbnb_package_uses_nightly_terms():
-    package = compile_channel(_short_stay(), "airbnb")
+    package = compile_site_package(_short_stay(), "airbnb")
     assert "$120" in package.title
     assert "Cleaning fee $45" in package.body
     assert "2 night minimum" in package.body
@@ -118,13 +118,13 @@ def test_airbnb_package_uses_nightly_terms():
 
 
 def test_short_stay_channel_warns_when_the_price_is_missing():
-    package = compile_channel(_short_stay(nightly_price=None), "vrbo")
+    package = compile_site_package(_short_stay(nightly_price=None), "vrbo")
     assert any("nightly rate" in warning for warning in package.warnings)
 
 
 def test_portal_overrides_feed_the_package():
     """A portal's price/min-stay override replaces the property's own value."""
-    package = compile_channel(_short_stay(), "airbnb", price_override=140.0,
+    package = compile_site_package(_short_stay(), "airbnb", price_override=140.0,
                               min_stay_override=3)
     assert "$140" in package.title
     assert "3 night minimum" in package.body
@@ -135,14 +135,14 @@ def test_portal_overrides_feed_the_package():
 
 def test_override_of_zero_means_no_override():
     """The Portals group stores 0 for "use the property's value"."""
-    package = compile_channel(_short_stay(), "vrbo", price_override=0,
+    package = compile_site_package(_short_stay(), "vrbo", price_override=0,
                               min_stay_override=0)
     assert "$120" in package.title
     assert "Minimum stay: 2 nights" in package.body
 
 
 def test_override_suppresses_the_missing_price_warning():
-    package = compile_channel(_short_stay(nightly_price=None), "airbnb",
+    package = compile_site_package(_short_stay(nightly_price=None), "airbnb",
                               price_override=140.0)
     assert not any("nightly rate" in warning for warning in package.warnings)
 
@@ -373,7 +373,7 @@ def test_listing_dialog_applies_the_portal_override(kekar_app):
         property_id=prop_id, portal="airbnb", enabled=True,
         price_override=140.0, min_stay_override=3))
     dlg = ListingDialog(kekar_app, kekar_app.property_repo.get(prop_id))
-    dlg.channel.setCurrentIndex(dlg.channel.findData("airbnb"))
+    dlg.site_combo.setCurrentIndex(dlg.site_combo.findData("airbnb"))
     assert "$140" in dlg.text.toPlainText()
     assert "3 night minimum" in dlg.text.toPlainText()
     assert "override" in dlg.override_note.text()

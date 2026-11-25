@@ -109,7 +109,7 @@ feature) and must stay green:
   and the `mailto:` hand-off (`test_leases.py`)
 - Listing channels: Zillow and apartments.com packages, per-field lists,
   title-length and missing-rent warnings, and the dialog's channel switching
-  (`test_listing_channels.py`)
+  (`test_listing_sites.py`)
 - Branding: the `.ico` carries every frame size, the hicolor PNGs exist, the
   window icon is set, and the logo renders in the header and About
   (`test_branding.py`)

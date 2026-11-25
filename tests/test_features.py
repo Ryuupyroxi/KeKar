@@ -25,18 +25,18 @@ def test_lite_disables_only_the_three_direct_connections(monkeypatch):
     assert features.portal_sync_enabled() is False
 
 
-def test_lite_hides_only_the_named_site_channels(monkeypatch):
+def test_lite_hides_only_the_named_site_sites(monkeypatch):
     monkeypatch.setenv("KEKAR_VARIANT", "lite")
-    channels = ["generic", "zillow", "apartments_com", "airbnb", "vrbo",
+    sites = ["generic", "zillow", "apartments_com", "airbnb", "vrbo",
                 "booking_com"]
-    assert features.visible_channels(channels) == channels
+    assert features.visible_sites(sites) == sites
 
 
 def test_full_keeps_every_channel(monkeypatch):
     monkeypatch.delenv("KEKAR_VARIANT", raising=False)
-    channels = ["generic", "zillow", "apartments_com", "airbnb", "vrbo",
+    sites = ["generic", "zillow", "apartments_com", "airbnb", "vrbo",
                 "booking_com"]
-    assert features.visible_channels(channels) == channels
+    assert features.visible_sites(sites) == sites
 
 
 def test_lite_disables_google_maps_suggestions(monkeypatch):

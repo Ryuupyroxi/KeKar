@@ -46,7 +46,7 @@ end to end.
   place; `SCHEMA_VERSION` stays 1.
 - `PropertyForm` has a **Type** selector. Rental terms and Short-stay terms are
   separate group boxes; Portals shows only for a short stay.
-- `listing_channels.py` gained `airbnb`, `vrbo` and `booking_com`, each with a
+- `listing_sites.py` gained `airbnb`, `vrbo` and `booking_com`, each with a
   `kind` marker, a per-site title/body and a per-field list. `known_channels(kind)`
   filters the dialog's dropdown by the property's kind.
 - `listing_compiler` has a short-stay generic template and a short-stay footer.
@@ -78,7 +78,7 @@ end to end.
 
 - **The overrides were stored but never used.** The design says a short-stay
   listing shows the portal's `price_override` / `min_stay_override` when set.
-  Nothing read them. `compile_channel()` now takes both, `_substitute()` and
+  Nothing read them. `compile_site_package()` now takes both, `_substitute()` and
   `_common_fields()` use the effective values, and the warnings test the
   effective values. `ListingDialog` reads them through `PortalRepo` and shows
   "Using the Airbnb override: $140 per night and a 3-night minimum."

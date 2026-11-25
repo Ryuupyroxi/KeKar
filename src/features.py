@@ -17,11 +17,7 @@ LITE = "lite"
 VALID_VARIANTS = (FULL, LITE)
 
 # Channel keys hidden from the Lite picker. The copy/paste mechanism itself is
-# never disabled: compile_channel() still accepts every key in both builds.
-# Listing packages are offline copy/paste text, so every site stays visible
-# in Lite. Direct connections (portal sync, Marketplace autofill, Maps) remain
-# disabled; those are separate feature flags below.
-LITE_HIDDEN_CHANNELS = frozenset()
+# never disabled: compile_site_package() still accepts every key in both builds.
 
 
 def _stamped_variant() -> str | None:
@@ -69,8 +65,10 @@ def maps_enabled() -> bool:
     return not is_lite()
 
 
-def visible_channels(all_channels: list[str]) -> list[str]:
-    """Channel keys the current build offers in the listing picker."""
-    if not is_lite():
-        return list(all_channels)
-    return [key for key in all_channels if key not in LITE_HIDDEN_CHANNELS]
+def visible_sites(all_sites: list[str]) -> list[str]:
+    """Listing-site keys the current build offers.
+
+    Every site is an offline copy package; direct connections are controlled
+    by the flags below, not by hiding the packages.
+    """
+    return list(all_sites)

@@ -86,7 +86,7 @@ def test_lite_listing_dialog_offers_only_local_rental_channels(
     prop = Property(address="10 Copy Court", rent_price=900, sqft=800,
                     bedrooms=2, bathrooms=1.0)
     dialog = ListingDialog(kekar_app, prop)
-    keys = [dialog.channel.itemData(i) for i in range(dialog.channel.count())]
+    keys = [dialog.site_combo.itemData(i) for i in range(dialog.site_combo.count())]
     assert keys == ["generic", "apartments_com", "facebook_marketplace",
                     "zillow"]
     dialog.close()
@@ -98,18 +98,18 @@ def test_lite_listing_dialog_offers_only_local_stay_channels(
     prop = Property(address="11 Copy Court", kind=SHORT_STAY_KIND,
                     nightly_price=190, max_guests=4, min_stay_nights=2)
     dialog = ListingDialog(kekar_app, prop)
-    keys = [dialog.channel.itemData(i) for i in range(dialog.channel.count())]
+    keys = [dialog.site_combo.itemData(i) for i in range(dialog.site_combo.count())]
     assert keys == ["generic", "airbnb", "booking_com", "vrbo"]
 
     assert "Airbnb" not in dialog.note.text()
     dialog.close()
 
 
-def test_lite_compile_channel_still_accepts_a_hidden_key():
+def test_lite_compile_site_package_still_accepts_a_hidden_key():
     """Hiding a channel in the picker must not change the data layer."""
-    from src.services.listing_channels import compile_channel
+    from src.services.listing_sites import compile_site_package
     prop = Property(address="12 Copy Court", rent_price=700, sqft=700)
-    package = compile_channel(prop, "apartments_com")
+    package = compile_site_package(prop, "apartments_com")
     assert "Description" in [name for name, _ in package.fields]
 
 

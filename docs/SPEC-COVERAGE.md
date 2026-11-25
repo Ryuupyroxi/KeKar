@@ -52,19 +52,19 @@ Decision references (D1-D10) are defined in Part 1 of
 | §14.1 | Questionnaire + document storage | `src/data/applicant_repo.py` (`add_document`, `documents`) | `test_applicant_repo.py` |
 | §14.2 | AI applicant summaries | `src/agent/tools.py` + `chat_pane.py` | `test_agent_tools.py` |
 | §3.5 | Lease drawn up from the client's example lease | `src/services/lease_builder.py`, `src/data/lease_repo.py`, `src/ui/lease_tab.py` | `test_leases.py` |
-| §3.2 | Per-channel listing packages (Zillow, apartments.com) | `src/services/listing_channels.py`, `src/ui/listing_dialog.py` | `test_listing_channels.py` |
+| §3.2 | Per-channel listing packages (Zillow, apartments.com) | `src/services/listing_sites.py`, `src/ui/listing_dialog.py` | `test_listing_sites.py` |
 | §8.1 | Collapsible property list and chat panels | `src/ui/main_window.py` (`CollapsibleSplitter`, menu-bar toggles) | `test_layout.py` |
 | §8.1 | Light, dark and OLED themes with WCAG contrast | `src/ui/palette.py`, `src/ui/theme.py`, `src/config/settings.py` | `test_themes.py` |
 | §6 | Guided tour covers the Leases tab | `src/ui/tour.py` | `test_tour.py`, `test_leases.py` |
 | §8.1 | Supplied icon and logo wired into the window, start menu, About and the packages | `src/paths.py::resource_path`, `src/ui/main_window.py::_set_logo`, `src/app.py`, `packaging/linux/kekar.desktop`, `packaging/linux/kekar.png`, `packaging/windows/kekar.ico`, `tools/make_usb_package.py` | `test_branding.py`, `test_usb_packaging.py` |
 | §8.1 | Accounts and login plumbing (the client-facing feature's foundation) | `src/services/auth.py`, `src/data/user_repo.py`, `src/ui/login_dialog.py`, `src/ui/users_dialog.py` | `test_auth.py` |
 | §7.2 | Short-stay property kind and its own terms (design: `2026-11-15-airbnb-short-stay-design.md`) | `properties.kind` + 10 columns, `Database._add_missing_columns`, `src/ui/property_form.py` (`kind_combo`, Rental/Short-stay terms) | `test_short_stay.py`, `test_property_repo.py` |
-| §3.2 | Short-stay listing packages (Airbnb, Vrbo, Booking.com) and per-portal overrides | `src/services/listing_channels.py`, `src/ui/listing_dialog.py` | `test_short_stay.py`, `test_listing_channels.py` |
+| §3.2 | Short-stay listing packages (Airbnb, Vrbo, Booking.com) and per-portal overrides | `src/services/listing_sites.py`, `src/ui/listing_dialog.py` | `test_short_stay.py`, `test_listing_sites.py` |
 | §8.3 | Reservations: calendar, bookings table, overlap rejection | `src/data/booking_repo.py`, `src/ui/stays_tab.py` | `test_short_stay.py` |
 | §10.1 | Two-way portal calendar sync over iCal, with a sync log | `src/services/ical_service.py`, `src/services/portal_sync.py`, `src/data/portal_repo.py`, `property_portals` / `portal_sync_log` | `test_short_stay.py` |
 | Calendar | Move-in/move-out dates from properties | `src/ui/calendar_tab.py`, `src/ui/property_form.py`, `src/data/models.py` | `test_calendar_tab.py` |
 | Lite | KeKar Lite variant | `src/features.py`, `tools/set_variant.py` | `test_features.py`, `test_set_variant.py`, `test_kekar_lite.py` |
-| Lite | KeKar Lite keeps copy-and-paste listings | `src/ui/listing_dialog.py`, `src/services/listing_compiler.py`, `src/services/clipboard.py` | `test_lite_ui.py`, `test_listing_channels.py` |
+| Lite | KeKar Lite keeps copy-and-paste listings | `src/ui/listing_dialog.py`, `src/services/listing_compiler.py`, `src/services/clipboard.py` | `test_lite_ui.py`, `test_listing_sites.py` |
 
 ## Deliberate deviations from the spec
 

@@ -71,43 +71,51 @@ exec "$HERE/KeKar_Linux/KeKar" "$@"
 # real path, an icon, and a Desktop shortcut. Double-clicking KeKar.sh is the
 # zero-setup path.
 
-README = """KEKAR PROPERTY MANAGER
-======================
+README_POINTER = """This portable app includes INSTRUCTIONS.txt with setup, data-location,
+assistant and troubleshooting details. Start there.
+"""
 
-To open KeKar:
-  On Windows:  double-click  KeKar.bat
-  On Linux:    double-click  KeKar.sh  (or run ./KeKar.sh in a terminal)
+INSTRUCTIONS = """KEKAR — QUICK START INSTRUCTIONS
+=================================
 
-For a one-click icon on Linux (application menu and Desktop):
-  Run:  python3 install_linux.py --desktop
-  (or simply:  ./install_linux.py --desktop)
-This writes a proper launcher with the KeKar icon. If the drive's mount
-point changes, run it again after plugging the drive in.
+This folder is a portable application. Keep the whole folder together; your
+data stays with it.
 
-Your properties, photos, and notes are stored in the KeKarData folder on this
-drive. They never leave this drive unless you email or copy them yourself.
+WINDOWS
+-------
+1. Open the package folder and double-click KeKar.bat.
+2. If Windows says "Windows protected your PC", choose More info -> Run anyway.
+3. Optional: right-click KeKar.bat and choose Send to > Desktop (create shortcut).
 
-If Windows says "Windows protected your PC":
-  Click "More info", then "Run anyway". This happens because the app is new and
-  not yet signed. It is safe.
+LINUX
+-----
+1. In a terminal in this folder run:
+       chmod +x KeKar.sh
+       ./KeKar.sh
+2. Optional desktop/menu launcher:
+       python3 install_linux.py --desktop
+   Run it again if the drive mount point changes.
 
-If the app will not start:
-  - Try a different USB port (use a USB 3.0 port, usually blue).
-  - Make sure the drive is plugged in before you double-click.
-  - Right-click KeKar.bat and choose "Run as administrator" once.
+YOUR DATA
+---------
+Your own data starts empty. The guided tour uses a separate demo database.
+Everything you save lives in KeKarData beside the launcher. Copy the whole
+folder to back it up.
+
+ASSISTANT
+---------
+The AI assistant is already configured. Ask it questions in the chat pane.
+It is the only part of this app that uses the internet. Keep this folder
+private — its configuration includes access to the assistant account.
 
 TROUBLESHOOTING
 ---------------
-Problem                          What to do
--------------------------------- ------------------------------------------
-"Windows protected your PC"      More info -> Run anyway
-App opens then closes             Plug the drive in again, then retry
-Chat says it can't connect        Check the computer's internet, then retry
-Photos won't add                  Use .jpg or .png, under 20 MB each
-Drive is slow                     Use a USB 3.0 port (blue), not a hub
-Forgot which drive                Look for the folder named KeKarData
+App will not open  Check that you launched the file beside KeKarData.
+Slow on USB        Use a USB 3.0 port (blue), not a hub.
+Photos won't add   Use .jpg or .png under 20 MB.
+Windows warning    More info -> Run anyway.
 
-Need help? Contact your family's KeKar helper.
+Need help? Contact whoever supplied this copy.
 """
 
 def _lite(text: str) -> str:
@@ -124,12 +132,13 @@ def sh_for(variant: str) -> str:
 
 
 def readme_for(variant: str) -> str:
-    if variant == "full":
-        return README
-    text = README.replace("KEKAR PROPERTY MANAGER", "KEKAR LITE")
-    text = _lite(text)
-    return "\n".join(line for line in text.splitlines()
-                      if "Chat says it can't connect" not in line) + "\n"
+    return README_POINTER
+
+
+def instructions_for(variant: str) -> str:
+    if variant == "lite":
+        return INSTRUCTIONS.replace("KEKAR", "KEKAR LITE")
+    return INSTRUCTIONS
 
 
 DATA_SUBDIRS = ("photos", "applicants", "memory", "config", "backups", "logs")
@@ -149,7 +158,7 @@ def make_platform_package(platform: str, source: Path, out: Path,
     shutil.copytree(source, target)
     if platform == "windows":
         _stage_icon(target)
-    _write_launchers(out, variant)
+    _write_launchers(out, variant, platform)
     return out
 
 
@@ -181,20 +190,23 @@ def combine(linux_dir: Path, windows_dir: Path, out: Path,
     return out
 
 
-def _write_launchers(out: Path, variant: str = "full") -> Path:
+def _write_launchers(out: Path, variant: str = "full",
+                     platform: str | None = None) -> Path:
     name = "KeKarLite" if variant == "lite" else "KeKar"
-    (out / f"{name}.bat").write_text(bat_for(variant), encoding="utf-8")
-    sh = out / f"{name}.sh"
-    sh.write_text(sh_for(variant), encoding="utf-8")
-    sh.chmod(0o755)
+    if platform in (None, "windows"):
+        (out / f"{name}.bat").write_text(bat_for(variant), encoding="utf-8")
+    if platform in (None, "linux"):
+        sh = out / f"{name}.sh"
+        sh.write_text(sh_for(variant), encoding="utf-8")
+        sh.chmod(0o755)
+        # The one-click installer is Linux-only.
+        source = Path(__file__).resolve().parent / "install_linux.py"
+        if source.exists():
+            shutil.copy2(source, out / "install_linux.py")
+            (out / "install_linux.py").chmod(0o755)
     (out / "README.txt").write_text(readme_for(variant), encoding="utf-8")
-
-    # The one-click installer travels with the package. It auto-detects the
-    # binary inside KeKar_Linux/ and writes a validated .desktop entry.
-    source = Path(__file__).resolve().parent / "install_linux.py"
-    if source.exists():
-        shutil.copy2(source, out / "install_linux.py")
-        (out / "install_linux.py").chmod(0o755)
+    (out / "INSTRUCTIONS.txt").write_text(
+        instructions_for(variant), encoding="utf-8")
 
     data = out / "KeKarData"
     data.mkdir(exist_ok=True)

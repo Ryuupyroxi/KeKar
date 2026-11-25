@@ -22,26 +22,26 @@ def test_all_requested_sites_are_available_in_lite():
     import os
     os.environ["KEKAR_VARIANT"] = "lite"
     from src import features
-    from src.services.listing_channels import CHANNELS, known_channels
+    from src.services.listing_sites import SITES, known_sites
 
     for key in ("facebook_marketplace", "apartments_com", "airbnb", "vrbo"):
-        assert key in known_channels()
-        assert key in features.visible_channels(known_channels())
+        assert key in known_sites()
+        assert key in features.visible_sites(known_sites())
     try:
-        assert features.visible_channels(known_channels()) == sorted(CHANNELS)
+        assert features.visible_sites(known_sites()) == sorted(SITES)
     finally:
         os.environ.pop("KEKAR_VARIANT", None)
 
 
 def test_facebook_marketplace_package_is_distinct(kekar_app):
     from src.data.models import Property
-    from src.services.listing_channels import compile_channel
+    from src.services.listing_sites import compile_site_package
 
     prop = Property(address="44 Market Way", city="Pawhuska",
                     rent_price=900, deposit_amount=900, bedrooms=2,
                     bathrooms=1.0, sqft=800, pet_policy="Yes",
                     available_date="2027-01-01")
-    pkg = compile_channel(prop, "facebook_marketplace")
+    pkg = compile_site_package(prop, "facebook_marketplace")
     assert pkg.label == "Facebook Marketplace"
     assert "No application fee" in pkg.body
     assert dict(pkg.fields).get("Monthly rent") == "900"
