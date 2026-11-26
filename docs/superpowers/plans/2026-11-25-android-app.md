@@ -883,6 +883,10 @@ git commit -m "feat(android): add calendar events and screen"
 package com.ryuupyroxi.kekar.records
 
 import com.google.common.truth.Truth.assertThat
+import com.ryuupyroxi.kekar.domain.model.Booking
+import com.ryuupyroxi.kekar.domain.usecase.leaseClauses
+import com.ryuupyroxi.kekar.domain.usecase.leaseFields
+import com.ryuupyroxi.kekar.domain.usecase.staysOverlap
 import org.junit.Test
 
 class RecordScreenSpecTest {

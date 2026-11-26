@@ -20,9 +20,12 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
+import com.ryuupyroxi.kekar.ui.applicants.ApplicantsScreen
 import com.ryuupyroxi.kekar.ui.calendar.CalendarScreen
 import com.ryuupyroxi.kekar.ui.property.PropertyDetailScreen
+import com.ryuupyroxi.kekar.ui.leases.LeasesScreen
 import com.ryuupyroxi.kekar.ui.property.PropertyListScreen
+import com.ryuupyroxi.kekar.ui.stays.StaysScreen
 
 private data class Destination(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
@@ -60,6 +63,9 @@ fun KeKarNavHost() {
                 )
                 selected == "Properties" -> PropertyListScreen(emptyList()) { editing = true }
                 selected == "Calendar" -> CalendarScreen(emptyList())
+                selected == "Applicants" -> ApplicantsScreen(emptyList())
+                selected == "Leases" -> LeasesScreen()
+                selected == "Stays" -> StaysScreen(emptyList())
                 else -> Text(destinations.first { it.label == selected }.label + " coming next")
             }
         }
